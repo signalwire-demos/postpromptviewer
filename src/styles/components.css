@@ -945,7 +945,7 @@
 .recording__transcript-role--user { color: rgba(16, 185, 129, 0.9); }
 .recording__transcript-role--assistant { color: rgba(59, 130, 246, 0.9); }
 .recording__transcript-role--tool { color: rgba(245, 158, 11, 0.9); }
-.recording__transcript-role--thinking { color: rgba(168, 85, 247, 0.9); }
+.recording__transcript-role--assistant-thinking { color: rgba(168, 85, 247, 0.9); }
 .recording__transcript-role--say { color: rgba(236, 72, 153, 0.9); }
 .recording__transcript-role--calling { color: rgba(251, 146, 60, 0.9); }
 .recording__transcript-role--step { color: rgba(148, 163, 184, 0.9); }

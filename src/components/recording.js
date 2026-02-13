@@ -11,7 +11,7 @@ const REGION_COLORS = {
   assistant: 'rgba(59, 130, 246, 0.12)',
   'assistant-manual': 'rgba(236, 72, 153, 0.12)',
   tool: 'rgba(245, 158, 11, 0.12)',
-  thinking: 'rgba(168, 85, 247, 0.12)',
+  'assistant-thinking': 'rgba(168, 85, 247, 0.12)',
   calling: 'rgba(251, 146, 60, 0.12)',
   step: 'rgba(148, 163, 184, 0.12)',
 };
@@ -19,7 +19,7 @@ const REGION_COLORS = {
 function classifySystemLog(content) {
   if (!content || typeof content !== 'string') return null;
   const trimmed = content.trim();
-  if (trimmed.startsWith('Thinking:')) return 'thinking';
+  if (trimmed.startsWith('Thinking:')) return 'assistant-thinking';
   if (trimmed.startsWith('Calling function:')) return 'calling';
   if (trimmed.startsWith('Steps function:')) return 'step';
   return null;
@@ -238,7 +238,7 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
       if (b.start >= a.end) break;
       // Skip overlaps between related roles (e.g. thinking overlaps assistant)
       if (a.role === b.role) continue;
-      if (a.role === 'thinking' || b.role === 'thinking') continue;
+      if (a.role === 'assistant-thinking' || b.role === 'assistant-thinking') continue;
       if (a.role === 'step' || b.role === 'step') continue;
       if (a.role === 'endpointing' || b.role === 'endpointing') continue;
       if ((a.role === 'assistant-manual' && b.role === 'tool') || (a.role === 'tool' && b.role === 'assistant-manual')) continue;
@@ -331,7 +331,7 @@ export function renderRecording(container, payload) {
         <span class="recording__legend-item"><span class="recording__swatch" style="background:rgba(250,204,21,0.7); border:1px solid rgba(250,204,21,0.9)"></span> Endpointing</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.assistant}; border:1px solid rgba(59,130,246,0.6)"></span> Assistant</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.tool}; border:1px solid rgba(245,158,11,0.6)"></span> Tool Call</span>
-        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.thinking}; border:1px solid rgba(168,85,247,0.6)"></span> Thinking</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['assistant-thinking']}; border:1px solid rgba(168,85,247,0.6)"></span> Thinking</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['assistant-manual']}; border:1px solid rgba(236,72,153,0.6)"></span> Manual Say</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.step}; border:1px solid rgba(148,163,184,0.6)"></span> Step</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:rgba(239, 68, 68, 0.25); border:1px solid rgba(239,68,68,0.6)"></span> Barge-in</span>
@@ -470,9 +470,9 @@ export function renderRecording(container, payload) {
   const transcriptText = transcriptEl.querySelector('.recording__transcript-text');
   let lastTranscriptId = null;
 
-  const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', thinking: 'Thinking', step: 'Step', overlap: 'Barge-in' };
+  const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', 'assistant-thinking': 'Thinking', step: 'Step', overlap: 'Barge-in' };
 
-  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, endpointing: 1, tool: 1, thinking: 1, step: 0, assistant: 0 };
+  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, endpointing: 1, tool: 1, 'assistant-thinking': 1, step: 0, assistant: 0 };
 
   wavesurfer.on('timeupdate', (time) => {
     currentEl.textContent = formatTime(time);

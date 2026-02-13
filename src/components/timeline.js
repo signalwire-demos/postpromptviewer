@@ -24,7 +24,7 @@ const LABEL_WIDTH = 72;
 function classifySystemLog(content) {
   if (!content || typeof content !== 'string') return null;
   const trimmed = content.trim();
-  if (trimmed.startsWith('Thinking:')) return 'thinking';
+  if (trimmed.startsWith('Thinking:')) return 'assistant-thinking';
   if (trimmed.startsWith('Calling function:')) return 'calling';
   if (trimmed.startsWith('Steps function:')) return 'step';
   return null;
@@ -113,7 +113,7 @@ export function renderTimeline(container, payload, metrics) {
 
       const content = typeof msg.content === 'string' ? msg.content.trim() : '';
       let label = '';
-      if (category === 'thinking') {
+      if (category === 'assistant-thinking') {
         label = content.replace(/^Thinking:\s*/, '');
         label = truncate(label, 40);
       } else if (category === 'calling') {
@@ -257,7 +257,7 @@ export function renderTimeline(container, payload, metrics) {
   const swimPct = (us) => ((us - swimStart) / swimTotal) * 100;
 
   const SYSTEM_COLORS = {
-    thinking: 'rgba(139, 92, 246, 0.6)',
+    'assistant-thinking': 'rgba(139, 92, 246, 0.6)',
     calling: 'rgba(245, 158, 11, 0.5)',
     step: 'rgba(148, 163, 184, 0.5)',
   };
@@ -323,7 +323,7 @@ export function renderTimeline(container, payload, metrics) {
     roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${bg}"></span>${roleLabels[role]} (${count})</div>`);
   }
   if (hasSystem) {
-    roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.thinking}"></span>Thinking</div>`);
+    roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS['assistant-thinking']}"></span>Thinking</div>`);
     roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.calling}"></span>Fn Dispatch</div>`);
     roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.step}"></span>Step</div>`);
   }
@@ -425,14 +425,14 @@ export function renderTimeline(container, payload, metrics) {
       }
 
     } else if (role === 'system') {
-      const catLabel = category === 'thinking' ? 'Thinking'
+      const catLabel = category === 'assistant-thinking' ? 'Thinking'
         : category === 'calling' ? 'Function Dispatch'
         : category === 'step' ? 'Step Transition'
         : 'System';
       html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--system">${catLabel}</div>`;
       // Show full content without the prefix
       let displayText = content;
-      if (category === 'thinking') displayText = content.replace(/^Thinking:\s*/, '');
+      if (category === 'assistant-thinking') displayText = content.replace(/^Thinking:\s*/, '');
       else if (category === 'calling') displayText = content.replace(/^Calling function:\s*/, '');
       else if (category === 'step') displayText = content.replace(/^Steps function:\s*/, '');
       html += `<div class="swimlane__tooltip-text">${displayText}</div>`;
