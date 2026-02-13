@@ -4,6 +4,48 @@ A single-page application for visualizing SignalWire AI Agent post-conversation 
 
 Built with **Vanilla JS**, **Vite**, **Chart.js**, and **wavesurfer.js** — no framework dependencies.
 
+## Screenshots
+
+### Dashboard
+KPI metric cards covering call duration, response latency (assistant and tool), system performance rating, conversation stats, token usage, SWAIG details, and media/billing summaries.
+
+<img src="images/dashboard.png" alt="Dashboard — KPI metrics overview" width="800" />
+
+### Charts
+Six interactive Chart.js visualizations: dual latency breakdown charts (assistant responses and tool calls), tokens per second, ASR confidence per utterance, speech detection timing, message role breakdown donut, and SWAIG latency by command.
+
+<img src="images/charts.png" alt="Charts — latency, TPS, ASR, and role breakdown" width="800" />
+
+### Timeline
+Horizontal swimlane view of the full call lifecycle. The top bar shows call phases (ring, setup, AI session, teardown). Below, a conversation flow chart maps every user, assistant, tool, say, and system message to its real timestamp.
+
+<img src="images/timeline.png" alt="Timeline — call phases and conversation flow swimlane" width="800" />
+
+### Transcript
+Scrollable processed conversation log with role-colored message bubbles (system, assistant, tool, user). Each message includes expandable metadata badges for latency, audio timing, ASR confidence, and timestamps.
+
+<img src="images/transcript.png" alt="Transcript — role-colored conversation with metadata" width="800" />
+
+### SWAIG Inspector
+Expandable accordion of every SWAIG function call made during the session. Each entry shows the full `post_data` request and `post_response` as formatted JSON, with timestamps for tracking execution order.
+
+<img src="images/swaig-inspector.png" alt="SWAIG Inspector — function call request/response details" width="800" />
+
+### Post-Prompt
+Displays the post-prompt execution result with Raw and Substituted sub-tabs. Shows what the AI agent executed after the conversation ended (e.g., summary functions, data extraction).
+
+<img src="images/post-prompt.png" alt="Post-Prompt — post-conversation function results" width="800" />
+
+### Recording
+Stereo waveform visualization powered by wavesurfer.js with color-coded overlay regions (user speech, endpointing, assistant, tool calls, thinking, manual say, barge-in). Includes synced video playback, speed controls, and a scrubbing cursor that displays the matching transcript line.
+
+<img src="images/recording.png" alt="Recording — stereo waveform with overlay regions and video" width="800" />
+
+### Global Data
+Raw JSON view of session state at end of call, including `global_data` (set by SWAIG `set_global_data` actions), `SWMLVars` (runtime call variables), and `SWMLCall` signaling-layer metadata.
+
+<img src="images/global-data.png" alt="Global Data — session state and call metadata JSON" width="800" />
+
 ## What This Does
 
 When a SignalWire AI Agent call completes, the platform emits a `post_conversation` webhook payload containing everything that happened during the call: the full conversation log, SWAIG function calls, ASR confidence scores, token usage, latency measurements, and more.
