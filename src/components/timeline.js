@@ -10,6 +10,7 @@ const PHASE_COLORS = {
 const ROLE_BG = {
   user: 'rgba(16, 185, 129, 0.7)',
   assistant: 'rgba(59, 130, 246, 0.7)',
+  'assistant-manual': 'rgba(6, 182, 212, 0.6)',
   tool: 'rgba(245, 158, 11, 0.7)',
   system: 'rgba(139, 92, 246, 0.6)',
 };
@@ -25,7 +26,7 @@ function classifySystemLog(content) {
   const trimmed = content.trim();
   if (trimmed.startsWith('Thinking:')) return 'thinking';
   if (trimmed.startsWith('Calling function:')) return 'calling';
-  if (trimmed.startsWith('Manual Say:')) return 'say';
+  if (trimmed.startsWith('Steps function:')) return 'step';
   return null;
 }
 
@@ -80,12 +81,12 @@ export function renderTimeline(container, payload, metrics) {
   let toolCallIdx = 0;
 
   // ─── Collect ALL events including system-log ───
-  const allMessages = []; // every message with a timestamp for ordering
+  const allMessages = [];
   for (const msg of payload.callLog) {
-    if (!msg.timestamp) continue;
+    if (!msg.timestamp && !msg.start_timestamp) continue;
     allMessages.push(msg);
   }
-  allMessages.sort((a, b) => a.timestamp - b.timestamp);
+  allMessages.sort((a, b) => (a.start_timestamp || a.timestamp) - (b.start_timestamp || b.timestamp));
 
   // Build typed events from sorted messages
   const events = [];
@@ -107,13 +108,6 @@ export function renderTimeline(container, payload, metrics) {
         break;
       }
       let durationMs = Math.round((nextTs - msg.timestamp) / 1000);
-      // Manual Say entries are actual spoken audio — give them a minimum
-      // duration based on word count since the next log entry fires immediately.
-      if (category === 'say') {
-        const words = (msg.content || '').split(/\s+/).length;
-        const estimatedSpeakMs = Math.max(words * 250, 500);
-        durationMs = Math.max(durationMs, estimatedSpeakMs);
-      }
       // Skip very short entries (< 20ms) — they're just log markers
       if (durationMs < 20) continue;
 
@@ -125,8 +119,8 @@ export function renderTimeline(container, payload, metrics) {
       } else if (category === 'calling') {
         label = content.replace(/^Calling function:\s*/, '');
         label = truncate(label, 40);
-      } else if (category === 'say') {
-        label = content.replace(/^Manual Say:\s*/, '');
+      } else if (category === 'step') {
+        label = content.replace(/^Steps function:\s*/, '');
         label = truncate(label, 40);
       }
 
@@ -144,15 +138,18 @@ export function renderTimeline(container, payload, metrics) {
 
     // Skip assistant tool dispatches (no content, just function calls)
     if (msg.role === 'assistant' && msg.tool_calls && !msg.content) continue;
-    // Skip post-conversation summary (assistant message with no latency — never spoken)
-    if (msg.role === 'assistant' && !msg.audio_latency && !msg.utterance_latency && !msg.latency) continue;
+    // Skip post-conversation summary (assistant message with no timing data — never spoken)
+    if (msg.role === 'assistant' && !msg.start_timestamp && !msg.audio_latency && !msg.utterance_latency && !msg.latency) continue;
 
     const ev = {
       role: msg.role,
       timestamp: msg.timestamp,
+      startTimestamp: msg.start_timestamp || 0,
+      endTimestamp: msg.end_timestamp || 0,
       content: typeof msg.content === 'string' ? msg.content.trim() : '',
       speakingDuration: msg.speaking_to_final_event || 0,
       audioLatency: msg.audio_latency || msg.utterance_latency || msg.latency || 0,
+      rawAudioLatency: msg.audio_latency || 0,
       execLatency: msg.execution_latency || msg.function_latency || 0,
     };
 
@@ -182,16 +179,11 @@ export function renderTimeline(container, payload, metrics) {
   const segments = [];
 
   // System segments (simple: start→end already computed)
-  // Manual Say events get their own role so they render on a separate lane.
   for (const ev of sysEvents) {
     const startUs = Math.max(ev.timestamp, swimStart);
-    // For say events, extend endUs by estimated duration so the block width
-    // is proportional to how long the spoken audio lasts.
-    const endUs = ev.category === 'say'
-      ? Math.min(startUs + ev.durationMs * 1000, swimEnd)
-      : Math.min(ev.endTimestamp, swimEnd);
+    const endUs = Math.min(ev.endTimestamp, swimEnd);
     segments.push({
-      role: ev.category === 'say' ? 'say' : 'system',
+      role: 'system',
       category: ev.category,
       startUs,
       endUs,
@@ -202,6 +194,8 @@ export function renderTimeline(container, payload, metrics) {
   }
 
   // Conversation segments (user, assistant, tool)
+  let lastTriggerUs = aiStart;
+
   for (let i = 0; i < convEvents.length; i++) {
     const ev = convEvents[i];
     const nextEv = convEvents[i + 1] || null;
@@ -209,45 +203,62 @@ export function renderTimeline(container, payload, metrics) {
     let startUs, endUs, durationMs;
 
     if (ev.role === 'user') {
-      durationMs = ev.speakingDuration || 500;
-      startUs = ev.timestamp - durationMs * 1000;
-      endUs = ev.timestamp;
-    } else if (ev.role === 'assistant') {
-      // Start from previous event's end (system was processing since then)
-      if (prevEv) {
-        // If previous is a tool, the assistant can't start until the tool result
-        // returns. Tool timestamp is initiation; add execution_latency.
-        // If previous is also an assistant (e.g. garbled retry), start at own
-        // timestamp to avoid overlapping on the same row.
-        startUs = prevEv.role === 'tool'
-          ? prevEv.timestamp + (prevEv.execLatency || 0) * 1000
-          : prevEv.role === 'assistant'
-            ? ev.timestamp
-            : prevEv.timestamp;
+      if (ev.startTimestamp && ev.endTimestamp) {
+        startUs = ev.startTimestamp;
+        endUs = ev.endTimestamp;
+        durationMs = (endUs - startUs) / 1000;
       } else {
-        // First assistant message (greeting): anchor to AI start so the prompt
-        // compilation / first-token time is shown as part of the response block
-        // rather than as an empty gap.
-        startUs = aiStart;
+        durationMs = ev.speakingDuration || 500;
+        startUs = ev.timestamp - durationMs * 1000;
+        endUs = ev.timestamp;
       }
-      if (nextEv) {
-        const nextStartUs = nextEv.role === 'user'
-          ? nextEv.timestamp - (nextEv.speakingDuration || 0) * 1000
-          : nextEv.timestamp;
-        endUs = Math.max(ev.timestamp, nextStartUs);
+      lastTriggerUs = ev.endTimestamp || ev.timestamp;
+    } else if (ev.role === 'assistant') {
+      if (ev.startTimestamp && ev.endTimestamp) {
+        startUs = ev.startTimestamp;
+        endUs = ev.endTimestamp;
       } else {
-        const words = ev.content.split(/\s+/).length;
-        const speakMs = Math.max(words / 3 * 1000, 1000);
-        endUs = ev.timestamp + speakMs * 1000;
+        // Legacy fallback: estimate from audio_latency or previous event
+        if (ev.rawAudioLatency) {
+          startUs = lastTriggerUs + (ev.rawAudioLatency - 50) * 1000;
+        } else if (prevEv) {
+          startUs = prevEv.role === 'tool'
+            ? (prevEv.endTimestamp || prevEv.timestamp + (prevEv.execLatency || 0) * 1000)
+            : prevEv.role === 'assistant'
+              ? ev.timestamp
+              : (prevEv.endTimestamp || prevEv.timestamp);
+        } else {
+          startUs = aiStart;
+        }
+        if (nextEv) {
+          const nextStartUs = nextEv.startTimestamp
+            || (nextEv.role === 'user' ? nextEv.timestamp - (nextEv.speakingDuration || 0) * 1000 : nextEv.timestamp);
+          endUs = Math.max(ev.timestamp, nextStartUs);
+        } else {
+          const words = ev.content.split(/\s+/).length;
+          const speakMs = Math.max(words / 3 * 1000, 1000);
+          endUs = ev.timestamp + speakMs * 1000;
+        }
       }
       endUs = Math.min(endUs, swimEnd);
       durationMs = (endUs - startUs) / 1000;
+    } else if (ev.role === 'assistant-manual') {
+      if (!ev.startTimestamp || !ev.endTimestamp) continue;
+      startUs = ev.startTimestamp;
+      endUs = ev.endTimestamp;
+      durationMs = (endUs - startUs) / 1000;
     } else if (ev.role === 'tool') {
-      // Tool timestamp is when the call was INITIATED (not when the result returned).
-      // The segment extends forward by execution_latency.
-      durationMs = ev.execLatency || 300;
-      startUs = ev.timestamp;
-      endUs = ev.timestamp + durationMs * 1000;
+      if (ev.startTimestamp && ev.endTimestamp) {
+        startUs = ev.startTimestamp;
+        endUs = ev.endTimestamp;
+        durationMs = (endUs - startUs) / 1000;
+      } else {
+        // Legacy: estimate from execution_latency
+        durationMs = ev.execLatency || 300;
+        startUs = ev.timestamp;
+        endUs = ev.timestamp + durationMs * 1000;
+      }
+      lastTriggerUs = ev.endTimestamp || ev.timestamp;
     }
 
     const seg = {
@@ -293,18 +304,18 @@ export function renderTimeline(container, payload, metrics) {
   const SYSTEM_COLORS = {
     thinking: 'rgba(139, 92, 246, 0.6)',
     calling: 'rgba(245, 158, 11, 0.5)',
-    say: 'rgba(6, 182, 212, 0.6)',
+    step: 'rgba(148, 163, 184, 0.5)',
   };
 
   function renderSegments(role) {
-    return segments.filter(s => s.role === role).map(seg => {
+    return segments.filter(s => s.role === role || (role === 'say' && s.role === 'assistant-manual')).map(seg => {
       const left = swimPct(seg.startUs);
       const width = Math.max(swimPct(seg.endUs) - left, 0.3);
       const gap = gapMap.get(seg) || 0;
       const showLabel = width > 4;
 
-      const bg = role === 'say'
-        ? SYSTEM_COLORS.say
+      const bg = seg.role === 'assistant-manual'
+        ? ROLE_BG['assistant-manual']
         : role === 'system'
           ? (SYSTEM_COLORS[seg.category] || ROLE_BG.system)
           : ROLE_BG[seg.role];
@@ -345,20 +356,21 @@ export function renderTimeline(container, payload, metrics) {
 
   const hasTools = segments.some(s => s.role === 'tool');
   const hasSystem = segments.some(s => s.role === 'system');
-  const hasSay = segments.some(s => s.role === 'say');
+  const hasSay = segments.some(s => s.role === 'assistant-manual');
 
   const roles = ['user', 'assistant', ...(hasTools ? ['tool'] : []), ...(hasSay ? ['say'] : []), ...(hasSystem ? ['system'] : [])];
   const roleLabels = { user: 'User', assistant: 'Assistant', tool: 'Tool', say: 'Say', system: 'System' };
 
   const roleLegendItems = [];
   for (const role of roles) {
-    const count = segments.filter(s => s.role === role).length;
-    const bg = role === 'say' ? SYSTEM_COLORS.say : role === 'system' ? ROLE_BG.system : ROLE_BG[role];
+    const count = segments.filter(s => s.role === role || (role === 'say' && s.role === 'assistant-manual')).length;
+    const bg = role === 'say' ? ROLE_BG['assistant-manual'] : role === 'system' ? ROLE_BG.system : ROLE_BG[role];
     roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${bg}"></span>${roleLabels[role]} (${count})</div>`);
   }
   if (hasSystem) {
     roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.thinking}"></span>Thinking</div>`);
     roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.calling}"></span>Fn Dispatch</div>`);
+    roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.step}"></span>Step</div>`);
   }
   const roleLegend = roleLegendItems.join('');
 
@@ -454,11 +466,11 @@ export function renderTimeline(container, payload, metrics) {
         html += `<div class="swimlane__tooltip-row swimlane__tooltip-row--gap"><span>Gap from prev</span><strong>${formatMs(gap)}</strong></div>`;
       }
 
-    } else if (role === 'say') {
-      const displayText = content.replace(/^Manual Say:\s*/, '');
+    } else if (role === 'assistant-manual') {
+      const displayText = content;
       html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--system">Manual Say</div>`;
       html += `<div class="swimlane__tooltip-text">${displayText}</div>`;
-      html += `<div class="swimlane__tooltip-row"><span>Est. Duration</span><strong>${formatMs(duration)}</strong></div>`;
+      html += `<div class="swimlane__tooltip-row"><span>Duration</span><strong>${formatMs(duration)}</strong></div>`;
       html += `<div class="swimlane__tooltip-row"><span>Offset</span><span>${formatMs(startMs)}</span></div>`;
       if (gap > 0) {
         html += `<div class="swimlane__tooltip-row swimlane__tooltip-row--gap"><span>Gap from prev</span><strong>${formatMs(gap)}</strong></div>`;
@@ -467,12 +479,14 @@ export function renderTimeline(container, payload, metrics) {
     } else if (role === 'system') {
       const catLabel = category === 'thinking' ? 'Thinking'
         : category === 'calling' ? 'Function Dispatch'
+        : category === 'step' ? 'Step Transition'
         : 'System';
       html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--system">${catLabel}</div>`;
       // Show full content without the prefix
       let displayText = content;
       if (category === 'thinking') displayText = content.replace(/^Thinking:\s*/, '');
       else if (category === 'calling') displayText = content.replace(/^Calling function:\s*/, '');
+      else if (category === 'step') displayText = content.replace(/^Steps function:\s*/, '');
       html += `<div class="swimlane__tooltip-text">${displayText}</div>`;
       html += `<div class="swimlane__tooltip-row"><span>Duration</span><strong>${formatMs(duration)}</strong></div>`;
       html += `<div class="swimlane__tooltip-row"><span>Offset</span><span>${formatMs(startMs)}</span></div>`;

@@ -1,63 +1,244 @@
 import WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
+import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.esm.js';
+import HoverPlugin from 'wavesurfer.js/dist/plugins/hover.esm.js';
 import { truncate } from '../../lib/utils.js';
 
 const REGION_COLORS = {
-  user: 'rgba(16, 185, 129, 0.25)',
-  assistant: 'rgba(59, 130, 246, 0.25)',
-  tool: 'rgba(245, 158, 11, 0.25)',
+  user: 'rgba(16, 185, 129, 0.12)',
+  assistant: 'rgba(59, 130, 246, 0.12)',
+  'assistant-manual': 'rgba(236, 72, 153, 0.12)',
+  tool: 'rgba(245, 158, 11, 0.12)',
+  thinking: 'rgba(168, 85, 247, 0.12)',
+  calling: 'rgba(251, 146, 60, 0.12)',
+  step: 'rgba(148, 163, 184, 0.12)',
 };
 
+function classifySystemLog(content) {
+  if (!content || typeof content !== 'string') return null;
+  const trimmed = content.trim();
+  if (trimmed.startsWith('Thinking:')) return 'thinking';
+  if (trimmed.startsWith('Calling function:')) return 'calling';
+  if (trimmed.startsWith('Steps function:')) return 'step';
+  return null;
+}
+
 let wavesurfer = null;
+let _spaceHandler = null;
 
 /**
  * Build call-log regions mapped to audio-relative seconds.
+ * Uses recordingDuration to auto-select the best anchor timestamp and
+ * apply a scale factor so regions align with the actual audio.
  */
-function buildRegions(payload) {
-  const anchorUs = payload.callAnswerDate || payload.callStartDate;
+function buildRegions(payload, recordingDuration) {
+  const callEnd = payload.callEndDate || payload.aiEndDate;
+  const candidates = [
+    payload.callStartDate,
+    payload.callAnswerDate,
+    payload.aiStartDate,
+  ].filter(Boolean);
+
+  let bestAnchor = payload.callStartDate;
+  let bestDiff = Infinity;
+  for (const anchor of candidates) {
+    const span = (callEnd - anchor) / 1_000_000;
+    const diff = Math.abs(span - recordingDuration);
+    if (diff < bestDiff) { bestDiff = diff; bestAnchor = anchor; }
+  }
+
+  const expectedDuration = (callEnd - bestAnchor) / 1_000_000;
+  const scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
+
+  // Helper: convert microsecond timestamp to audio-relative seconds
+  const toSec = (us) => ((us - bestAnchor) / 1_000_000) * scale;
+
+  // Check if new exact timestamps are available (start_timestamp / end_timestamp)
+  const hasExact = payload.callLog.some(m => m.start_timestamp || m.end_timestamp);
+
+  // Track the last "trigger" timestamp (user speech end or tool completion)
+  // so we can compute when assistant audio actually starts playing (legacy only).
+  let lastTriggerUs = payload.aiStartDate || bestAnchor;
   const regions = [];
 
-  for (const msg of payload.callLog) {
-    if (!msg.timestamp) continue;
+  // Index callLog for next-timestamp lookups (system-log duration)
+  const allMessages = payload.callLog.filter(m => m.timestamp || m.start_timestamp).sort((a, b) => (a.start_timestamp || a.timestamp) - (b.start_timestamp || b.timestamp));
+
+  for (let mi = 0; mi < allMessages.length; mi++) {
+    const msg = allMessages[mi];
     const role = msg.role;
+
+    // Handle system-log entries (thinking, step)
+    // "Calling function:" is merged into the tool region instead.
+    if (role === 'system-log') {
+      const category = classifySystemLog(msg.content);
+      if (!category || category === 'calling' || category === 'step') continue;
+      const startSec = toSec(msg.timestamp);
+      if (startSec < 0) continue;
+      // Duration: time until next message
+      let nextTs = msg.timestamp + 1_000_000; // 1s default
+      for (let j = mi + 1; j < allMessages.length; j++) {
+        nextTs = allMessages[j].timestamp;
+        break;
+      }
+      let durSec = ((nextTs - msg.timestamp) / 1_000_000) * scale;
+      if (durSec < 0.02) continue;
+      const displayContent = msg.content.trim()
+        .replace(/^Thinking:\s*/, '')
+        .replace(/^Steps function:\s*/, '');
+      regions.push({
+        start: Math.max(0, startSec),
+        end: startSec + durSec,
+        color: REGION_COLORS[category],
+        role: category,
+        content: truncate(displayContent, 40),
+        fullContent: displayContent,
+      });
+      continue;
+    }
+
     if (!REGION_COLORS[role]) continue;
 
-    const startSec = (msg.timestamp - anchorUs) / 1_000_000;
-    if (startSec < 0) continue;
-
     if (role === 'user') {
-      const dur = (msg.speaking_to_final_event || 500) / 1000;
+      let startSec, endSec;
+      if (hasExact && msg.start_timestamp && msg.end_timestamp) {
+        startSec = toSec(msg.start_timestamp);
+        endSec = toSec(msg.end_timestamp);
+      } else {
+        endSec = toSec(msg.timestamp);
+        const dur = ((msg.speaking_to_final_event || 500) / 1000) * scale;
+        startSec = endSec - dur;
+      }
+      if (endSec < 0) continue;
       regions.push({
-        start: Math.max(0, startSec - dur),
-        end: startSec,
+        start: Math.max(0, startSec),
+        end: endSec,
         color: REGION_COLORS.user,
+        role: 'user',
         content: truncate(msg.content || '', 40),
+        fullContent: msg.content || '',
       });
+      lastTriggerUs = msg.end_timestamp || msg.timestamp;
     } else if (role === 'assistant') {
       if (msg.tool_calls && !msg.content) continue;
-      if (!msg.audio_latency && !msg.utterance_latency && !msg.latency) continue;
-      const words = (msg.content || '').split(/\s+/).length;
-      const speakSec = Math.max(words / 3, 1);
+      let startSec, endSec;
+      if (msg.start_timestamp && msg.end_timestamp) {
+        startSec = toSec(msg.start_timestamp);
+        endSec = toSec(msg.end_timestamp);
+      } else {
+        // Legacy fallback: estimate from audio_latency + word count
+        if (!msg.audio_latency) continue;
+        const audioStartUs = lastTriggerUs + (msg.audio_latency - 50) * 1000;
+        startSec = toSec(audioStartUs);
+        const words = (msg.content || '').split(/\s+/).length;
+        endSec = startSec + Math.max(words / 3, 1) * scale;
+      }
+      if (startSec < 0) continue;
       regions.push({
-        start: startSec,
-        end: startSec + speakSec,
+        start: Math.max(0, startSec),
+        end: endSec,
         color: REGION_COLORS.assistant,
+        role: 'assistant',
         content: truncate(msg.content || '', 40),
+        fullContent: msg.content || '',
       });
     } else if (role === 'tool') {
-      const execSec = (msg.execution_latency || 300) / 1000;
+      let startSec, endSec;
+      if (msg.start_timestamp && msg.end_timestamp) {
+        startSec = toSec(msg.start_timestamp);
+        endSec = toSec(msg.end_timestamp);
+      } else {
+        // Legacy: estimate from execution_latency
+        startSec = toSec(msg.timestamp);
+        const execSec = ((msg.execution_latency || 300) / 1000) * scale;
+        endSec = startSec + execSec;
+      }
+      if (startSec < 0 && endSec < 0) continue;
       regions.push({
-        start: startSec,
-        end: startSec + execSec,
+        start: Math.max(0, startSec),
+        end: endSec,
         color: REGION_COLORS.tool,
+        role: 'tool',
         content: 'Tool',
+        fullContent: msg.content || 'Tool call',
+      });
+      lastTriggerUs = msg.end_timestamp || msg.timestamp;
+    } else if (role === 'assistant-manual') {
+      if (!msg.start_timestamp || !msg.end_timestamp) continue;
+      const startSec = toSec(msg.start_timestamp);
+      const endSec = toSec(msg.end_timestamp);
+      if (endSec < 0) continue;
+      regions.push({
+        start: Math.max(0, startSec),
+        end: endSec,
+        color: REGION_COLORS['assistant-manual'],
+        role: 'assistant-manual',
+        content: truncate(msg.content || '', 40),
+        fullContent: msg.content || '',
       });
     }
   }
 
+  // ── Post-processing (mostly for legacy data without exact timestamps) ──
+  if (!hasExact) {
+    // If a tool call starts during/after a user block, warp it to the user's end.
+    regions.sort((a, b) => a.start - b.start);
+    for (let i = 0; i < regions.length; i++) {
+      if (regions[i].role !== 'tool') continue;
+      for (let j = i - 1; j >= 0; j--) {
+        if (regions[j].role === 'user' && regions[i].start >= regions[j].start && regions[i].start < regions[j].end) {
+          const dur = regions[i].end - regions[i].start;
+          regions[i].start = regions[j].end;
+          regions[i].end = regions[i].start + dur;
+          break;
+        }
+      }
+    }
+
+    // Chain consecutive tool regions so they butt up against each other.
+    regions.sort((a, b) => a.start - b.start);
+    for (let i = 0; i < regions.length - 1; i++) {
+      if (regions[i].role !== 'tool') continue;
+      for (let j = i + 1; j < regions.length; j++) {
+        if (regions[j].role === 'tool') {
+          const dur = regions[j].end - regions[j].start;
+          regions[j].start = regions[i].end;
+          regions[j].end = regions[j].start + dur;
+        }
+        break;
+      }
+    }
+  }
+
+  // Detect overlaps and create red overlay regions instead of clipping
+  regions.sort((a, b) => a.start - b.start);
+  const overlaps = [];
+  for (let i = 0; i < regions.length; i++) {
+    const a = regions[i];
+    for (let j = i + 1; j < regions.length; j++) {
+      const b = regions[j];
+      if (b.start >= a.end) break;
+      // Skip overlaps between related roles (e.g. thinking overlaps assistant)
+      if (a.role === b.role) continue;
+      if (a.role === 'thinking' || b.role === 'thinking') continue;
+      if (a.role === 'step' || b.role === 'step') continue;
+      if ((a.role === 'assistant-manual' && b.role === 'tool') || (a.role === 'tool' && b.role === 'assistant-manual')) continue;
+      overlaps.push({
+        start: b.start,
+        end: Math.min(a.end, b.end),
+        color: 'rgba(239, 68, 68, 0.25)',
+        role: 'overlap',
+        content: 'Overlap',
+        fullContent: `${a.role} / ${b.role} overlap`,
+      });
+    }
+  }
+  regions.push(...overlaps);
+
   return regions;
 }
+
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -93,11 +274,9 @@ export function renderRecording(container, payload) {
 
   container.innerHTML = `
     <div class="recording">
-      ${isVideo ? `
-        <div class="recording__video-container">
-          <video class="recording__video" id="recording-video" playsinline></video>
-        </div>
-      ` : ''}
+      <div class="recording__video-container">
+        <video class="recording__video" id="recording-video" playsinline ${isVideo ? '' : 'style="display:none"'}></video>
+      </div>
 
       <div class="recording__controls">
         <button class="recording__btn recording__play" title="Play / Pause">
@@ -118,9 +297,14 @@ export function renderRecording(container, payload) {
           <button class="recording__speed-btn" data-speed="1.5">1.5x</button>
           <button class="recording__speed-btn" data-speed="2">2x</button>
         </div>
+        <div class="recording__zoom">
+          <label class="recording__zoom-label" title="Zoom">&#128269;</label>
+          <input type="range" class="recording__zoom-slider" min="0" max="500" step="1" value="0" />
+        </div>
         <a class="recording__download" href="${url}" target="_blank" title="Download">&#11015;</a>
       </div>
 
+      <div class="recording__minimap" id="waveform-minimap"></div>
       <div class="recording__waveform" id="waveform"></div>
       <div class="recording__timeline-axis" id="waveform-timeline"></div>
 
@@ -128,6 +312,15 @@ export function renderRecording(container, payload) {
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.user}; border:1px solid rgba(16,185,129,0.6)"></span> User</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.assistant}; border:1px solid rgba(59,130,246,0.6)"></span> Assistant</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.tool}; border:1px solid rgba(245,158,11,0.6)"></span> Tool Call</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.thinking}; border:1px solid rgba(168,85,247,0.6)"></span> Thinking</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['assistant-manual']}; border:1px solid rgba(236,72,153,0.6)"></span> Manual Say</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.step}; border:1px solid rgba(148,163,184,0.6)"></span> Step</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:rgba(239, 68, 68, 0.25); border:1px solid rgba(239,68,68,0.6)"></span> Barge-in</span>
+      </div>
+
+      <div class="recording__transcript" id="recording-transcript">
+        <span class="recording__transcript-role"></span>
+        <span class="recording__transcript-text"></span>
       </div>
 
       <div class="recording__status" id="recording-status">Loading recording...</div>
@@ -136,14 +329,15 @@ export function renderRecording(container, payload) {
 
   const regions = RegionsPlugin.create();
 
+  const isOutbound = payload.direction === 'outbound';
+
   const opts = {
     container: '#waveform',
     cursorColor: '#e4e6eb',
     cursorWidth: 1,
-    barWidth: 2,
-    barGap: 1,
-    barRadius: 2,
-    height: 128,
+    height: 250,
+    autoScroll: true,
+    normalize: true,
     splitChannels: [
       { waveColor: 'rgba(16, 185, 129, 0.5)', progressColor: 'rgba(16, 185, 129, 0.8)' },
       { waveColor: 'rgba(59, 130, 246, 0.5)', progressColor: 'rgba(59, 130, 246, 0.8)' },
@@ -159,6 +353,21 @@ export function renderRecording(container, payload) {
           color: 'var(--text-secondary)',
           fontSize: '11px',
         },
+      }),
+      MinimapPlugin.create({
+        height: 30,
+        waveColor: 'rgba(148, 163, 184, 0.4)',
+        progressColor: 'rgba(148, 163, 184, 0.7)',
+        cursorColor: '#e4e6eb',
+        container: '#waveform-minimap',
+      }),
+      HoverPlugin.create({
+        lineColor: 'rgba(255, 255, 255, 0.5)',
+        lineWidth: 1,
+        labelBackground: 'rgba(0, 0, 0, 0.75)',
+        labelColor: '#fff',
+        labelSize: '11px',
+        formatTimeCallback: (sec) => `${(sec * 1000).toFixed(0)}ms`,
       }),
     ],
   };
@@ -183,6 +392,7 @@ export function renderRecording(container, payload) {
   const currentEl = container.querySelector('.recording__current');
   const durationEl = container.querySelector('.recording__duration');
   const volumeSlider = container.querySelector('.recording__volume-slider');
+  const zoomSlider = container.querySelector('.recording__zoom-slider');
   const speedBtns = container.querySelectorAll('.recording__speed-btn');
 
   wavesurfer.on('loading', (pct) => {
@@ -193,23 +403,34 @@ export function renderRecording(container, payload) {
 
   wavesurfer.on('decode', () => {
     statusEl.textContent = 'Decoding...';
+    // For outbound calls, swap channel data so user is always on top
+    if (isOutbound) {
+      const buffer = wavesurfer.getDecodedData();
+      if (buffer && buffer.numberOfChannels >= 2) {
+        const ch0Copy = new Float32Array(buffer.getChannelData(0));
+        buffer.getChannelData(0).set(buffer.getChannelData(1));
+        buffer.getChannelData(1).set(ch0Copy);
+      }
+    }
   });
 
   wavesurfer.on('ready', () => {
     statusEl.style.display = 'none';
     durationEl.textContent = formatTime(wavesurfer.getDuration());
 
-    const callRegions = buildRegions(payload);
+    const callRegions = buildRegions(payload, wavesurfer.getDuration());
     const dur = wavesurfer.getDuration();
     for (const r of callRegions) {
-      regions.addRegion({
+      const region = regions.addRegion({
         start: r.start,
         end: Math.min(r.end, dur),
         color: r.color,
-        content: r.content,
         drag: false,
         resize: false,
       });
+      // Stash metadata for export and transcript display
+      region._original = { start: r.start, end: Math.min(r.end, dur), role: r.role, content: r.content };
+      region._meta = { role: r.role, fullContent: r.fullContent };
     }
   });
 
@@ -219,8 +440,37 @@ export function renderRecording(container, payload) {
     statusEl.style.display = '';
   });
 
+  const transcriptEl = container.querySelector('#recording-transcript');
+  const transcriptRole = transcriptEl.querySelector('.recording__transcript-role');
+  const transcriptText = transcriptEl.querySelector('.recording__transcript-text');
+  let lastTranscriptId = null;
+
+  const ROLE_LABELS = { user: 'User', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', thinking: 'Thinking', step: 'Step', overlap: 'Barge-in' };
+
+  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, tool: 1, thinking: 1, step: 0, assistant: 0 };
+
   wavesurfer.on('timeupdate', (time) => {
     currentEl.textContent = formatTime(time);
+
+    // Find all active regions; during barge-in prefer user over assistant
+    const hits = regions.getRegions().filter(r => time >= r.start && time <= r.end && r._meta);
+    hits.sort((a, b) => (ROLE_PRIORITY[b._meta.role] || 0) - (ROLE_PRIORITY[a._meta.role] || 0));
+    const active = hits[0] || null;
+    const id = active?.id || null;
+    if (id !== lastTranscriptId) {
+      lastTranscriptId = id;
+      if (active) {
+        const role = active._meta.role;
+        transcriptRole.textContent = ROLE_LABELS[role] || role;
+        transcriptRole.className = 'recording__transcript-role recording__transcript-role--' + role;
+        transcriptText.textContent = active._meta.fullContent;
+        transcriptEl.classList.add('recording__transcript--active');
+      } else {
+        transcriptRole.textContent = '';
+        transcriptText.textContent = '';
+        transcriptEl.classList.remove('recording__transcript--active');
+      }
+    }
   });
 
   wavesurfer.on('play', () => { playIcon.innerHTML = '&#9646;&#9646;'; });
@@ -228,17 +478,46 @@ export function renderRecording(container, payload) {
 
   playBtn.addEventListener('click', () => wavesurfer.playPause());
 
+  if (_spaceHandler) document.removeEventListener('keydown', _spaceHandler);
+  _spaceHandler = (e) => {
+    if (e.code === 'Space' && !e.target.closest('input, textarea, select, [contenteditable]')) {
+      e.preventDefault();
+      wavesurfer?.playPause();
+    }
+  };
+  document.addEventListener('keydown', _spaceHandler);
+
   volumeSlider.addEventListener('input', (e) => {
     wavesurfer.setVolume(parseFloat(e.target.value));
   });
   wavesurfer.setVolume(0.8);
 
+  // Restore saved playback speed (UI immediately, rate on ready)
+  const savedSpeed = localStorage.getItem('recording_speed');
+  if (savedSpeed) {
+    const speed = parseFloat(savedSpeed);
+    speedBtns.forEach(b => {
+      b.classList.toggle('active', parseFloat(b.dataset.speed) === speed);
+    });
+    wavesurfer.on('ready', () => {
+      wavesurfer.setPlaybackRate(speed);
+    });
+  }
+
   speedBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const speed = parseFloat(btn.dataset.speed);
       wavesurfer.setPlaybackRate(speed);
+      localStorage.setItem('recording_speed', speed);
       speedBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
+
+  // Zoom: slider value is additional pixels-per-second beyond the default
+  zoomSlider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value);
+    wavesurfer.zoom(val || 0);
+  });
+
 }
