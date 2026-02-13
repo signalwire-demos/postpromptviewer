@@ -78,35 +78,29 @@ export function renderCharts(container, payload, metrics) {
 
   const chartDefs = [];
 
-  // ─── 1. Latency Breakdown (stacked bar with reference lines) ───
+  // ─── 1. Latency Breakdown (dual stacked charts — assistant top, tool bottom) ───
   if (l.perResponseBreakdown.length > 0) {
     chartDefs.push({
       title: 'Latency Breakdown',
       id: 'chart-latency-breakdown',
-      render: (canvas) => {
+      dual: true, // signals custom two-canvas rendering
+      render: (wrapper) => {
         const breakdown = l.perResponseBreakdown;
-
-        // Labels: 💬 Turn N or 🔧 Tool N
         const labels = breakdown.map((r, i) =>
           r.role === 'tool' ? `Tool ${i + 1}` : `Turn ${i + 1}`
         );
 
-        // Segment data
-        const llmData = breakdown.map(r => r.llm);
-        const utteranceData = breakdown.map(r => r.utteranceProcessing);
-        const audioData = breakdown.map(r => r.audioDelivery);
+        // Assistant data (zero out tool indices)
+        const aLlm = breakdown.map(r => r.role !== 'tool' ? r.llm : 0);
+        const aUtterance = breakdown.map(r => r.role !== 'tool' ? r.utteranceProcessing : 0);
+        const aAudio = breakdown.map(r => r.role !== 'tool' ? r.audioDelivery : 0);
 
-        // Per-bar colors (brighter for assistant, dimmer for tool)
-        const llmColors = breakdown.map(r =>
-          r.role === 'tool' ? SEGMENT.llmTool : SEGMENT.llmAssistant);
-        const utteranceColors = breakdown.map(r =>
-          r.role === 'tool' ? SEGMENT.utteranceTool : SEGMENT.utteranceAssistant);
-        const audioColors = breakdown.map(r => {
-          if (r.role === 'tool' && r.audioDelivery === 0) return SEGMENT.audioToolNone;
-          return r.role === 'tool' ? SEGMENT.audioTool : SEGMENT.audioAssistant;
-        });
+        // Tool data (zero out assistant indices)
+        const tLlm = breakdown.map(r => r.role === 'tool' ? r.llm : 0);
+        const tUtterance = breakdown.map(r => r.role === 'tool' ? r.utteranceProcessing : 0);
+        const tAudio = breakdown.map(r => r.role === 'tool' ? r.audioDelivery : 0);
 
-        // Reference line plugin
+        // Reference line plugin (assistant chart only)
         const assistantStats = l.assistantStats;
         const refLinePlugin = {
           id: 'latencyRefLines',
@@ -117,7 +111,17 @@ export function renderCharts(container, payload, metrics) {
             const xAxis = chart.scales.x;
             ctx.save();
 
-            // Assistant Average — green dashed
+            // Min — cyan dashed
+            const minY = yAxis.getPixelForValue(assistantStats.min);
+            ctx.strokeStyle = 'rgba(34, 211, 238, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(xAxis.left, minY);
+            ctx.lineTo(xAxis.right, minY);
+            ctx.stroke();
+
+            // Avg — green dashed
             const avgY = yAxis.getPixelForValue(assistantStats.avg);
             ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
             ctx.lineWidth = 2;
@@ -127,7 +131,6 @@ export function renderCharts(container, payload, metrics) {
             ctx.lineTo(xAxis.right, avgY);
             ctx.stroke();
 
-            // Target 1200ms — yellow dashed
             const targetY = yAxis.getPixelForValue(1200);
             ctx.strokeStyle = 'rgba(251, 191, 36, 0.8)';
             ctx.lineWidth = 2;
@@ -137,7 +140,6 @@ export function renderCharts(container, payload, metrics) {
             ctx.lineTo(xAxis.right, targetY);
             ctx.stroke();
 
-            // Assistant Max — red dashed
             const maxY = yAxis.getPixelForValue(assistantStats.max);
             ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
             ctx.lineWidth = 2;
@@ -151,39 +153,39 @@ export function renderCharts(container, payload, metrics) {
           },
         };
 
-        return new Chart(canvas, {
+        const toolStats = l.toolStats;
+
+        const sharedBarOpts = { borderWidth: 0, barPercentage: 0.6, categoryPercentage: 0.8, stack: 'bars' };
+
+        const tooltipCallbacks = {
+          title: (items) => {
+            const idx = items[0].dataIndex;
+            const r = breakdown[idx];
+            return r.role === 'tool' ? `Tool Call ${idx + 1}` : `Turn ${idx + 1}`;
+          },
+          label: (ctx) => {
+            const val = ctx.parsed.y || 0;
+            if (val > 0) return `${ctx.dataset.label}: ${val}ms`;
+            return '';
+          },
+          afterBody: (items) => {
+            const idx = items[0].dataIndex;
+            const r = breakdown[idx];
+            return [`Total: ${r.total}ms`];
+          },
+        };
+
+        // ── Top chart: Assistant responses ──
+        const topCanvas = wrapper.querySelector('.chart-latency-top');
+        const topChart = new Chart(topCanvas, {
           type: 'bar',
           plugins: [refLinePlugin],
           data: {
             labels,
             datasets: [
-              {
-                label: 'LLM Latency',
-                data: llmData,
-                backgroundColor: llmColors,
-                borderWidth: 0,
-                barPercentage: 0.6,
-                categoryPercentage: 0.8,
-                stack: 'bars',
-              },
-              {
-                label: 'Utterance Processing',
-                data: utteranceData,
-                backgroundColor: utteranceColors,
-                borderWidth: 0,
-                barPercentage: 0.6,
-                categoryPercentage: 0.8,
-                stack: 'bars',
-              },
-              {
-                label: 'Audio Delivery',
-                data: audioData,
-                backgroundColor: audioColors,
-                borderWidth: 0,
-                barPercentage: 0.6,
-                categoryPercentage: 0.8,
-                stack: 'bars',
-              },
+              { label: 'LLM Latency', data: aLlm, backgroundColor: SEGMENT.llmAssistant, ...sharedBarOpts },
+              { label: 'Utterance Processing', data: aUtterance, backgroundColor: SEGMENT.utteranceAssistant, ...sharedBarOpts },
+              { label: 'Audio Delivery', data: aAudio, backgroundColor: SEGMENT.audioAssistant, ...sharedBarOpts },
             ],
           },
           options: {
@@ -201,76 +203,119 @@ export function renderCharts(container, payload, metrics) {
                   font: { size: 11 },
                   generateLabels: (chart) => {
                     const base = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                    // Add reference line legends
-                    base.push(
-                      {
-                        text: 'Asst Avg (excl. tools)',
-                        fillStyle: 'transparent',
-                        strokeStyle: 'rgba(34, 197, 94, 0.8)',
-                        lineWidth: 2,
-                        lineDash: [5, 5],
-                        hidden: false,
-                        index: 100,
-                      },
-                      {
-                        text: 'Target (1200ms)',
-                        fillStyle: 'transparent',
-                        strokeStyle: 'rgba(251, 191, 36, 0.8)',
-                        lineWidth: 2,
-                        lineDash: [10, 5],
-                        hidden: false,
-                        index: 101,
-                      },
-                      {
-                        text: 'Asst Max (excl. tools)',
-                        fillStyle: 'transparent',
-                        strokeStyle: 'rgba(239, 68, 68, 0.8)',
-                        lineWidth: 2,
-                        lineDash: [3, 3],
-                        hidden: false,
-                        index: 102,
-                      }
-                    );
+                    if (assistantStats) {
+                      base.push(
+                        { text: `Min: ${assistantStats.min}ms`, fillStyle: 'transparent', strokeStyle: 'rgba(34, 211, 238, 0.8)', lineWidth: 2, lineDash: [3, 3], hidden: false, index: 99 },
+                        { text: `Avg: ${assistantStats.avg}ms`, fillStyle: 'transparent', strokeStyle: 'rgba(34, 197, 94, 0.8)', lineWidth: 2, lineDash: [5, 5], hidden: false, index: 100 },
+                        { text: 'Target: 1200ms', fillStyle: 'transparent', strokeStyle: 'rgba(251, 191, 36, 0.8)', lineWidth: 2, lineDash: [10, 5], hidden: false, index: 101 },
+                        { text: `Max: ${assistantStats.max}ms`, fillStyle: 'transparent', strokeStyle: 'rgba(239, 68, 68, 0.8)', lineWidth: 2, lineDash: [3, 3], hidden: false, index: 102 },
+                      );
+                    }
                     return base;
                   },
                 },
               },
-              tooltip: {
-                ...TOOLTIP_STYLE,
-                callbacks: {
-                  title: (items) => {
-                    const idx = items[0].dataIndex;
-                    const r = breakdown[idx];
-                    return r.role === 'tool' ? `Tool Call ${idx + 1}` : `Turn ${idx + 1}`;
-                  },
-                  label: (ctx) => {
-                    const val = ctx.parsed.y || 0;
-                    if (val > 0) return `${ctx.dataset.label}: ${val}ms`;
-                    return '';
-                  },
-                  afterBody: (items) => {
-                    const idx = items[0].dataIndex;
-                    const r = breakdown[idx];
-                    return [`Total: ${r.total}ms`];
-                  },
-                },
-              },
+              tooltip: { ...TOOLTIP_STYLE, callbacks: tooltipCallbacks },
             },
             scales: {
-              x: {
-                stacked: true,
-                ...SCALE_STYLE.x,
-                title: { display: true, text: 'Responses', color: '#6b7280' },
-              },
-              y: {
-                stacked: true,
-                ...SCALE_STYLE.y,
-                beginAtZero: true,
-                title: { display: true, text: 'Latency (ms)', color: '#6b7280' },
-              },
+              x: { stacked: true, ...SCALE_STYLE.x, display: false },
+              y: { stacked: true, ...SCALE_STYLE.y, beginAtZero: true, title: { display: true, text: 'Assistant (ms)', color: '#6b7280' } },
             },
           },
         });
+
+        // ── Bottom chart: Tool calls ──
+        const toolRefLinePlugin = {
+          id: 'toolRefLines',
+          afterDraw: (chart) => {
+            if (!toolStats) return;
+            const ctx = chart.ctx;
+            const yAxis = chart.scales.y;
+            const xAxis = chart.scales.x;
+            ctx.save();
+
+            // Tool Min — cyan dashed
+            const minY = yAxis.getPixelForValue(toolStats.min);
+            ctx.strokeStyle = 'rgba(34, 211, 238, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(xAxis.left, minY);
+            ctx.lineTo(xAxis.right, minY);
+            ctx.stroke();
+
+            // Tool Average — green dashed
+            const avgY = yAxis.getPixelForValue(toolStats.avg);
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(xAxis.left, avgY);
+            ctx.lineTo(xAxis.right, avgY);
+            ctx.stroke();
+
+            // Tool Max — red dashed
+            const maxY = yAxis.getPixelForValue(toolStats.max);
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(xAxis.left, maxY);
+            ctx.lineTo(xAxis.right, maxY);
+            ctx.stroke();
+
+            ctx.restore();
+          },
+        };
+
+        const botCanvas = wrapper.querySelector('.chart-latency-bot');
+        const botChart = new Chart(botCanvas, {
+          type: 'bar',
+          plugins: [toolRefLinePlugin],
+          data: {
+            labels,
+            datasets: [
+              { label: 'LLM Latency', data: tLlm, backgroundColor: SEGMENT.llmTool, ...sharedBarOpts },
+              { label: 'Utterance Processing', data: tUtterance, backgroundColor: SEGMENT.utteranceTool, ...sharedBarOpts },
+              { label: 'Audio Delivery', data: tAudio, backgroundColor: SEGMENT.audioTool, ...sharedBarOpts },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  color: '#9ca3af',
+                  usePointStyle: false,
+                  boxWidth: 15,
+                  padding: 12,
+                  font: { size: 11 },
+                  generateLabels: (chart) => {
+                    const base = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                    if (toolStats) {
+                      base.push(
+                        { text: `Min: ${toolStats.min}ms`, fillStyle: 'transparent', strokeStyle: 'rgba(34, 211, 238, 0.8)', lineWidth: 2, lineDash: [3, 3], hidden: false, index: 100 },
+                        { text: `Avg: ${toolStats.avg}ms`, fillStyle: 'transparent', strokeStyle: 'rgba(34, 197, 94, 0.8)', lineWidth: 2, lineDash: [5, 5], hidden: false, index: 101 },
+                        { text: `Max: ${toolStats.max}ms`, fillStyle: 'transparent', strokeStyle: 'rgba(239, 68, 68, 0.8)', lineWidth: 2, lineDash: [3, 3], hidden: false, index: 102 },
+                      );
+                    }
+                    return base;
+                  },
+                },
+              },
+              tooltip: { ...TOOLTIP_STYLE, callbacks: tooltipCallbacks },
+            },
+            scales: {
+              x: { stacked: true, ...SCALE_STYLE.x, title: { display: true, text: 'Responses', color: '#6b7280' } },
+              y: { stacked: true, ...SCALE_STYLE.y, beginAtZero: true, title: { display: true, text: 'Tool (ms)', color: '#6b7280' } },
+            },
+          },
+        });
+
+        return [topChart, botChart];
       },
     });
   }
@@ -584,23 +629,42 @@ export function renderCharts(container, payload, metrics) {
   container.innerHTML = `
     <div class="charts">
       <div class="charts__grid">
-        ${chartDefs.map(cd => `
-          <div class="chart-card${cd.id === 'chart-latency-breakdown' ? ' chart-card--wide' : ''}">
-            <div class="chart-card__title">${cd.title}</div>
-            <div style="position:relative;height:${cd.id === 'chart-latency-breakdown' ? '320' : '260'}px;">
-              <canvas id="${cd.id}"></canvas>
-            </div>
-          </div>
-        `).join('')}
+        ${chartDefs.map(cd => {
+          if (cd.dual) return `
+            <div class="chart-card chart-card--wide" id="${cd.id}">
+              <div class="chart-card__title">${cd.title}</div>
+              <div style="position:relative;height:320px;">
+                <canvas class="chart-latency-top"></canvas>
+              </div>
+              <div style="position:relative;height:320px;">
+                <canvas class="chart-latency-bot"></canvas>
+              </div>
+            </div>`;
+          return `
+            <div class="chart-card">
+              <div class="chart-card__title">${cd.title}</div>
+              <div style="position:relative;height:260px;">
+                <canvas id="${cd.id}"></canvas>
+              </div>
+            </div>`;
+        }).join('')}
       </div>
     </div>
   `;
 
   for (const cd of chartDefs) {
-    const canvas = document.getElementById(cd.id);
-    if (canvas) {
-      const chart = cd.render(canvas);
-      if (chart) activeCharts.push(chart);
+    if (cd.dual) {
+      const wrapper = document.getElementById(cd.id);
+      if (wrapper) {
+        const charts = cd.render(wrapper);
+        if (Array.isArray(charts)) activeCharts.push(...charts);
+      }
+    } else {
+      const canvas = document.getElementById(cd.id);
+      if (canvas) {
+        const chart = cd.render(canvas);
+        if (chart) activeCharts.push(chart);
+      }
     }
   }
 }
