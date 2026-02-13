@@ -7,6 +7,7 @@ import { truncate } from '../../lib/utils.js';
 
 const REGION_COLORS = {
   user: 'rgba(16, 185, 129, 0.12)',
+  endpointing: 'rgba(16, 185, 129, 0.06)',
   assistant: 'rgba(59, 130, 246, 0.12)',
   'assistant-manual': 'rgba(236, 72, 153, 0.12)',
   tool: 'rgba(245, 158, 11, 0.12)',
@@ -24,6 +25,28 @@ function classifySystemLog(content) {
   return null;
 }
 
+/**
+ * Scan an audio channel for the first window of sustained energy above the
+ * noise floor.  Returns the time in seconds, or null if nothing found.
+ */
+function findFirstAudioSec(buffer, channelIndex) {
+  if (!buffer || channelIndex >= buffer.numberOfChannels) return null;
+  const data = buffer.getChannelData(channelIndex);
+  const rate = buffer.sampleRate;
+  const windowSize = Math.round(rate * 0.02); // 20ms windows
+  const threshold = 0.0004; // RMS² threshold (~-34 dBFS)
+  for (let i = 0; i < data.length - windowSize; i += windowSize) {
+    let energy = 0;
+    for (let j = 0; j < windowSize; j++) {
+      energy += data[i + j] * data[i + j];
+    }
+    if (energy / windowSize > threshold) {
+      return i / rate;
+    }
+  }
+  return null;
+}
+
 let wavesurfer = null;
 let _spaceHandler = null;
 
@@ -32,34 +55,67 @@ let _spaceHandler = null;
  * Uses recordingDuration to auto-select the best anchor timestamp and
  * apply a scale factor so regions align with the actual audio.
  */
-function buildRegions(payload, recordingDuration) {
-  const callEnd = payload.callEndDate || payload.aiEndDate;
-  const candidates = [
-    payload.callStartDate,
-    payload.callAnswerDate,
-    payload.aiStartDate,
-  ].filter(Boolean);
+function buildRegions(payload, recordingDuration, firstBotAudioSec) {
+  let bestAnchor, scale;
 
-  let bestAnchor = payload.callStartDate;
-  let bestDiff = Infinity;
-  for (const anchor of candidates) {
-    const span = (callEnd - anchor) / 1_000_000;
-    const diff = Math.abs(span - recordingDuration);
-    if (diff < bestDiff) { bestDiff = diff; bestAnchor = anchor; }
+  if (payload.recordCallStart) {
+    // Exact recording start timestamp from SWMLVars – best possible anchor.
+    bestAnchor = payload.recordCallStart;
+    const endRef = payload.callEndDate || payload.aiEndDate;
+    if (endRef) {
+      const expectedDuration = (endRef - payload.recordCallStart) / 1_000_000;
+      scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
+    } else {
+      scale = 1;
+    }
+  } else if (payload.aiStartDate && firstBotAudioSec != null) {
+    // No record_call_start – calibrate from the waveform.  Align the first
+    // speaking event's start_timestamp to where audio actually begins in the
+    // decoded buffer.  scale=1 because timestamps are wall-clock.
+    const firstSpeaker = payload.callLog.find(m =>
+      (m.role === 'assistant' || m.role === 'assistant-manual') && m.start_timestamp && m.content);
+    if (firstSpeaker) {
+      bestAnchor = firstSpeaker.start_timestamp - Math.round(firstBotAudioSec * 1_000_000);
+      scale = 1;
+    }
   }
 
-  const expectedDuration = (callEnd - bestAnchor) / 1_000_000;
-  const scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
+  if (bestAnchor == null && payload.aiStartDate) {
+    // Per spec: use ai_start_date as anchor, not call_answer_date.
+    bestAnchor = payload.aiStartDate;
+    const endRef = payload.callEndDate || payload.aiEndDate;
+    if (endRef) {
+      const expectedDuration = (endRef - payload.aiStartDate) / 1_000_000;
+      scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
+    } else {
+      scale = 1;
+    }
+  }
+
+  if (bestAnchor == null) {
+    // Legacy fallback: best-fit from available call-level timestamps.
+    const callEnd = payload.callEndDate || payload.aiEndDate;
+    const candidates = [
+      payload.callStartDate,
+      payload.callAnswerDate,
+      payload.aiStartDate,
+    ].filter(Boolean);
+
+    bestAnchor = payload.callStartDate;
+    let bestDiff = Infinity;
+    for (const anchor of candidates) {
+      const span = (callEnd - anchor) / 1_000_000;
+      const diff = Math.abs(span - recordingDuration);
+      if (diff < bestDiff) { bestDiff = diff; bestAnchor = anchor; }
+    }
+
+    const expectedDuration = (callEnd - bestAnchor) / 1_000_000;
+    scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
+  }
 
   // Helper: convert microsecond timestamp to audio-relative seconds
   const toSec = (us) => ((us - bestAnchor) / 1_000_000) * scale;
 
-  // Check if new exact timestamps are available (start_timestamp / end_timestamp)
-  const hasExact = payload.callLog.some(m => m.start_timestamp || m.end_timestamp);
-
-  // Track the last "trigger" timestamp (user speech end or tool completion)
-  // so we can compute when assistant audio actually starts playing (legacy only).
-  let lastTriggerUs = payload.aiStartDate || bestAnchor;
   const regions = [];
 
   // Index callLog for next-timestamp lookups (system-log duration)
@@ -101,15 +157,9 @@ function buildRegions(payload, recordingDuration) {
     if (!REGION_COLORS[role]) continue;
 
     if (role === 'user') {
-      let startSec, endSec;
-      if (hasExact && msg.start_timestamp && msg.end_timestamp) {
-        startSec = toSec(msg.start_timestamp);
-        endSec = toSec(msg.end_timestamp);
-      } else {
-        endSec = toSec(msg.timestamp);
-        const dur = ((msg.speaking_to_final_event || 500) / 1000) * scale;
-        startSec = endSec - dur;
-      }
+      if (!msg.start_timestamp || !msg.end_timestamp) continue;
+      const startSec = toSec(msg.start_timestamp);
+      const endSec = toSec(msg.end_timestamp);
       if (endSec < 0) continue;
       regions.push({
         start: Math.max(0, startSec),
@@ -119,21 +169,27 @@ function buildRegions(payload, recordingDuration) {
         content: truncate(msg.content || '', 40),
         fullContent: msg.content || '',
       });
-      lastTriggerUs = msg.end_timestamp || msg.timestamp;
+      // Mark the exact moment endpointing fired as a thin bright line.
+      const turnMs = msg.speaking_to_turn_detection || 0;
+      if (turnMs) {
+        const turnSec = toSec(msg.start_timestamp + turnMs * 1000);
+        if (turnSec > 0 && turnSec < endSec) {
+          const sliver = 0.04; // ~40ms wide – renders as a thin line
+          regions.push({
+            start: turnSec,
+            end: turnSec + sliver,
+            color: 'rgba(250, 204, 21, 0.7)',
+            role: 'endpointing',
+            content: 'EP',
+            fullContent: `Endpointing (${turnMs}ms) → ASR final +${msg.turn_detection_to_final_event || 0}ms`,
+          });
+        }
+      }
     } else if (role === 'assistant') {
       if (msg.tool_calls && !msg.content) continue;
-      let startSec, endSec;
-      if (msg.start_timestamp && msg.end_timestamp) {
-        startSec = toSec(msg.start_timestamp);
-        endSec = toSec(msg.end_timestamp);
-      } else {
-        // Legacy fallback: estimate from audio_latency + word count
-        if (!msg.audio_latency) continue;
-        const audioStartUs = lastTriggerUs + (msg.audio_latency - 50) * 1000;
-        startSec = toSec(audioStartUs);
-        const words = (msg.content || '').split(/\s+/).length;
-        endSec = startSec + Math.max(words / 3, 1) * scale;
-      }
+      if (!msg.start_timestamp || !msg.end_timestamp) continue;
+      const startSec = toSec(msg.start_timestamp);
+      const endSec = toSec(msg.end_timestamp);
       if (startSec < 0) continue;
       regions.push({
         start: Math.max(0, startSec),
@@ -144,16 +200,9 @@ function buildRegions(payload, recordingDuration) {
         fullContent: msg.content || '',
       });
     } else if (role === 'tool') {
-      let startSec, endSec;
-      if (msg.start_timestamp && msg.end_timestamp) {
-        startSec = toSec(msg.start_timestamp);
-        endSec = toSec(msg.end_timestamp);
-      } else {
-        // Legacy: estimate from execution_latency
-        startSec = toSec(msg.timestamp);
-        const execSec = ((msg.execution_latency || 300) / 1000) * scale;
-        endSec = startSec + execSec;
-      }
+      if (!msg.start_timestamp || !msg.end_timestamp) continue;
+      const startSec = toSec(msg.start_timestamp);
+      const endSec = toSec(msg.end_timestamp);
       if (startSec < 0 && endSec < 0) continue;
       regions.push({
         start: Math.max(0, startSec),
@@ -163,7 +212,6 @@ function buildRegions(payload, recordingDuration) {
         content: 'Tool',
         fullContent: msg.content || 'Tool call',
       });
-      lastTriggerUs = msg.end_timestamp || msg.timestamp;
     } else if (role === 'assistant-manual') {
       if (!msg.start_timestamp || !msg.end_timestamp) continue;
       const startSec = toSec(msg.start_timestamp);
@@ -180,37 +228,6 @@ function buildRegions(payload, recordingDuration) {
     }
   }
 
-  // ── Post-processing (mostly for legacy data without exact timestamps) ──
-  if (!hasExact) {
-    // If a tool call starts during/after a user block, warp it to the user's end.
-    regions.sort((a, b) => a.start - b.start);
-    for (let i = 0; i < regions.length; i++) {
-      if (regions[i].role !== 'tool') continue;
-      for (let j = i - 1; j >= 0; j--) {
-        if (regions[j].role === 'user' && regions[i].start >= regions[j].start && regions[i].start < regions[j].end) {
-          const dur = regions[i].end - regions[i].start;
-          regions[i].start = regions[j].end;
-          regions[i].end = regions[i].start + dur;
-          break;
-        }
-      }
-    }
-
-    // Chain consecutive tool regions so they butt up against each other.
-    regions.sort((a, b) => a.start - b.start);
-    for (let i = 0; i < regions.length - 1; i++) {
-      if (regions[i].role !== 'tool') continue;
-      for (let j = i + 1; j < regions.length; j++) {
-        if (regions[j].role === 'tool') {
-          const dur = regions[j].end - regions[j].start;
-          regions[j].start = regions[i].end;
-          regions[j].end = regions[j].start + dur;
-        }
-        break;
-      }
-    }
-  }
-
   // Detect overlaps and create red overlay regions instead of clipping
   regions.sort((a, b) => a.start - b.start);
   const overlaps = [];
@@ -223,6 +240,7 @@ function buildRegions(payload, recordingDuration) {
       if (a.role === b.role) continue;
       if (a.role === 'thinking' || b.role === 'thinking') continue;
       if (a.role === 'step' || b.role === 'step') continue;
+      if (a.role === 'endpointing' || b.role === 'endpointing') continue;
       if ((a.role === 'assistant-manual' && b.role === 'tool') || (a.role === 'tool' && b.role === 'assistant-manual')) continue;
       overlaps.push({
         start: b.start,
@@ -310,6 +328,7 @@ export function renderRecording(container, payload) {
 
       <div class="recording__legend">
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.user}; border:1px solid rgba(16,185,129,0.6)"></span> User</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:rgba(250,204,21,0.7); border:1px solid rgba(250,204,21,0.9)"></span> Endpointing</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.assistant}; border:1px solid rgba(59,130,246,0.6)"></span> Assistant</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.tool}; border:1px solid rgba(245,158,11,0.6)"></span> Tool Call</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.thinking}; border:1px solid rgba(168,85,247,0.6)"></span> Thinking</span>
@@ -418,7 +437,13 @@ export function renderRecording(container, payload) {
     statusEl.style.display = 'none';
     durationEl.textContent = formatTime(wavesurfer.getDuration());
 
-    const callRegions = buildRegions(payload, wavesurfer.getDuration());
+    // Detect first bot audio for waveform-based anchor calibration.
+    // After the decode channel swap, bot is always channel 1 (stereo) or 0 (mono).
+    const buf = wavesurfer.getDecodedData();
+    const botCh = buf && buf.numberOfChannels >= 2 ? 1 : 0;
+    const firstBotAudioSec = findFirstAudioSec(buf, botCh);
+
+    const callRegions = buildRegions(payload, wavesurfer.getDuration(), firstBotAudioSec);
     const dur = wavesurfer.getDuration();
     for (const r of callRegions) {
       const region = regions.addRegion({
@@ -445,9 +470,9 @@ export function renderRecording(container, payload) {
   const transcriptText = transcriptEl.querySelector('.recording__transcript-text');
   let lastTranscriptId = null;
 
-  const ROLE_LABELS = { user: 'User', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', thinking: 'Thinking', step: 'Step', overlap: 'Barge-in' };
+  const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', thinking: 'Thinking', step: 'Step', overlap: 'Barge-in' };
 
-  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, tool: 1, thinking: 1, step: 0, assistant: 0 };
+  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, endpointing: 1, tool: 1, thinking: 1, step: 0, assistant: 0 };
 
   wavesurfer.on('timeupdate', (time) => {
     currentEl.textContent = formatTime(time);

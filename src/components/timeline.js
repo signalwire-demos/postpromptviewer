@@ -44,9 +44,9 @@ export function renderTimeline(container, payload, metrics) {
   const aiEnd = payload.aiEndDate || callEnd;
   const aiTotal = aiEnd - aiStart;
 
-  // Swimlane spans from call answer (or call start) through AI end,
-  // so pre-AI SWML verbs are visible.
-  const swimStart = payload.callAnswerDate || callStart;
+  // Swimlane spans from AI start through AI end.
+  // Per spec: use ai_start_date as anchor, not call_answer_date.
+  const swimStart = aiStart;
   const swimEnd = aiEnd;
   const swimTotal = swimEnd - swimStart;
 
@@ -138,19 +138,15 @@ export function renderTimeline(container, payload, metrics) {
 
     // Skip assistant tool dispatches (no content, just function calls)
     if (msg.role === 'assistant' && msg.tool_calls && !msg.content) continue;
-    // Skip post-conversation summary (assistant message with no timing data — never spoken)
-    if (msg.role === 'assistant' && !msg.start_timestamp && !msg.audio_latency && !msg.utterance_latency && !msg.latency) continue;
+    // Skip assistant messages without exact timestamps (summary, etc.)
+    if (msg.role === 'assistant' && !msg.start_timestamp) continue;
 
     const ev = {
       role: msg.role,
-      timestamp: msg.timestamp,
       startTimestamp: msg.start_timestamp || 0,
       endTimestamp: msg.end_timestamp || 0,
       content: typeof msg.content === 'string' ? msg.content.trim() : '',
-      speakingDuration: msg.speaking_to_final_event || 0,
       audioLatency: msg.audio_latency || msg.utterance_latency || msg.latency || 0,
-      rawAudioLatency: msg.audio_latency || 0,
-      execLatency: msg.execution_latency || msg.function_latency || 0,
     };
 
     if (msg.role === 'user') {
@@ -194,53 +190,19 @@ export function renderTimeline(container, payload, metrics) {
   }
 
   // Conversation segments (user, assistant, tool)
-  let lastTriggerUs = aiStart;
-
   for (let i = 0; i < convEvents.length; i++) {
     const ev = convEvents[i];
-    const nextEv = convEvents[i + 1] || null;
-    const prevEv = i > 0 ? convEvents[i - 1] : null;
     let startUs, endUs, durationMs;
 
     if (ev.role === 'user') {
-      if (ev.startTimestamp && ev.endTimestamp) {
-        startUs = ev.startTimestamp;
-        endUs = ev.endTimestamp;
-        durationMs = (endUs - startUs) / 1000;
-      } else {
-        durationMs = ev.speakingDuration || 500;
-        startUs = ev.timestamp - durationMs * 1000;
-        endUs = ev.timestamp;
-      }
-      lastTriggerUs = ev.endTimestamp || ev.timestamp;
+      if (!ev.startTimestamp || !ev.endTimestamp) continue;
+      startUs = ev.startTimestamp;
+      endUs = ev.endTimestamp;
+      durationMs = (endUs - startUs) / 1000;
     } else if (ev.role === 'assistant') {
-      if (ev.startTimestamp && ev.endTimestamp) {
-        startUs = ev.startTimestamp;
-        endUs = ev.endTimestamp;
-      } else {
-        // Legacy fallback: estimate from audio_latency or previous event
-        if (ev.rawAudioLatency) {
-          startUs = lastTriggerUs + (ev.rawAudioLatency - 50) * 1000;
-        } else if (prevEv) {
-          startUs = prevEv.role === 'tool'
-            ? (prevEv.endTimestamp || prevEv.timestamp + (prevEv.execLatency || 0) * 1000)
-            : prevEv.role === 'assistant'
-              ? ev.timestamp
-              : (prevEv.endTimestamp || prevEv.timestamp);
-        } else {
-          startUs = aiStart;
-        }
-        if (nextEv) {
-          const nextStartUs = nextEv.startTimestamp
-            || (nextEv.role === 'user' ? nextEv.timestamp - (nextEv.speakingDuration || 0) * 1000 : nextEv.timestamp);
-          endUs = Math.max(ev.timestamp, nextStartUs);
-        } else {
-          const words = ev.content.split(/\s+/).length;
-          const speakMs = Math.max(words / 3 * 1000, 1000);
-          endUs = ev.timestamp + speakMs * 1000;
-        }
-      }
-      endUs = Math.min(endUs, swimEnd);
+      if (!ev.startTimestamp || !ev.endTimestamp) continue;
+      startUs = ev.startTimestamp;
+      endUs = Math.min(ev.endTimestamp, swimEnd);
       durationMs = (endUs - startUs) / 1000;
     } else if (ev.role === 'assistant-manual') {
       if (!ev.startTimestamp || !ev.endTimestamp) continue;
@@ -248,17 +210,10 @@ export function renderTimeline(container, payload, metrics) {
       endUs = ev.endTimestamp;
       durationMs = (endUs - startUs) / 1000;
     } else if (ev.role === 'tool') {
-      if (ev.startTimestamp && ev.endTimestamp) {
-        startUs = ev.startTimestamp;
-        endUs = ev.endTimestamp;
-        durationMs = (endUs - startUs) / 1000;
-      } else {
-        // Legacy: estimate from execution_latency
-        durationMs = ev.execLatency || 300;
-        startUs = ev.timestamp;
-        endUs = ev.timestamp + durationMs * 1000;
-      }
-      lastTriggerUs = ev.endTimestamp || ev.timestamp;
+      if (!ev.startTimestamp || !ev.endTimestamp) continue;
+      startUs = ev.startTimestamp;
+      endUs = ev.endTimestamp;
+      durationMs = (endUs - startUs) / 1000;
     }
 
     const seg = {
@@ -374,14 +329,7 @@ export function renderTimeline(container, payload, metrics) {
   }
   const roleLegend = roleLegendItems.join('');
 
-  // AI Start marker position within the swimlane
-  const aiStartPct = swimPct(aiStart);
-  const preAiMs = Math.round((aiStart - swimStart) / 1000);
-  const showAiMarker = preAiMs > 50; // only show if there's meaningful pre-AI time
-
-  const aiMarkerHtml = showAiMarker
-    ? `<div class="swimlane__marker" style="left:${aiStartPct}%" title="AI Start (+${formatMs(preAiMs)})"><span class="swimlane__marker-label">AI Start</span></div>`
-    : '';
+  const aiMarkerHtml = '';
 
   const swimlaneRows = roles.map(role => `
     <div class="swimlane__row">
