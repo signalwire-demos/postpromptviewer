@@ -1,0 +1,27 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Dokku Services Configuration - Post-Prompt Viewer
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# This is a static site with no backend services required.
+# All services are disabled.
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  postgres:
+    enabled: false
+
+  redis:
+    enabled: false
+
+  mysql:
+    enabled: false
+
+  mongo:
+    enabled: false
+
+  rabbitmq:
+    enabled: false
+
+  elasticsearch:
+    enabled: false
