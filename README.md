@@ -17,9 +17,9 @@ See [`ui/README.md`](ui/README.md) for full documentation.
 ## Screenshots
 
 ### Drop Zone (Start Screen)
-Dual upload interface supporting both Post-Prompt conversation files and SWML configuration files. Drag-and-drop or click to browse.
+Dual upload interface supporting both Post-Prompt conversation files and SWML configuration files. Features drag-and-drop, file browsing, instant example loading, and GitHub repository link.
 
-<img src="images/01-drop-zone.png" alt="Drop Zone — file upload interface" width="800" />
+<img src="images/01-drop-zone.png" alt="Drop Zone — file upload interface with example loading" width="800" />
 
 ### Dashboard
 KPI metric cards covering call duration, response latency (assistant and tool), system performance rating, conversation stats, token usage, SWAIG details, and media/billing summaries.
@@ -127,7 +127,10 @@ npm install
 npm run dev
 ```
 
-Open the URL shown in the terminal (default: `http://localhost:5173`), then drag and drop a post-conversation JSON file onto the page.
+Open the URL shown in the terminal (default: `http://localhost:5173`), then either:
+- Click **"Load Example"** to instantly try the app with sample data
+- Drag and drop your own post-conversation JSON file
+- Click **"Browse Files"** to select a file from your computer
 
 ## Building for Production
 
@@ -160,7 +163,7 @@ npm run preview
 │   ├── main.js                 # App entry: mounts components, wires tab navigation
 │   ├── state.js                # Pub/sub store for payload, metrics, UI state
 │   ├── components/
-│   │   ├── drop-zone.js        # Drag-and-drop + file picker for JSON upload
+│   │   ├── drop-zone.js        # Drag-and-drop + file picker + example loader
 │   │   ├── header.js           # Call ID, timestamps, duration badge, caller info
 │   │   ├── dashboard.js        # 4x4 grid of metric cards
 │   │   ├── charts.js           # 6 Chart.js visualizations
@@ -173,7 +176,13 @@ npm run preview
 │   └── styles/
 │       ├── theme.css           # Dark theme, CSS custom properties
 │       └── components.css      # Component-specific styles
-├── index.html                  # App shell
+├── public/
+│   ├── examples/
+│   │   ├── call.json           # Example post-conversation payload
+│   │   └── voyager.json        # Example SWML configuration
+│   ├── favicon.svg             # SignalWire favicon
+│   └── og-image.jpg            # OpenGraph social sharing image
+├── index.html                  # App shell with OpenGraph metadata
 ├── vite.config.js              # Vite configuration
 └── package.json
 ```
