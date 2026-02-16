@@ -78,8 +78,15 @@ export async function renderStateFlow(container, payload) {
         </div>
       </div>
 
-      <div class="state-flow__diagram" id="flow-mermaid-container">
-        <div class="mermaid">${mermaidDef}</div>
+      <div class="state-flow__diagram-wrapper">
+        <div class="state-flow__zoom-controls">
+          <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
+          <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
+          <button class="zoom-btn" id="zoom-reset" title="Reset Zoom">⊙</button>
+        </div>
+        <div class="state-flow__diagram" id="flow-mermaid-container">
+          <div class="mermaid">${mermaidDef}</div>
+        </div>
       </div>
 
       <div class="state-flow__timeline">
@@ -122,6 +129,13 @@ export async function renderStateFlow(container, payload) {
   try {
     const mermaidElement = container.querySelector('.mermaid');
     await mermaid.run({ nodes: [mermaidElement] });
+
+    // Add zoom/pan functionality
+    const svg = container.querySelector('#flow-mermaid-container svg');
+    if (svg) {
+      setupZoomPan(svg, container);
+      makeEdgesClickable(svg);
+    }
   } catch (error) {
     console.error('Mermaid rendering error:', error);
     container.querySelector('#flow-mermaid-container').innerHTML = `
@@ -347,6 +361,133 @@ function formatTimestamp(timestamp) {
   const seconds = date.getSeconds().toString().padStart(2, '0');
   const ms = Math.floor((timestamp % 1000000) / 1000);
   return `${hours}:${minutes}:${seconds}.${ms.toString().padStart(3, '0')}`;
+}
+
+function setupZoomPan(svg, container) {
+  let scale = 1;
+  let translateX = 0;
+  let translateY = 0;
+  let isDragging = false;
+  let startX, startY;
+
+  const g = svg.querySelector('g');
+  if (!g) return;
+
+  function updateTransform() {
+    g.setAttribute('transform', `translate(${translateX},${translateY}) scale(${scale})`);
+  }
+
+  // Zoom controls
+  const zoomIn = container.querySelector('#zoom-in');
+  const zoomOut = container.querySelector('#zoom-out');
+  const zoomReset = container.querySelector('#zoom-reset');
+
+  zoomIn?.addEventListener('click', () => {
+    scale = Math.min(scale * 1.2, 5);
+    updateTransform();
+  });
+
+  zoomOut?.addEventListener('click', () => {
+    scale = Math.max(scale / 1.2, 0.1);
+    updateTransform();
+  });
+
+  zoomReset?.addEventListener('click', () => {
+    scale = 1;
+    translateX = 0;
+    translateY = 0;
+    updateTransform();
+  });
+
+  // Mouse wheel zoom
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.1), 5);
+    updateTransform();
+  });
+
+  // Pan on drag
+  svg.addEventListener('mousedown', (e) => {
+    if (e.target.tagName === 'path' || e.target.tagName === 'text') return;
+    isDragging = true;
+    startX = e.clientX - translateX;
+    startY = e.clientY - translateY;
+    svg.style.cursor = 'grabbing';
+  });
+
+  svg.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    translateX = e.clientX - startX;
+    translateY = e.clientY - startY;
+    updateTransform();
+  });
+
+  svg.addEventListener('mouseup', () => {
+    isDragging = false;
+    svg.style.cursor = 'grab';
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    isDragging = false;
+    svg.style.cursor = 'default';
+  });
+
+  svg.style.cursor = 'grab';
+}
+
+function makeEdgesClickable(svg) {
+  const edges = svg.querySelectorAll('.edge path, .flowchart-link');
+  let selectedEdge = null;
+
+  edges.forEach(edge => {
+    edge.style.cursor = 'pointer';
+    edge.style.transition = 'stroke-width 0.2s, stroke 0.2s';
+
+    edge.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      // Reset previous selection
+      if (selectedEdge && selectedEdge !== edge) {
+        selectedEdge.style.strokeWidth = '';
+        selectedEdge.style.stroke = '';
+      }
+
+      // Toggle current selection
+      if (selectedEdge === edge) {
+        edge.style.strokeWidth = '';
+        edge.style.stroke = '';
+        selectedEdge = null;
+      } else {
+        edge.style.strokeWidth = '3px';
+        edge.style.stroke = '#f59e0b';
+        selectedEdge = edge;
+      }
+    });
+
+    edge.addEventListener('mouseenter', () => {
+      if (selectedEdge !== edge) {
+        edge.style.strokeWidth = '2px';
+      }
+    });
+
+    edge.addEventListener('mouseleave', () => {
+      if (selectedEdge !== edge) {
+        edge.style.strokeWidth = '';
+      }
+    });
+  });
+
+  // Click outside to deselect
+  svg.addEventListener('click', (e) => {
+    if (e.target === svg || e.target.tagName === 'g') {
+      if (selectedEdge) {
+        selectedEdge.style.strokeWidth = '';
+        selectedEdge.style.stroke = '';
+        selectedEdge = null;
+      }
+    }
+  });
 }
 
 function escapeHtml(str) {
