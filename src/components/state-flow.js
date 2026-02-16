@@ -72,6 +72,14 @@ export async function renderStateFlow(container, payload) {
           <div class="swml-stat-card__value">${flowData.uniqueStates.size}</div>
         </div>
         <div class="swml-stat-card">
+          <div class="swml-stat-card__label">AI-Initiated</div>
+          <div class="swml-stat-card__value" style="color:#10b981">${flowData.aiInitiated}</div>
+        </div>
+        <div class="swml-stat-card">
+          <div class="swml-stat-card__label">Tool-Forced</div>
+          <div class="swml-stat-card__value" style="color:#f59e0b">${flowData.toolForced}</div>
+        </div>
+        <div class="swml-stat-card">
           <div class="swml-stat-card__label">Functions Called</div>
           <div class="swml-stat-card__value">${flowData.totalFunctions}</div>
         </div>
@@ -104,11 +112,13 @@ export async function renderStateFlow(container, payload) {
                 ${trans.triggeredBy ? `
                   <div class="flow-timeline-trigger">
                     <strong>Triggered by:</strong> <code>${escapeHtml(trans.triggeredBy)}</code>
+                    ${trans.source === 'ai' ? '<span style="color:#10b981;margin-left:0.5rem;font-size:0.7rem">● AI-initiated</span>' : ''}
+                    ${trans.source === 'tool' ? '<span style="color:#f59e0b;margin-left:0.5rem;font-size:0.7rem">● Tool-forced</span>' : ''}
                   </div>
                 ` : ''}
                 ${trans.functionsInState && trans.functionsInState.length > 0 ? `
                   <div class="flow-timeline-functions">
-                    <strong>Functions in this state:</strong>
+                    <strong>Functions called (${trans.functionsInState.length}):</strong>
                     ${trans.functionsInState.map(fn => `<span class="swml-function-tag">${escapeHtml(fn)}</span>`).join('')}
                   </div>
                 ` : ''}
@@ -218,10 +228,35 @@ function extractStateFlow(payload) {
   const swaigLog = payload.swaigLog || [];
   const callLog = payload.callLog || [];
 
-  // Extract step names and timestamps from swaig_log
-  const stepChanges = [];
-  let currentStep = null;
+  // Extract ALL step changes from both sources
+  const allStepChanges = [];
 
+  // 1. Extract AI-initiated step changes from call_log (next_step, change_context)
+  callLog.forEach(entry => {
+    if (entry.role === 'system-log' && entry.content) {
+      // Match "Calling function: next_step(...)" or "Calling function: change_context(...)"
+      const nextStepMatch = entry.content.match(/Calling function: next_step\(([^)]+)\)/);
+      const changeContextMatch = entry.content.match(/Calling function: change_context\(([^)]+)\)/);
+
+      if (nextStepMatch || changeContextMatch) {
+        const match = nextStepMatch || changeContextMatch;
+        const funcName = nextStepMatch ? 'next_step' : 'change_context';
+
+        // Parse the argument (step name) - handle both quoted and unquoted
+        let stepName = match[1].trim();
+        stepName = stepName.replace(/^["']|["']$/g, ''); // Remove quotes if present
+
+        allStepChanges.push({
+          timestamp: entry.timestamp,
+          step: stepName,
+          triggeredBy: `AI: ${funcName}`,
+          source: 'ai',
+        });
+      }
+    }
+  });
+
+  // 2. Extract tool-forced step changes from swaig_log (change_step actions)
   swaigLog.forEach(entry => {
     const postResponse = entry.postResponse || entry.post_response;
     if (!postResponse || !postResponse.action || !Array.isArray(postResponse.action)) {
@@ -239,19 +274,34 @@ function extractStateFlow(payload) {
       }
     });
 
-    // Record step change if it's different from current
-    if (newStep && newStep !== currentStep) {
-      stepChanges.push({
+    if (newStep) {
+      allStepChanges.push({
         timestamp: timestamp,
         step: newStep,
-        triggeredBy: commandName,
+        triggeredBy: `Tool: ${commandName}`,
+        source: 'tool',
       });
-      currentStep = newStep;
     }
   });
 
-  // Build map of function calls with timestamps from call_log
+  // Sort all step changes by timestamp
+  allStepChanges.sort((a, b) => a.timestamp - b.timestamp);
+
+  // Deduplicate consecutive identical steps
+  const stepChanges = [];
+  let currentStep = null;
+
+  allStepChanges.forEach(change => {
+    if (change.step !== currentStep) {
+      stepChanges.push(change);
+      currentStep = change.step;
+    }
+  });
+
+  // Build comprehensive map of ALL function calls from both call_log and swaig_log
   const functionCalls = [];
+
+  // Extract from call_log (AI-initiated tool calls)
   callLog.forEach(entry => {
     if (entry.role === 'system-log' && entry.content && entry.content.startsWith('Calling function:')) {
       const funcMatch = entry.content.match(/Calling function: ([^(]+)/);
@@ -259,10 +309,28 @@ function extractStateFlow(payload) {
         functionCalls.push({
           timestamp: entry.timestamp,
           name: funcMatch[1].trim(),
+          source: 'call_log',
         });
       }
     }
   });
+
+  // Extract from swaig_log (SWAIG function executions)
+  swaigLog.forEach(entry => {
+    const commandName = entry.commandName || entry.command_name;
+    const timestamp = (entry.epochTime || entry.epoch_time) * 1000000;
+
+    if (commandName) {
+      functionCalls.push({
+        timestamp: timestamp,
+        name: commandName,
+        source: 'swaig_log',
+      });
+    }
+  });
+
+  // Sort all function calls by timestamp
+  functionCalls.sort((a, b) => a.timestamp - b.timestamp);
 
   // Get instructions from call_log
   const instructionsByTimestamp = new Map();
@@ -300,6 +368,7 @@ function extractStateFlow(payload) {
       timestamp: stepChange.timestamp,
       toState: stepChange.step,
       triggeredBy: stepChange.triggeredBy,
+      source: stepChange.source,
       functionsInState: uniqueFunctions,
       instructions: instructions,
     });
@@ -309,6 +378,8 @@ function extractStateFlow(payload) {
   // Calculate stats
   const uniqueStates = new Set(transitions.map(t => t.toState));
   const totalFunctions = transitions.reduce((sum, trans) => sum + trans.functionsInState.length, 0);
+  const aiInitiated = transitions.filter(t => t.source === 'ai').length;
+  const toolForced = transitions.filter(t => t.source === 'tool').length;
 
   let duration = 'N/A';
   if (transitions.length > 0) {
@@ -322,6 +393,8 @@ function extractStateFlow(payload) {
     transitions,
     uniqueStates,
     totalFunctions,
+    aiInitiated,
+    toolForced,
     duration,
   };
 }
@@ -350,8 +423,10 @@ function generateFlowDiagram(flowData) {
     const nextId = `s${idx + 1}`;
 
     if (idx < transitions.length - 1) {
-      const edgeLabel = trans.triggeredBy ? trans.triggeredBy : '';
+      let edgeLabel = trans.triggeredBy ? trans.triggeredBy : '';
       if (edgeLabel) {
+        // Sanitize edge label - remove colons and special chars that break Mermaid
+        edgeLabel = edgeLabel.replace(/:/g, ' -').replace(/"/g, '');
         diagram += `    ${currentId} --> ${nextId}: ${edgeLabel}\n`;
       } else {
         diagram += `    ${currentId} --> ${nextId}\n`;
