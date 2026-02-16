@@ -20,7 +20,9 @@ export function renderTranscript(container, payload) {
       if (msg.utterance_latency != null) metaTags.push(`utterance: ${msg.utterance_latency}ms`);
       if (msg.confidence != null) metaTags.push(`confidence: ${(msg.confidence * 100).toFixed(1)}%`);
       if (msg.content_type) metaTags.push(msg.content_type);
-      if (msg.barge_count) metaTags.push(`barge: ${msg.barge_count}`);
+      if (msg.barge_count) metaTags.push({ text: `🔴 barge-in ×${msg.barge_count}`, class: 'barge' });
+      if (msg.merge_count) metaTags.push({ text: `🔀 merged ×${msg.merge_count}`, class: 'merge' });
+      if (msg.merged && !msg.merge_count) metaTags.push({ text: '🔀 merged', class: 'merge' });
       if (msg.execution_latency != null) metaTags.push(`exec: ${msg.execution_latency}ms`);
       if (msg.speaking_to_final_event != null) metaTags.push(`speak-to-final: ${msg.speaking_to_final_event}ms`);
 
@@ -44,7 +46,12 @@ export function renderTranscript(container, payload) {
             ${toolCallsHtml}
             ${metaTags.length > 0 ? `
               <div class="transcript__meta">
-                ${metaTags.map(t => `<span class="transcript__meta-tag">${t}</span>`).join('')}
+                ${metaTags.map(t => {
+                  if (typeof t === 'object') {
+                    return `<span class="transcript__meta-tag transcript__meta-tag--${t.class}">${t.text}</span>`;
+                  }
+                  return `<span class="transcript__meta-tag">${t}</span>`;
+                }).join('')}
                 ${time ? `<span class="transcript__meta-tag">${time}</span>` : ''}
               </div>
             ` : (time ? `<div class="transcript__meta"><span class="transcript__meta-tag">${time}</span></div>` : '')}

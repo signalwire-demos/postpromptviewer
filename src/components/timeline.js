@@ -25,7 +25,8 @@ function classifySystemLog(content) {
   if (!content || typeof content !== 'string') return null;
   const trimmed = content.trim();
   if (trimmed.startsWith('Thinking:')) return 'assistant-thinking';
-  if (trimmed.startsWith('Calling function:')) return 'calling';
+  // Skip "Calling function:" - redundant with TOOL row
+  // if (trimmed.startsWith('Calling function:')) return 'calling';
   if (trimmed.startsWith('Steps function:')) return 'step';
   return null;
 }
@@ -323,9 +324,15 @@ export function renderTimeline(container, payload, metrics) {
     roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${bg}"></span>${roleLabels[role]} (${count})</div>`);
   }
   if (hasSystem) {
-    roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS['assistant-thinking']}"></span>Thinking</div>`);
-    roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.calling}"></span>Fn Dispatch</div>`);
-    roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.step}"></span>Step</div>`);
+    const hasThinking = segments.some(s => s.role === 'system' && s.category === 'assistant-thinking');
+    const hasStep = segments.some(s => s.role === 'system' && s.category === 'step');
+
+    if (hasThinking) {
+      roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS['assistant-thinking']}"></span>Thinking</div>`);
+    }
+    if (hasStep) {
+      roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.step}"></span>Step</div>`);
+    }
   }
   const roleLegend = roleLegendItems.join('');
 

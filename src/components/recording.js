@@ -83,13 +83,9 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
   if (bestAnchor == null && payload.aiStartDate) {
     // Per spec: use ai_start_date as anchor, not call_answer_date.
     bestAnchor = payload.aiStartDate;
-    const endRef = payload.callEndDate || payload.aiEndDate;
-    if (endRef) {
-      const expectedDuration = (endRef - payload.aiStartDate) / 1_000_000;
-      scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
-    } else {
-      scale = 1;
-    }
+    // Don't apply scale factor without recordCallStart - trust the timestamps
+    // Scaling without a precise recording start introduces more error than it fixes
+    scale = 1;
   }
 
   if (bestAnchor == null) {
@@ -109,12 +105,20 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
       if (diff < bestDiff) { bestDiff = diff; bestAnchor = anchor; }
     }
 
-    const expectedDuration = (callEnd - bestAnchor) / 1_000_000;
-    scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
+    // Use scale=1 to trust timestamps rather than introducing drift
+    scale = 1;
   }
 
   // Helper: convert microsecond timestamp to audio-relative seconds
   const toSec = (us) => ((us - bestAnchor) / 1_000_000) * scale;
+
+  console.log('Recording alignment debug:', {
+    bestAnchor,
+    scale,
+    recordingDuration,
+    firstBotAudioSec,
+    hasRecordCallStart: !!payload.recordCallStart,
+  });
 
   const regions = [];
 
@@ -190,7 +194,7 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
       if (!msg.start_timestamp || !msg.end_timestamp) continue;
       const startSec = toSec(msg.start_timestamp);
       const endSec = toSec(msg.end_timestamp);
-      if (startSec < 0) continue;
+      if (endSec <= 0) continue; // Only skip if region ends before recording starts
       regions.push({
         start: Math.max(0, startSec),
         end: endSec,

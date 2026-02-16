@@ -1,7 +1,9 @@
 const state = {
   payload: null,
   metrics: null,
+  swml: null,
   activeTab: 'dashboard',
+  viewMode: null, // 'postprompt' or 'swml'
 };
 
 const listeners = new Set();
