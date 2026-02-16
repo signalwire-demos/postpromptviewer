@@ -71,9 +71,14 @@ function parseSWMLToState(swml) {
   }
 
   // Parse contexts
+  // First pass: create contexts and steps, build name-to-ID mapping
+  const stepNameToId = new Map();
+  const contextNameToId = new Map();
+
   if (aiBlock.prompt && aiBlock.prompt.contexts) {
     Object.entries(aiBlock.prompt.contexts).forEach(([contextName, contextData], idx) => {
       const contextId = `context_${idx}`;
+      contextNameToId.set(contextName, contextId);
 
       state.contexts[contextId] = {
         id: contextId,
@@ -92,6 +97,7 @@ function parseSWMLToState(swml) {
       if (contextData.steps) {
         contextData.steps.forEach((stepData, stepIdx) => {
           const stepId = `step_${idx}_${stepIdx}`;
+          stepNameToId.set(stepData.name, stepId);
 
           state.contexts[contextId].steps[stepId] = {
             id: stepId,
@@ -100,23 +106,62 @@ function parseSWMLToState(swml) {
             instructions: parseStepText(stepData.text),
             criteria: stepData.step_criteria || '',
             functions: Array.isArray(stepData.functions) ? stepData.functions : [],
-            validSteps: stepData.valid_steps || [],
-            validContexts: stepData.valid_contexts || [],
+            validSteps: stepData.valid_steps || [], // Will be converted in second pass
+            validContexts: stepData.valid_contexts || [], // Will be converted in second pass
             gatherInfo: stepData.gather_info || null,
             position: { x: 100 + (stepIdx * 200), y: 100 + (idx * 150) }
           };
         });
       }
     });
+
+    // Second pass: convert step names to IDs in validSteps and validContexts
+    Object.values(state.contexts).forEach(context => {
+      Object.values(context.steps).forEach(step => {
+        // Convert valid_steps from names to IDs
+        if (step.validSteps && step.validSteps.length > 0) {
+          step.validSteps = step.validSteps
+            .map(stepName => stepNameToId.get(stepName))
+            .filter(Boolean); // Remove any that weren't found
+        }
+
+        // Convert valid_contexts from names to IDs
+        if (step.validContexts && step.validContexts.length > 0) {
+          step.validContexts = step.validContexts
+            .map(contextName => contextNameToId.get(contextName))
+            .filter(Boolean); // Remove any that weren't found
+        }
+      });
+    });
   }
 
-  // Parse functions
-  if (aiBlock.functions) {
-    aiBlock.functions.forEach((funcData, idx) => {
+  // Parse functions and build name-to-ID mapping
+  const functionNameToId = new Map();
+
+  // Check both aiBlock.functions (old format) and aiBlock.SWAIG.functions (new format)
+  const functionsArray = aiBlock.SWAIG?.functions || aiBlock.functions || [];
+
+  if (functionsArray.length > 0) {
+    functionsArray.forEach((funcData, idx) => {
       const funcId = `func_${idx}`;
+      functionNameToId.set(funcData.function, funcId);
 
       const parameters = [];
-      if (funcData.argument) {
+
+      // Handle new SWAIG format with JSON Schema parameters
+      if (funcData.parameters?.properties) {
+        const required = funcData.parameters.required || [];
+        Object.entries(funcData.parameters.properties).forEach(([paramName, paramData]) => {
+          parameters.push({
+            name: paramName,
+            type: paramData.type || 'string',
+            description: paramData.description || '',
+            required: required.includes(paramName)
+          });
+        });
+      }
+      // Handle old format with argument
+      else if (funcData.argument) {
         Object.entries(funcData.argument).forEach(([paramName, paramData]) => {
           parameters.push({
             name: paramName,
@@ -130,12 +175,30 @@ function parseSWMLToState(swml) {
       state.functions[funcId] = {
         id: funcId,
         name: funcData.function,
-        purpose: funcData.purpose || '',
+        purpose: funcData.purpose || funcData.description || '',
         parameters,
-        metaArgs: funcData.meta_args || {},
+        metaArgs: funcData.meta_args || funcData.meta_data || {},
         webHookUrl: funcData.web_hook_url || '',
-        swaigFields: {}
+        swaigFields: {
+          wait_file: funcData.wait_file,
+          wait_file_loops: funcData.wait_file_loops
+        },
+        position: { x: 600, y: 100 + (idx * 120) }
       };
+    });
+
+    // Convert function names to IDs in steps
+    Object.values(state.contexts).forEach(context => {
+      Object.values(context.steps).forEach(step => {
+        if (step.functions && Array.isArray(step.functions) && step.functions.length > 0) {
+          // Skip if it's the special "none" value
+          if (step.functions[0] === 'none') return;
+
+          step.functions = step.functions
+            .map(funcName => functionNameToId.get(funcName) || funcName)
+            .filter(Boolean);
+        }
+      });
     });
   }
 
