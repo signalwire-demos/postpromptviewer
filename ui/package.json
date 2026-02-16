@@ -1,0 +1,17 @@
+{
+  "name": "signalwire-agent-builder",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5177",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "cytoscape": "^3.30.2",
+    "cytoscape-dagre": "^2.5.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1"
+  }
+}

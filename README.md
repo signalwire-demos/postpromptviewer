@@ -4,6 +4,16 @@ A single-page application for visualizing SignalWire AI Agent post-conversation 
 
 Built with **Vanilla JS**, **Vite**, **Chart.js**, **Mermaid**, and **wavesurfer.js** — no framework dependencies.
 
+## 🆕 Agent Builder
+
+The project now includes a **visual drag-and-drop agent builder** for creating SignalWire AI agents!
+
+- **Location**: `/ui` directory
+- **Dev Server**: `http://localhost:5177` (when running)
+- **Features**: Visual canvas, step/function nodes, SWML export, Python SDK code generation
+
+See [`ui/README.md`](ui/README.md) for full documentation.
+
 ## Screenshots
 
 ### Drop Zone (Start Screen)
