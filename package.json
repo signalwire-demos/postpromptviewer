@@ -11,6 +11,7 @@
   "dependencies": {
     "chart.js": "^4.4.7",
     "mermaid": "^11.4.1",
+    "serve": "^14.2.1",
     "wavesurfer.js": "^7.12.1"
   },
   "devDependencies": {
