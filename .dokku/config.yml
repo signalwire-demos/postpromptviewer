@@ -34,8 +34,8 @@ scale:
 # ─────────────────────────────────────────────────────────────────────────────
 # Custom Domains
 # ─────────────────────────────────────────────────────────────────────────────
-custom_domains:
-  - postprompt.signalwire.me
+# custom_domains:
+#   - postprompt.signalwire.me
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Environment-Specific Overrides
