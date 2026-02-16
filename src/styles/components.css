@@ -2307,6 +2307,17 @@
   color: #fff;
   border-color: var(--accent);
 }
+.swml-step-flow-diagram-wrapper {
+  position: relative;
+}
+.swml-zoom-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+}
 .swml-step-flow-diagram {
   background: var(--bg-secondary);
   border: 1px solid var(--border);

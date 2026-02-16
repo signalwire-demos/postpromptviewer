@@ -55,15 +55,19 @@ export async function renderSwmlPrompts(container, swml) {
               <p class="swml-section-subtitle">Visual representation of the conversation state machine</p>
             </div>
             <div style="display:flex;gap:0.5rem">
-              <button id="swml-zoom-in" class="swml-flow-btn" title="Zoom In">+</button>
-              <button id="swml-zoom-out" class="swml-flow-btn" title="Zoom Out">−</button>
-              <button id="swml-zoom-reset" class="swml-flow-btn" title="Reset">⊙</button>
               <button id="copy-step-mermaid-btn" class="swml-flow-btn">Copy Mermaid</button>
               <button id="copy-step-svg-btn" class="swml-flow-btn">Copy SVG</button>
             </div>
           </div>
-          <div class="swml-step-flow-diagram" id="step-mermaid-container">
-            <div class="mermaid">${mermaidDef}</div>
+          <div class="swml-step-flow-diagram-wrapper">
+            <div class="swml-zoom-controls">
+              <button class="zoom-btn" id="swml-zoom-in" title="Zoom In">+</button>
+              <button class="zoom-btn" id="swml-zoom-out" title="Zoom Out">−</button>
+              <button class="zoom-btn" id="swml-zoom-reset" title="Reset Zoom">⊙</button>
+            </div>
+            <div class="swml-step-flow-diagram" id="step-mermaid-container">
+              <div class="mermaid">${mermaidDef}</div>
+            </div>
           </div>
         </div>
       ` : ''}
