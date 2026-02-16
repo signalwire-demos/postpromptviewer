@@ -8,7 +8,7 @@ mermaid.initialize({
     primaryColor: '#3b82f6',
     primaryTextColor: '#e5e7eb',
     primaryBorderColor: '#60a5fa',
-    lineColor: '#6b7280',
+    lineColor: '#9ca3af',
     secondaryColor: '#1f2937',
     tertiaryColor: '#111827',
     background: '#0a0a0a',
@@ -24,6 +24,8 @@ mermaid.initialize({
   flowchart: {
     curve: 'basis',
     padding: 20,
+    useMaxWidth: false,
+    defaultRenderer: 'dagre',
   },
 });
 
@@ -56,6 +58,7 @@ export async function renderStateFlow(container, payload) {
         <div style="display:flex;gap:0.5rem">
           <button id="copy-flow-mermaid-btn" class="swml-flow-btn">Copy Mermaid</button>
           <button id="copy-flow-svg-btn" class="swml-flow-btn">Copy SVG</button>
+          <button id="download-flow-image-btn" class="swml-flow-btn">Download Image</button>
         </div>
       </div>
 
@@ -169,6 +172,27 @@ export async function renderStateFlow(container, payload) {
           copySvgBtn.textContent = 'Copy SVG';
         }, 2000);
       });
+    }
+  });
+
+  // Add download image button handler
+  const downloadImageBtn = container.querySelector('#download-flow-image-btn');
+  downloadImageBtn?.addEventListener('click', async () => {
+    const svg = container.querySelector('#flow-mermaid-container svg');
+    if (svg) {
+      try {
+        await downloadSvgAsImage(svg, 'state-flow-diagram.png');
+        downloadImageBtn.textContent = 'Downloaded!';
+        setTimeout(() => {
+          downloadImageBtn.textContent = 'Download Image';
+        }, 2000);
+      } catch (error) {
+        console.error('Failed to download image:', error);
+        downloadImageBtn.textContent = 'Failed';
+        setTimeout(() => {
+          downloadImageBtn.textContent = 'Download Image';
+        }, 2000);
+      }
     }
   });
 
@@ -494,4 +518,169 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+async function downloadSvgAsImage(svgElement, filename) {
+  // Clone SVG to avoid modifying the original
+  const clonedSvg = svgElement.cloneNode(true);
+
+  // Remove any transforms from the main group to get true dimensions
+  const g = clonedSvg.querySelector('g');
+  if (g) {
+    g.removeAttribute('transform');
+  }
+
+  // Make ALL paths/lines highly visible with dark color
+  const allPaths = clonedSvg.querySelectorAll('path');
+  allPaths.forEach(path => {
+    const currentStroke = path.getAttribute('stroke');
+    // Only modify paths that are lines (not fills)
+    if (currentStroke && currentStroke !== 'none') {
+      path.setAttribute('stroke', '#1e293b'); // Very dark, highly visible
+      path.setAttribute('stroke-width', '3');
+      path.removeAttribute('stroke-dasharray'); // Remove all dashing
+    }
+  });
+
+  // Make start node green and prominent
+  const startNodes = clonedSvg.querySelectorAll('.start-state circle, [id*="start"] circle, .node circle');
+  startNodes.forEach((circle, idx) => {
+    if (idx === 0) {
+      circle.setAttribute('fill', '#10b981');
+      circle.setAttribute('stroke', '#059669');
+      circle.setAttribute('stroke-width', '3');
+    }
+  });
+
+  // Style state boxes with rounded corners
+  const stateRects = clonedSvg.querySelectorAll('.node rect, rect.state');
+  stateRects.forEach(rect => {
+    rect.setAttribute('fill', '#1e293b');
+    rect.setAttribute('stroke', '#3b82f6');
+    rect.setAttribute('stroke-width', '2');
+    rect.setAttribute('rx', '8'); // More rounded
+  });
+
+  // HIDE all function note boxes completely - show only text
+  const noteRects = clonedSvg.querySelectorAll('.note rect, [class*="note"] rect, [class*="Note"] rect');
+  noteRects.forEach(rect => {
+    rect.setAttribute('fill', 'none'); // Completely transparent
+    rect.setAttribute('stroke', 'none'); // No border
+    rect.setAttribute('opacity', '0'); // Invisible
+  });
+
+  // Make note text stand out since there's no box
+  const noteTexts = clonedSvg.querySelectorAll('.note text, [class*="note"] text, [class*="Note"] text');
+  noteTexts.forEach(text => {
+    text.setAttribute('fill', '#64748b'); // Medium gray, subtle
+    text.setAttribute('font-size', '13');
+    text.setAttribute('font-weight', '400');
+    text.setAttribute('font-style', 'italic'); // Italicize to distinguish
+  });
+
+  // Make all other text larger and bolder
+  const texts = clonedSvg.querySelectorAll('text');
+  texts.forEach(text => {
+    const currentSize = parseFloat(text.getAttribute('font-size') || '14');
+    text.setAttribute('font-size', Math.max(currentSize * 1.3, 16));
+    text.setAttribute('font-weight', '600');
+    // Only change to light if not already set by note styling
+    if (!text.closest('.note') && !text.closest('[class*="note"]')) {
+      text.setAttribute('fill', '#f1f5f9');
+    }
+  });
+
+  // Clean edge labels - simple white background, no border
+  const edgeLabelRects = clonedSvg.querySelectorAll('.edgeLabel rect, .edge-label rect');
+  edgeLabelRects.forEach(rect => {
+    rect.setAttribute('fill', '#ffffff');
+    rect.setAttribute('fill-opacity', '0.95');
+    rect.setAttribute('stroke', 'none'); // Remove border
+    rect.setAttribute('rx', '4');
+  });
+
+  const edgeLabels = clonedSvg.querySelectorAll('.edgeLabel text, .edge-label text');
+  edgeLabels.forEach(label => {
+    label.setAttribute('font-size', '14');
+    label.setAttribute('font-weight', '600');
+    label.setAttribute('fill', '#1e293b');
+  });
+
+  // Get true bounding box of all content
+  const tempDiv = document.createElement('div');
+  tempDiv.style.position = 'absolute';
+  tempDiv.style.visibility = 'hidden';
+  document.body.appendChild(tempDiv);
+  tempDiv.appendChild(clonedSvg);
+
+  const bbox = clonedSvg.getBBox();
+  const padding = 40; // Add padding around the diagram
+  const width = Math.ceil(bbox.width + bbox.x * 2 + padding);
+  const height = Math.ceil(bbox.height + bbox.y * 2 + padding);
+
+  document.body.removeChild(tempDiv);
+
+  // Prepare final SVG
+  clonedSvg.setAttribute('width', width);
+  clonedSvg.setAttribute('height', height);
+  clonedSvg.setAttribute('viewBox', `${bbox.x - padding/2} ${bbox.y - padding/2} ${width} ${height}`);
+
+  // Add white background to SVG
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', bbox.x - padding/2);
+  rect.setAttribute('y', bbox.y - padding/2);
+  rect.setAttribute('width', width);
+  rect.setAttribute('height', height);
+  rect.setAttribute('fill', '#ffffff');
+  clonedSvg.insertBefore(rect, clonedSvg.firstChild);
+
+  // Serialize SVG to string and encode as data URI
+  const svgString = new XMLSerializer().serializeToString(clonedSvg);
+  const svgDataUri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+
+  // Create image from SVG data URI
+  const img = new Image();
+  img.width = width;
+  img.height = height;
+
+  return new Promise((resolve, reject) => {
+    img.onload = () => {
+      try {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = width * 2; // 2x for better quality
+        canvas.height = height * 2;
+        const ctx = canvas.getContext('2d');
+
+        // Draw SVG (background already in SVG)
+        ctx.scale(2, 2);
+        ctx.drawImage(img, 0, 0);
+
+        // Convert to blob and download
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Failed to create image blob'));
+            return;
+          }
+          const downloadUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+          resolve();
+        }, 'image/png', 0.95);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    img.onerror = () => {
+      reject(new Error('Failed to load SVG'));
+    };
+
+    img.src = svgDataUri;
+  });
 }
