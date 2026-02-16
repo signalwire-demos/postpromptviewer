@@ -1,67 +1,80 @@
 # Post-Prompt Observability Viewer
 
-A single-page application for visualizing SignalWire AI Agent post-conversation webhook payloads. Upload a JSON payload from a completed call and instantly see performance metrics, conversation flow, tool usage, latency analysis, and full call recordings with stereo waveform visualization.
+A single-page application for visualizing SignalWire AI Agent post-conversation webhook payloads and SWML configuration files. Upload a JSON payload from a completed call and instantly see performance metrics, conversation flow, tool usage, latency analysis, and full call recordings with stereo waveform visualization. Also supports SWML inspection with interactive state diagrams and prompt analysis.
 
-Built with **Vanilla JS**, **Vite**, **Chart.js**, and **wavesurfer.js** — no framework dependencies.
+Built with **Vanilla JS**, **Vite**, **Chart.js**, **Mermaid**, and **wavesurfer.js** — no framework dependencies.
 
 ## Screenshots
+
+### Drop Zone (Start Screen)
+Dual upload interface supporting both Post-Prompt conversation files and SWML configuration files. Drag-and-drop or click to browse.
+
+<img src="images/01-drop-zone.png" alt="Drop Zone — file upload interface" width="800" />
 
 ### Dashboard
 KPI metric cards covering call duration, response latency (assistant and tool), system performance rating, conversation stats, token usage, SWAIG details, and media/billing summaries.
 
-<img src="images/dashboard.png" alt="Dashboard — KPI metrics overview" width="800" />
+<img src="images/02-dashboard.png" alt="Dashboard — KPI metrics overview" width="800" />
 
 ### Charts
 Six interactive Chart.js visualizations: dual latency breakdown charts (assistant responses and tool calls), tokens per second, ASR confidence per utterance, speech detection timing, message role breakdown donut, and SWAIG latency by command.
 
-<img src="images/charts.png" alt="Charts — latency, TPS, ASR, and role breakdown" width="800" />
+<img src="images/03-charts.png" alt="Charts — latency, TPS, ASR, and role breakdown" width="800" />
 
 ### Timeline
 Horizontal swimlane view of the full call lifecycle. The top bar shows call phases (ring, setup, AI session, teardown). Below, a conversation flow chart maps every user, assistant, tool, say, and system message to its real timestamp.
 
-<img src="images/timeline.png" alt="Timeline — call phases and conversation flow swimlane" width="800" />
+<img src="images/04-timeline.png" alt="Timeline — call phases and conversation flow swimlane" width="800" />
 
 ### Transcript
-Scrollable processed conversation log with role-colored message bubbles (system, assistant, tool, user). Each message includes expandable metadata badges for latency, audio timing, ASR confidence, and timestamps.
+Scrollable conversation log with role-colored message bubbles (system, assistant, tool, user). Each message includes expandable metadata badges for latency, audio timing, ASR confidence, and timestamps. Includes response time rating badges (Excellent, Good, Fair, Needs Improvement) and filters for finding slow responses.
 
-<img src="images/transcript.png" alt="Transcript — role-colored conversation with metadata" width="800" />
+<img src="images/05-transcript.png" alt="Transcript — role-colored conversation with metadata" width="800" />
 
 ### SWAIG Inspector
-Expandable accordion of every SWAIG function call made during the session. Each entry shows the full `post_data` request and `post_response` as formatted JSON, with timestamps for tracking execution order.
+Expandable accordion of every SWAIG function call made during the session. Each entry shows the full `post_data` request and `post_response` as formatted JSON with search functionality that auto-expands nested items and filters to matching fields only.
 
-<img src="images/swaig-inspector.png" alt="SWAIG Inspector — function call request/response details" width="800" />
-
-### Post-Prompt
-Displays the post-prompt execution result with Raw and Substituted sub-tabs. Shows what the AI agent executed after the conversation ended (e.g., summary functions, data extraction).
-
-<img src="images/post-prompt.png" alt="Post-Prompt — post-conversation function results" width="800" />
-
-### Recording
-Stereo waveform visualization powered by wavesurfer.js with color-coded overlay regions (user speech, endpointing, assistant, tool calls, thinking, manual say, barge-in). Includes synced video playback, speed controls, and a scrubbing cursor that displays the matching transcript line.
-
-<img src="images/recording.png" alt="Recording — stereo waveform with overlay regions and video" width="800" />
+<img src="images/06-swaig-inspector.png" alt="SWAIG Inspector — function call request/response details" width="800" />
 
 ### Global Data
-Raw JSON view of session state at end of call, including `global_data` (set by SWAIG `set_global_data` actions), `SWMLVars` (runtime call variables), and `SWMLCall` signaling-layer metadata.
+Expandable JSON view of session state at end of call, including `global_data` (set by SWAIG `set_global_data` actions), `SWMLVars` (runtime call variables), and `SWMLCall` signaling-layer metadata. Includes search with auto-expand and field-level filtering.
 
-<img src="images/global-data.png" alt="Global Data — session state and call metadata JSON" width="800" />
+<img src="images/07-global-data.png" alt="Global Data — session state and call metadata JSON" width="800" />
+
+### State Flow
+Interactive Mermaid diagram visualizing the conversation flow as a state machine. Shows the progression through states, functions, and prompts with scrollable viewport and PNG export capability.
+
+<img src="images/08-state-flow.png" alt="State Flow — conversation state machine diagram" width="800" />
+
+### SWML Overview
+Inspector for SignalWire Markup Language (SWML) configuration files. Overview tab shows general configuration, sections, and high-level structure.
+
+<img src="images/09-swml-overview.png" alt="SWML Overview — configuration summary" width="800" />
+
+### SWML Prompts & Steps
+Detailed view of SWML prompts and steps with interactive Mermaid state diagrams. Supports both text and bullet-point prompt formats with PNG export for diagrams.
+
+<img src="images/10-swml-prompts.png" alt="SWML Prompts — prompts and state flow visualization" width="800" />
 
 ## What This Does
 
 When a SignalWire AI Agent call completes, the platform emits a `post_conversation` webhook payload containing everything that happened during the call: the full conversation log, SWAIG function calls, ASR confidence scores, token usage, latency measurements, and more.
 
-This viewer parses that payload and presents it across eight interactive tabs:
+This viewer parses that payload and presents it across nine interactive tabs:
 
 | Tab | What It Shows |
 |-----|---------------|
 | **Dashboard** | 16 KPI metric cards — call duration, response latency, token usage, ASR confidence, barge-in rate, SWAIG call count, TPS stats |
 | **Charts** | 6 Chart.js visualizations — response latency over time, tokens per second, ASR confidence distribution, message role breakdown, SWAIG execution latency, call timeline phases |
 | **Timeline** | Horizontal swimlane showing the full call lifecycle — user speech, assistant responses, tool calls, thinking, manual says, all mapped to real timestamps |
-| **Transcript** | Scrollable conversation with role-colored message bubbles and expandable metadata (latency, confidence, tool results) |
-| **SWAIG Inspector** | Accordion list of every SWAIG function call with full `post_data` and `post_response` as formatted JSON |
+| **Transcript** | Scrollable conversation with role-colored message bubbles, expandable metadata (latency, confidence, tool results), response time rating badges, and filters for finding slow responses |
+| **SWAIG Inspector** | Accordion list of every SWAIG function call with full `post_data` and `post_response` as formatted JSON, search with auto-expand and field-level filtering |
 | **Post-Prompt** | Tabbed view of raw, substituted, and parsed post-prompt data |
+| **State Flow** | Interactive Mermaid diagram visualizing conversation flow as a state machine with scrollable viewport and PNG export |
 | **Recording** | Stereo waveform visualization with call-log regions overlaid, synced video playback for MP4 recordings, playback controls with speed adjustment |
-| **Global Data** | Raw view of `global_data`, `SWMLVars`, `SWMLCall`, and other top-level payload fields |
+| **Global Data** | Expandable JSON view of `global_data`, `SWMLVars`, `SWMLCall`, and other top-level payload fields with search and field-level filtering |
+
+Additionally, the viewer supports **SWML Inspector** mode for analyzing SignalWire Markup Language configuration files with four dedicated tabs: Overview, Prompts & Steps (with interactive state diagrams), Functions, and Configuration.
 
 ## Quick Start
 

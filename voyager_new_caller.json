@@ -1,0 +1,585 @@
+{
+  "version": "1.0.0",
+  "sections": {
+    "main": [
+      {
+        "answer": {}
+      },
+      {
+        "record_call": {
+          "format": "wav",
+          "stereo": true
+        }
+      },
+      {
+        "ai": {
+          "prompt": {
+            "pom": [
+              {
+                "title": "Personality",
+                "body": "You are Voyager, a friendly AI travel concierge who helps callers find and book flights. Keep it warm and brief — the occasional travel quip is welcome."
+              },
+              {
+                "title": "Rules",
+                "bullets": [
+                  "This is a PHONE CALL. Keep every response to 1-2 short sentences.",
+                  "Use airline names not codes ('Delta' not 'DL'). Say times naturally ('seven thirty PM' not '19:30').",
+                  "Spell confirmation codes using the NATO phonetic alphabet.",
+                  "Avoid commas in speech — use 'and' or 'or' instead. Keep sentences short and direct."
+                ]
+              }
+            ],
+            "contexts": {
+              "default": {
+                "steps": [
+                  {
+                    "name": "greeting",
+                    "text": "## Task\nWelcome new caller and start profile\n\n## Process\n- Say: 'Welcome to Voyager! I'd love to help you book a flight.'\n- Explain you'll collect their profile\n- Move to collect_profile step",
+                    "step_criteria": "Ready to collect profile",
+                    "functions": "none",
+                    "valid_steps": [
+                      "collect_profile"
+                    ]
+                  },
+                  {
+                    "name": "get_origin",
+                    "text": "## Task\nCollect the departure city or airport\n\n## Process\n- Ask where they're flying from, then call resolve_location with location_text and location_type='origin'\n- If caller says an IATA code directly ('I'm flying from LAX'), still call resolve_location to validate it\n- After resolve_location returns, tell the caller which airport was found and ask if that's correct\n- If they confirm, move to get_destination\n- If multiple airports are returned, move to disambiguate_origin\n- If no match, ask the caller to try a different city name",
+                    "step_criteria": "Origin airport resolved and confirmed",
+                    "functions": [
+                      "resolve_location"
+                    ],
+                    "valid_steps": [
+                      "get_destination",
+                      "disambiguate_origin"
+                    ]
+                  },
+                  {
+                    "name": "disambiguate_origin",
+                    "text": "## Task\nAsk the caller to choose between multiple origin airports\n\n## Process\n- Present the airports by name and city and ask which they prefer\n- Call select_airport with location_type='origin' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate",
+                    "step_criteria": "Origin airport stored via select_airport",
+                    "functions": [
+                      "select_airport"
+                    ],
+                    "valid_steps": [
+                      "get_destination"
+                    ]
+                  },
+                  {
+                    "name": "get_destination",
+                    "text": "## Task\nCollect the arrival city or airport\n\n## Process\n- Ask where they're flying to — or if they already said a destination, call resolve_location right away with location_type='destination'\n- After resolve_location returns, tell the caller which airport was found and ask if that's correct\n- If they confirm, move to collect_trip_type\n- If multiple airports are returned, move to disambiguate_destination\n- If no match, ask the caller for clarification",
+                    "step_criteria": "Destination airport resolved and confirmed",
+                    "functions": [
+                      "resolve_location"
+                    ],
+                    "valid_steps": [
+                      "collect_trip_type",
+                      "disambiguate_destination"
+                    ]
+                  },
+                  {
+                    "name": "disambiguate_destination",
+                    "text": "## Task\nAsk the caller to choose between multiple destination airports\n\n## Process\n- Present the airports by name and ask which they prefer\n- Call select_airport with location_type='destination' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate",
+                    "step_criteria": "Destination airport stored via select_airport",
+                    "functions": [
+                      "select_airport"
+                    ],
+                    "valid_steps": [
+                      "collect_trip_type"
+                    ]
+                  },
+                  {
+                    "name": "collect_trip_type",
+                    "text": "## Task\nAsk whether this is a round-trip or one-way flight\n\n## Process\n- Ask the caller: 'Is this a round-trip or one-way?'\n- Read back their answer and ask them to confirm it is correct\n- Call select_trip_type with trip_type 'round_trip' or 'one_way' and their confirmation",
+                    "step_criteria": "Trip type confirmed and submitted via select_trip_type",
+                    "functions": [
+                      "select_trip_type"
+                    ],
+                    "valid_steps": [
+                      "collect_booking"
+                    ]
+                  },
+                  {
+                    "name": "search_flights",
+                    "text": "## Task\nRe-search flights (used only for error recovery — happy path searches inline via submit_cabin)\n\n## Process\n- Call search_flights to find available flights\n- The function returns up to 3 options pre-summarized for voice\n- Move to present_options to read them to the caller\n- If no results: move to error_recovery",
+                    "step_criteria": "Flight search completed",
+                    "functions": [
+                      "search_flights"
+                    ],
+                    "valid_steps": [
+                      "present_options",
+                      "error_recovery"
+                    ]
+                  },
+                  {
+                    "name": "present_options",
+                    "text": "## Task\nPresent up to 3 flight options and let the caller pick one\n\n## Process\n- Read each flight option from booking_state.flight_summaries — include airline, stops, times, duration, and price\n- Label them 'Option 1' then 'Option 2' then 'Option 3'\n- Ask which option they'd like or if they want to try different dates or a different route\n- When the caller picks one, call select_flight with that option_number\n- If caller wants different dates or a different route, call restart_search",
+                    "step_criteria": "Caller selects an option via select_flight or requests new search via restart_search",
+                    "functions": [
+                      "select_flight",
+                      "restart_search"
+                    ],
+                    "valid_steps": [
+                      "confirm_price",
+                      "collect_booking",
+                      "get_origin"
+                    ]
+                  },
+                  {
+                    "name": "confirm_price",
+                    "text": "## Task\nConfirm the live price on the selected flight\n\n## Process\n- Call get_flight_price to confirm the live fare\n- Read back the confirmed price and baggage allowance to the caller\n- Ask: 'Shall I go ahead and book this?'\n- If they say yes, call confirm_booking\n- If they say no, call decline_booking",
+                    "step_criteria": "Caller confirms or declines via confirm_booking or decline_booking",
+                    "functions": [
+                      "get_flight_price",
+                      "confirm_booking",
+                      "decline_booking"
+                    ],
+                    "valid_steps": [
+                      "create_booking",
+                      "present_options",
+                      "error_recovery"
+                    ]
+                  },
+                  {
+                    "name": "create_booking",
+                    "text": "## Task\nBook the flight and wrap up\n\n## Process\n- Call book_flight to create the reservation\n- Read the PNR back to the caller using the NATO phonetic spelling provided\n- Let them know the confirmation has been texted to their phone\n- Thank them and say goodbye",
+                    "step_criteria": "Booking created, PNR read back, call ending",
+                    "functions": [
+                      "book_flight"
+                    ],
+                    "valid_steps": [
+                      "wrap_up",
+                      "error_recovery"
+                    ]
+                  },
+                  {
+                    "name": "error_recovery",
+                    "text": "## Task\nHandle booking failures, no results, and mid-flow changes\n\n## Process\n- Offer options: try different dates, a different route, or re-search the same route\n- If different dates: call restart_booking to go back to date collection\n- If different route: call restart_search with reason='different_route' to start over from origin\n- If same route: call search_flights to re-search with current settings",
+                    "step_criteria": "Recovery action taken",
+                    "functions": [
+                      "search_flights",
+                      "restart_booking",
+                      "restart_search"
+                    ],
+                    "valid_steps": [
+                      "present_options",
+                      "collect_booking",
+                      "get_origin"
+                    ]
+                  },
+                  {
+                    "name": "wrap_up",
+                    "text": "## Task\nEnd the call\n\n## Process\n- Say a brief, warm goodbye: 'Thanks for flying with Voyager — have an amazing trip!'\n- End the call",
+                    "functions": "none",
+                    "valid_steps": []
+                  },
+                  {
+                    "name": "collect_profile",
+                    "text": "Now let's start booking your flight.",
+                    "valid_steps": [
+                      "save_profile_step"
+                    ],
+                    "gather_info": {
+                      "questions": [
+                        {
+                          "key": "first_name",
+                          "question": "What is your first name?"
+                        },
+                        {
+                          "key": "last_name",
+                          "question": "What is your last name?"
+                        },
+                        {
+                          "key": "date_of_birth",
+                          "question": "What is your date of birth?",
+                          "confirm": true,
+                          "prompt": "Accept natural language but submit in YYYY-MM-DD format"
+                        },
+                        {
+                          "key": "gender",
+                          "question": "Are you male or female?",
+                          "prompt": "Submit exactly MALE or FEMALE"
+                        },
+                        {
+                          "key": "email",
+                          "question": "What email should we send confirmations to?",
+                          "confirm": true
+                        },
+                        {
+                          "key": "seat_preference",
+                          "question": "Do you prefer a window or aisle seat?",
+                          "prompt": "Submit exactly WINDOW or AISLE"
+                        },
+                        {
+                          "key": "cabin_preference",
+                          "question": "What cabin class do you usually fly?",
+                          "prompt": "Options are ECONOMY, PREMIUM_ECONOMY, BUSINESS, or FIRST"
+                        },
+                        {
+                          "key": "home_airport",
+                          "question": "What airport do you usually fly from?",
+                          "confirm": true,
+                          "prompt": "Accept city or airport name. Format answer as 'Airport Name (CODE)'"
+                        }
+                      ],
+                      "prompt": "Welcome to Voyager! I'd love to help you book a flight. Let me get your profile set up first.",
+                      "output_key": "profile_answers",
+                      "completion_action": "next_step"
+                    }
+                  },
+                  {
+                    "name": "save_profile_step",
+                    "text": "## Task\nSave the completed profile\n\n## Process\n- Call save_profile to create the passenger record\n- Profile data is in ${profile_answers}",
+                    "functions": [
+                      "save_profile"
+                    ],
+                    "valid_steps": [
+                      "get_origin"
+                    ]
+                  },
+                  {
+                    "name": "collect_booking",
+                    "text": "Search for flights.",
+                    "valid_steps": [
+                      "search_and_present"
+                    ],
+                    "gather_info": {
+                      "questions": [
+                        {
+                          "key": "departure_date",
+                          "question": "When would you like to depart?",
+                          "confirm": true,
+                          "prompt": "Accept natural language but submit in YYYY-MM-DD format. Must be a future date."
+                        },
+                        {
+                          "key": "return_date",
+                          "question": "When would you like to return?",
+                          "confirm": true,
+                          "prompt": "Accept natural language but submit in YYYY-MM-DD format. Must be after departure date. For one-way trips, submit the word ONEWAY instead of a date."
+                        },
+                        {
+                          "key": "adults",
+                          "question": "How many passengers?",
+                          "type": "integer",
+                          "prompt": "Must be 1-8 passengers"
+                        },
+                        {
+                          "key": "cabin_class",
+                          "question": "What cabin class?",
+                          "prompt": "Options: ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST. Suggest the passenger's stored preference if available in ${passenger_profile}"
+                        }
+                      ],
+                      "prompt": "Now let's plan your trip.",
+                      "output_key": "booking_answers",
+                      "completion_action": "next_step"
+                    }
+                  },
+                  {
+                    "name": "search_and_present",
+                    "text": "## Task\nSearch for available flights\n\n## Process\n- Booking details are in ${booking_answers}\n- Call search_flights to find available flights\n- The search will return up to 3 options and transition to present_options",
+                    "step_criteria": "Search completed",
+                    "functions": [
+                      "search_flights"
+                    ],
+                    "valid_steps": [
+                      "present_options",
+                      "error_recovery"
+                    ]
+                  }
+                ]
+              }
+            },
+            "top_p": 0.9,
+            "temperature": 0.3
+          },
+          "post_prompt": {
+            "text": "Summarize the conversation."
+          },
+          "post_prompt_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/post_prompt/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnBvc3RfcHJvbXB0LjE3NzEyNjk3NjQuNjM1YjRiNzEuYzI0YTgyYjhjMjdjZTU4ZA%3D%3D",
+          "SWAIG": {
+            "functions": [
+              {
+                "function": "resolve_location",
+                "description": "Resolve a spoken city or place name",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "location_text": {
+                      "type": "string",
+                      "description": "The city, airport, or place name spoken by the caller"
+                    },
+                    "location_type": {
+                      "type": "string",
+                      "description": "Whether this is an 'origin' or 'destination'",
+                      "enum": [
+                        "origin",
+                        "destination"
+                      ]
+                    },
+                    "mode": {
+                      "type": "string",
+                      "description": "normal = resolve and change step (default). verify = resolve and return result without changing step.",
+                      "enum": [
+                        "normal",
+                        "verify"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "location_text"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnJlc29sdmVfbG9jYXRpb24uMTc3MTI2OTc2NC40Njg1ZDJhZi4wNzFjYjczNWU2ZjNhY2I2"
+              },
+              {
+                "function": "select_airport",
+                "description": "Select an airport from the disambiguation candidates.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "location_type": {
+                      "type": "string",
+                      "description": "Whether this is an 'origin' or 'destination'",
+                      "enum": [
+                        "origin",
+                        "destination"
+                      ]
+                    },
+                    "iata_code": {
+                      "type": "string",
+                      "description": "The IATA code of the selected airport from the candidates list"
+                    }
+                  },
+                  "required": [
+                    "location_type",
+                    "iata_code"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnNlbGVjdF9haXJwb3J0LjE3NzEyNjk3NjQuN2QxMjAwM2EuZDI1ZTA3YTgwNDgzYzg2Mg%3D%3D"
+              },
+              {
+                "function": "select_trip_type",
+                "description": "Record whether this is a round-trip or one-way flight.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "trip_type": {
+                      "type": "string",
+                      "description": "round_trip or one_way",
+                      "enum": [
+                        "round_trip",
+                        "one_way"
+                      ]
+                    },
+                    "confirmed": {
+                      "type": "boolean",
+                      "description": "Set true only after the caller explicitly confirmed"
+                    }
+                  },
+                  "required": [
+                    "trip_type"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnNlbGVjdF90cmlwX3R5cGUuMTc3MTI2OTc2NC5hN2ZhYTM5Yy4yODA3NTgzMDlhNjViMDFh"
+              },
+              {
+                "function": "finalize_profile",
+                "description": "Save the completed profile. Reads from profile_answers in global_data.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLmZpbmFsaXplX3Byb2ZpbGUuMTc3MTI2OTc2NC43NDFlMTAzOC5jMzNkMmI2NTVjNzI5ZjQz"
+              },
+              {
+                "function": "finalize_booking",
+                "description": "Store the collected booking details. Reads from booking_answers in global_data.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLmZpbmFsaXplX2Jvb2tpbmcuMTc3MTI2OTc2NC5kOTUwZGExYS5mNDdjYTAwNWY3NWRlMjVj"
+              },
+              {
+                "function": "search_flights",
+                "description": "Search for available flights and return up to 3 options.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnNlYXJjaF9mbGlnaHRzLjE3NzEyNjk3NjQuOThjYTJmM2QuZWJlN2RjNTRiMDg1MDEwZA%3D%3D"
+              },
+              {
+                "function": "select_flight",
+                "description": "Select one of the flight options returned by search_flights. Call this after the caller picks option 1, 2, or 3.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "option_number": {
+                      "type": "integer",
+                      "description": "The option number the caller chose",
+                      "enum": [
+                        1,
+                        2,
+                        3
+                      ]
+                    }
+                  },
+                  "required": [
+                    "option_number"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnNlbGVjdF9mbGlnaHQuMTc3MTI2OTc2NC44ZTI0NTFjMS40ZWY4Y2Y5MWUzYTY1ZTNm"
+              },
+              {
+                "function": "restart_search",
+                "description": "Caller wants to change dates or route. Call this instead of select_flight.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "description": "Why the caller wants to restart: 'different_dates' or 'different_route'",
+                      "enum": [
+                        "different_dates",
+                        "different_route"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "reason"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnJlc3RhcnRfc2VhcmNoLjE3NzEyNjk3NjQuNWNjZmZiYjAuN2E5MjgwMDE0NjE0NmFmYQ%3D%3D"
+              },
+              {
+                "function": "restart_booking",
+                "description": "Restart the booking with new dates. Call from error recovery.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnJlc3RhcnRfYm9va2luZy4xNzcxMjY5NzY0LmZlMjI2YzZhLjVkNjhmYjA4MTYwNzI4OTY%3D"
+              },
+              {
+                "function": "get_flight_price",
+                "description": "Confirm the exact price for the flight selected via select_flight.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLmdldF9mbGlnaHRfcHJpY2UuMTc3MTI2OTc2NC5mZTEwZjVkZS5kNTExOGZjODMzNmNkYjBj"
+              },
+              {
+                "function": "confirm_booking",
+                "description": "Caller accepted the price — proceed to booking.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLmNvbmZpcm1fYm9va2luZy4xNzcxMjY5NzY0LmFkNGU4ZTBlLjBkM2VjYzUzMDFiODY2ZWM%3D"
+              },
+              {
+                "function": "decline_booking",
+                "description": "Caller declined the price — go back to flight options.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLmRlY2xpbmVfYm9va2luZy4xNzcxMjY5NzY0LjQwZjAxMGU1LjM3YmU1ZjA5YjJhNTA0ODQ%3D"
+              },
+              {
+                "function": "book_flight",
+                "description": "Book the confirmed flight and create a PNR.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "fillers": {
+                  "en-US": [
+                    "Booking that for you now"
+                  ]
+                },
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLmJvb2tfZmxpZ2h0LjE3NzEyNjk3NjQuMDU1NTc0MmYuZTc5Y2YzMjI0ZDMzZDE1Ng%3D%3D"
+              },
+              {
+                "function": "summarize_conversation",
+                "description": "Generate a structured call summary. Called automatically when the conversation ends.",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "string",
+                      "description": "Brief description of what happened during the call"
+                    }
+                  },
+                  "required": [
+                    "summary"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnN1bW1hcml6ZV9jb252ZXJzYXRpb24uMTc3MTI2OTc2NC5hMWNlYmZjNy4zMjcwOTEwYmIxMjUxMWQ1"
+              },
+              {
+                "function": "save_profile",
+                "description": "Save profile and create passenger",
+                "parameters": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MmM3Y2U3ZTQtMGI0NC00NTY1LWFiNzgtZTg4MGRhYzY0NjlhLnNhdmVfcHJvZmlsZS4xNzcxMjY5NzY0LjA5YTMwOGQwLmMwYWI2NWZkNWI5MTY2YjM%3D"
+              }
+            ],
+            "defaults": {
+              "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/"
+            }
+          },
+          "params": {
+            "ai_model": "gpt-oss-120b@groq.ai",
+            "end_of_speech_timeout": 500
+          },
+          "hints": [
+            "Voyager",
+            "IATA",
+            "nonstop",
+            "layover",
+            "round trip"
+          ],
+          "languages": [
+            {
+              "name": "English",
+              "code": "en-US",
+              "voice": "azure.en-US-AvaNeural"
+            }
+          ],
+          "global_data": {
+            "passenger_profile": null,
+            "is_new_caller": true,
+            "caller_phone": "user-c81f3dd2@test.domain"
+          }
+        }
+      }
+    ]
+  }
+}

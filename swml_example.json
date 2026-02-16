@@ -1,0 +1,321 @@
+{
+  "version": "1.0.0",
+  "sections": {
+    "main": [
+      {
+        "answer": {}
+      },
+      {
+        "record_call": {
+          "format": "mp4",
+          "stereo": true
+        }
+      },
+      {
+        "ai": {
+          "prompt": {
+            "pom": [
+              {
+                "body": "You are Sigmond, the friendly order-taker at Holy Guacamole! Mexican drive-thru. You're warm, enthusiastic about the food, and help customers order efficiently. The customer has a screen showing their order, so NEVER read back the full order - they can see it! Just acknowledge items briefly as they're added. Keep responses concise and friendly. CRITICAL: When a customer orders multiple items in one sentence (like 'two tacos and a drink'), you MUST call add_item separately for EACH item. Never skip items! IMPORTANT MENU RULE: NEVER list specific menu items or say what drinks/options we have. If asked about menu items or options, say 'Please check the menu on your screen' or 'Everything we have is shown on the menu.' You can ONLY confirm what we have by attempting to add_item - let the function tell you if we have it or not.",
+                "title": "Personality"
+              }
+            ],
+            "contexts": {
+              "default": {
+                "steps": [
+                  {
+                    "name": "greeting",
+                    "text": "## Current Task\nWelcome the customer and start their order\n\n## Process\n- Welcome them warmly to Holy Guacamole!\n- Ask what they'd like to order\n- Mention combo meals save money\n- Listen for ALL items they mention\n- If they order multiple items (e.g. 'two tacos and a drink'), call add_item for EACH item separately",
+                    "step_criteria": "Customer has started ordering",
+                    "functions": [
+                      "add_item"
+                    ],
+                    "valid_steps": [
+                      "taking_order"
+                    ]
+                  },
+                  {
+                    "name": "taking_order",
+                    "text": "## Current Task\nBuild the customer's order\n\n## IMPORTANT RULES\n- Current order has ${global_data.order_state.item_count} items\n- Current total: $${global_data.order_state.total}\n- 🔴 HIGHEST PRIORITY - Check for RESTART patterns FIRST:\n-   - 'I only want X', 'never mind just X', 'actually just X' = cancel_order() THEN add_item(X)\n-   - 'cancel', 'start over', 'never mind' = cancel_order()\n- When customer orders multiple items (e.g. 'two tacos and a drink'): CALL add_item FOR EACH ITEM SEPARATELY\n- CRITICAL: If customer says 'X and Y', you MUST call add_item twice - once for X and once for Y\n- ⚠️ CRITICAL PATTERN - Customer wants to RESTART with only one item:\n-   - TRIGGERS: 'never mind, I just want X', 'I only want X', 'forget everything, just X'\n-   - Also: 'actually just give me X', 'you know what, just X', 'scratch that, only X'\n-   - This means CLEAR ALL and keep ONLY the mentioned item\n-   - ACTION REQUIRED: 1) FIRST call cancel_order(), 2) THEN call add_item(X)\n-   - DO NOT use remove_item - MUST use cancel_order to clear everything\n- When customer explicitly wants to cancel entire order:\n-   - 'cancel my order', 'start over', 'never mind' (without mentioning another item)\n-   - ACTION: CALL cancel_order()\n- When customer wants to remove items:\n-   - 'remove one water/bottle': CALL remove_item('water', quantity=1)\n-   - 'remove 5 waters/bottles': CALL remove_item('water', quantity=5)\n-   - 'remove all the water/bottles': CALL remove_item('water', quantity=-1)\n-   - Default (no quantity specified): removes 1 item\n-   - IMPORTANT: 'bottles' usually means 'water' - use 'water' as item_name\n- When customer wants to change quantity: CALL modify_quantity function\n- When customer wants to see order: CALL review_order function\n- When customer is done: CALL finalize_order function\n- Acknowledge items briefly (don't read back the entire order)\n- 💡 COMBO UPGRADES: If add_item response includes 'Great news!' about a combo:\n-   - This means a money-saving combo is available\n-   - If customer says 'yes', 'sure', 'okay', 'upgrade' or agrees: CALL upgrade_to_combo\n-   - Determine combo type from the suggestion (taco, burrito, or both)\n-   - If response mentions TWO combos, use combo_type='both'\n- NEVER quote prices yourself - let the functions provide them",
+                    "step_criteria": "Customer says they're done ordering",
+                    "functions": [
+                      "add_item",
+                      "remove_item",
+                      "modify_quantity",
+                      "review_order",
+                      "finalize_order",
+                      "upgrade_to_combo",
+                      "cancel_order"
+                    ],
+                    "valid_steps": [
+                      "confirming_order"
+                    ]
+                  },
+                  {
+                    "name": "confirming_order",
+                    "text": "## Current Task\nConfirm the complete order\n\n## Instructions\n- The customer can see their order on the screen\n- DO NOT read back the items - they can see them\n- Just ask if the order on screen looks correct\n- If they confirm, use process_payment\n- If they want changes, use add_item or remove_item\n- Only mention the total price, not individual items",
+                    "step_criteria": "Order is confirmed as correct",
+                    "functions": [
+                      "process_payment",
+                      "add_item",
+                      "remove_item",
+                      "cancel_order"
+                    ],
+                    "valid_steps": [
+                      "payment_processing",
+                      "taking_order"
+                    ]
+                  },
+                  {
+                    "name": "payment_processing",
+                    "text": "## Current Task\nDirect customer to payment\n\n## Instructions\n- Order number: ${global_data.order_state.order_number}\n- Total: $${global_data.order_state.total}\n- Tell them to pull forward to the first window\n- Thank them for their order\n- Call complete_order to finish",
+                    "step_criteria": "Payment instructions given",
+                    "functions": [
+                      "complete_order"
+                    ],
+                    "valid_steps": [
+                      "order_complete"
+                    ]
+                  },
+                  {
+                    "name": "order_complete",
+                    "text": "## Current Task\nOrder is complete\n\n## Final Steps\n- Thank the customer\n- Wish them a great day\n- If they want another order, use new_order",
+                    "functions": [
+                      "new_order"
+                    ],
+                    "valid_steps": [
+                      "greeting"
+                    ]
+                  }
+                ],
+                "pom": [
+                  {
+                    "title": "Goal",
+                    "body": "Take accurate food orders efficiently while providing excellent customer service."
+                  }
+                ]
+              }
+            },
+            "temperature": 0.1,
+            "top_p": 0.1
+          },
+          "post_prompt": {
+            "text": "Summarize the conversation, including all the details about the food order and any special requests."
+          },
+          "post_prompt_url": "https://NiheyBNy7sDgpyon:zmj2tuhsTyOwis6S@botworks-prod.signalwire.me/postprompt/1",
+          "SWAIG": {
+            "functions": [
+              {
+                "function": "add_item",
+                "description": "Add an item to the order",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "item_name": {
+                      "type": "string",
+                      "description": "Name of the menu item"
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "description": "How many to add",
+                      "minimum": 1,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "item_name"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLmFkZF9pdGVtLjE3NzEyNTYyOTEuYzE0MTc0ZDkuYmQ4NTI1YmJkOTA1MDMzNQ=="
+              },
+              {
+                "function": "remove_item",
+                "description": "Remove an item from the order",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "item_name": {
+                      "type": "string",
+                      "description": "Name of item to remove"
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "description": "How many to remove (default: 1, use -1 for all)",
+                      "minimum": -1
+                    }
+                  },
+                  "required": [
+                    "item_name"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLnJlbW92ZV9pdGVtLjE3NzEyNTYyOTEuY2UyZDRmOTIuNDQ5ODdhMzhkYTlmYTI2MQ=="
+              },
+              {
+                "function": "modify_quantity",
+                "description": "Change the quantity of an item already in the order",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "item_name": {
+                      "type": "string",
+                      "description": "Name of the item to modify"
+                    },
+                    "new_quantity": {
+                      "type": "integer",
+                      "description": "New quantity (0 to remove)",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  },
+                  "required": [
+                    "item_name",
+                    "new_quantity"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLm1vZGlmeV9xdWFudGl0eS4xNzcxMjU2MjkxLmZkM2ZiY2Q5LmMyYjczZjYzY2Q3YWUzOTY="
+              },
+              {
+                "function": "review_order",
+                "description": "Review the current order",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLnJldmlld19vcmRlci4xNzcxMjU2MjkxLjY5ZTYxZjE4LjI4NDcyYWVlOWYxMDRiNzE="
+              },
+              {
+                "function": "finalize_order",
+                "description": "Finalize order and move to confirmation",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLmZpbmFsaXplX29yZGVyLjE3NzEyNTYyOTEuM2VmN2RmZWYuYWUyYWY2NTdjZWYzY2UxYQ=="
+              },
+              {
+                "function": "process_payment",
+                "description": "Process the payment",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLnByb2Nlc3NfcGF5bWVudC4xNzcxMjU2MjkxLmNiOTBhMWE0LmVmNzYxYzI4M2QwMDc3YzE="
+              },
+              {
+                "function": "complete_order",
+                "description": "Complete the order",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLmNvbXBsZXRlX29yZGVyLjE3NzEyNTYyOTEuZWI4NjJiMzQuM2YyOGUyNDY2MTc4ZDBjNQ=="
+              },
+              {
+                "function": "cancel_order",
+                "description": "Clear/cancel the entire order. Use when customer says 'cancel', 'start over', 'never mind', or before adding a single item when they say 'I only want X'",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLmNhbmNlbF9vcmRlci4xNzcxMjU2MjkxLjQ0YmE0YTQ5LjgzMTJiOTNiNDgwMWU1YTc="
+              },
+              {
+                "function": "new_order",
+                "description": "Start a new order",
+                "parameters": {
+                  "type": "object",
+                  "properties": {},
+                  "required": []
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLm5ld19vcmRlci4xNzcxMjU2MjkxLmY0ZmNmY2ZiLmZmZWM1NmM2NmRiZWZkYTE="
+              },
+              {
+                "function": "upgrade_to_combo",
+                "description": "Upgrade individual items to a combo meal",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "combo_type": {
+                      "type": "string",
+                      "description": "Type of combo: 'taco', 'burrito', or 'both'"
+                    }
+                  },
+                  "required": [
+                    "combo_type"
+                  ]
+                },
+                "wait_file": "https://briankwest.ngrok.io/keyspressing.mp3",
+                "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/?__token=YTE3ZDVjM2UtMTU5Zi00YWEyLThkMDctOWYyMjMxMGU1M2VkLnVwZ3JhZGVfdG9fY29tYm8uMTc3MTI1NjI5MS4yNGMzOWNkNi5iNzFhOTJmMDRiMTA0NTZm"
+              }
+            ],
+            "defaults": {
+              "web_hook_url": "https://signalwire:asdasdfsadf@briankwest.ngrok.io/swml/swaig/"
+            }
+          },
+          "params": {
+            "turn_detection_timeout": "300",
+            "end_of_speech_timeout": "2000",
+            "video_idle_file": "https://briankwest.ngrok.io/sigmond_cc_idle.mp4",
+            "video_talking_file": "https://briankwest.ngrok.io/sigmond_cc_talking.mp4"
+          },
+          "hints": [
+            "taco",
+            "burrito",
+            "quesadilla",
+            "beef",
+            "chicken",
+            "bean",
+            "cheese",
+            "chips",
+            "salsa",
+            "guacamole",
+            "drink",
+            "water",
+            "combo",
+            "small",
+            "large",
+            "yes",
+            "no",
+            "done",
+            "finished",
+            "add",
+            "remove",
+            "cancel"
+          ],
+          "languages": [
+            {
+              "name": "English",
+              "code": "en-US",
+              "voice": "elevenlabs.adam"
+            }
+          ],
+          "global_data": {
+            "restaurant": "Holy Guacamole!",
+            "order_state": {
+              "items": [],
+              "total": 0.0,
+              "subtotal": 0.0,
+              "tax": 0.0,
+              "order_number": null,
+              "item_count": 0
+            }
+          }
+        }
+      }
+    ]
+  }
+}

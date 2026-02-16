@@ -1,0 +1,1871 @@
+{
+  "SWMLCall": {
+    "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+    "call_state": "answered",
+    "direction": "inbound",
+    "from": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+    "node_id": "tony-ai@",
+    "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+    "segment_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+    "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+    "to": "/public/holyguacamole-8hnrg?channel=audio",
+    "type": "webrtc"
+  },
+  "SWMLVars": {
+    "ai_result": "success",
+    "answer_result": "success",
+    "record_call_result": "success",
+    "record_call_start": "1771251157624637",
+    "record_call_url": "https://files.swire.io/f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787/37d8414f-60d1-4e7b-bf04-b5569535011b/recordings/f85b621b-0ddb-4f1a-8670-72d53003fbba.mp4",
+    "record_control_id": "142243bb-fe85-4ff1-85a4-6252f886428d",
+    "userVariables": {
+      "extension": "holy_guacamole",
+      "interface": "web-ui",
+      "timestamp": "2026-02-16T14:12:35.894Z",
+      "userName": "Holy Guacamole Customer"
+    }
+  },
+  "action": "post_conversation",
+  "ai_end_date": 1771251233922752,
+  "ai_id_tag": "08ff60bacc753b64279b7c16407f6751",
+  "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+  "ai_start_date": 1771251158375270,
+  "app_name": "swml app",
+  "call_answer_date": 1771251157074330,
+  "call_end_date": 1771251234939359,
+  "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+  "call_log": [
+    {
+      "content": "\n## Personality\n\nYou are Sigmond, the friendly order-taker at Holy Guacamole! Mexican drive-thru. You're warm, enthusiastic about the food, and help customers order efficiently. The customer has a screen showing their order, so NEVER read back the full order - they can see it! Just acknowledge items briefly as they're added. Keep responses concise and friendly. CRITICAL: When a customer orders multiple items in one sentence (like 'two tacos and a drink'), you MUST call add_item separately for EACH item. Never skip items! IMPORTANT MENU RULE: NEVER list specific menu items or say what drinks/options we have. If asked about menu items or options, say 'Please check the menu on your screen' or 'Everything we have is shown on the menu.' You can ONLY confirm what we have by attempting to add_item - let the function tell you if we have it or not.\n",
+      "role": "system",
+      "timestamp": 1771251158375270
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nWelcome the customer and start their order\n\n## Process\n- Welcome them warmly to Holy Guacamole!\n- Ask what they'd like to order\n- Mention combo meals save money\n- Listen for ALL items they mention\n- If they order multiple items (e.g. 'two tacos and a drink'), call add_item for EACH item separately\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCustomer has started ordering\n",
+      "role": "system-log",
+      "timestamp": 1771251158452420
+    },
+    {
+      "audio_latency": 983,
+      "content": " Welcome to Holy Guacamole! What would you like to order today? Remember, our combo meals can save you some money!",
+      "end_timestamp": 1771251165361030,
+      "latency": 321,
+      "role": "assistant",
+      "start_timestamp": 1771251159436462,
+      "timestamp": 1771251165361015,
+      "utterance_latency": 521
+    },
+    {
+      "confidence": 0.999023,
+      "content": "I want two beef tacos, chips, and salsa, and a small drink. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251170037202,
+      "role": "user",
+      "speaking_to_final_event": 3760,
+      "speaking_to_turn_detection": 3420,
+      "start_timestamp": 1771251166277019,
+      "timestamp": 1771251170043907,
+      "turn_detection_to_final_event": 340
+    },
+    {
+      "content": "Calling function: add_item({\"item_name\":\"beef taco\",\"quantity\":2})",
+      "role": "system-log",
+      "timestamp": 1771251171099747
+    },
+    {
+      "content": "",
+      "end_timestamp": 1771251172404323,
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"item_name\":\"beef taco\",\"quantity\":2}",
+            "name": "add_item"
+          },
+          "id": "c3c1324b-2f3b-43e4-ade4-8b449f7639f9",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "audio_latency": 1055,
+      "content": "Tool result below. Remain in the same language.\nAdded 2 Beef Tacos to your order. Your total is now seven dollars and sixty-eight cents.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251171099788,
+      "execution_latency": 1055,
+      "function_latency": 559,
+      "latency": 394,
+      "role": "tool",
+      "start_timestamp": 1771251170603189,
+      "timestamp": 1771251171099788,
+      "utterance_latency": 559
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nBuild the customer's order\n\n## IMPORTANT RULES\n- Current order has 2 items\n- Current total: $7.680000\n- 🔴 HIGHEST PRIORITY - Check for RESTART patterns FIRST:\n-   - 'I only want X', 'never mind just X', 'actually just X' = cancel_order() THEN add_item(X)\n-   - 'cancel', 'start over', 'never mind' = cancel_order()\n- When customer orders multiple items (e.g. 'two tacos and a drink'): CALL add_item FOR EACH ITEM SEPARATELY\n- CRITICAL: If customer says 'X and Y', you MUST call add_item twice - once for X and once for Y\n- ⚠️ CRITICAL PATTERN - Customer wants to RESTART with only one item:\n-   - TRIGGERS: 'never mind, I just want X', 'I only want X', 'forget everything, just X'\n-   - Also: 'actually just give me X', 'you know what, just X', 'scratch that, only X'\n-   - This means CLEAR ALL and keep ONLY the mentioned item\n-   - ACTION REQUIRED: 1) FIRST call cancel_order(), 2) THEN call add_item(X)\n-   - DO NOT use remove_item - MUST use cancel_order to clear everything\n- When customer explicitly wants to cancel entire order:\n-   - 'cancel my order', 'start over', 'never mind' (without mentioning another item)\n-   - ACTION: CALL cancel_order()\n- When customer wants to remove items:\n-   - 'remove one water/bottle': CALL remove_item('water', quantity=1)\n-   - 'remove 5 waters/bottles': CALL remove_item('water', quantity=5)\n-   - 'remove all the water/bottles': CALL remove_item('water', quantity=-1)\n-   - Default (no quantity specified): removes 1 item\n-   - IMPORTANT: 'bottles' usually means 'water' - use 'water' as item_name\n- When customer wants to change quantity: CALL modify_quantity function\n- When customer wants to see order: CALL review_order function\n- When customer is done: CALL finalize_order function\n- Acknowledge items briefly (don't read back the entire order)\n- 💡 COMBO UPGRADES: If add_item response includes 'Great news!' about a combo:\n-   - This means a money-saving combo is available\n-   - If customer says 'yes', 'sure', 'okay', 'upgrade' or agrees: CALL upgrade_to_combo\n-   - Determine combo type from the suggestion (taco, burrito, or both)\n-   - If response mentions TWO combos, use combo_type='both'\n- NEVER quote prices yourself - let the functions provide them\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCustomer says they're done ordering\n",
+      "role": "system-log",
+      "timestamp": 1771251171102291
+    },
+    {
+      "content": "Calling function: add_item({\"item_name\":\"chips\",\"quantity\":1})",
+      "role": "system-log",
+      "timestamp": 1771251172741085
+    },
+    {
+      "content": "",
+      "end_timestamp": 1771251174024597,
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"item_name\":\"chips\",\"quantity\":1}",
+            "name": "add_item"
+          },
+          "id": "3147052f-867c-4a45-901c-a03d6e45337a",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "audio_latency": 1638,
+      "content": "Tool result below. Remain in the same language.\nAdded Chips & Salsa to your order. Your total is now ten dollars and ninety-seven cents.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251172741125,
+      "execution_latency": 1638,
+      "function_latency": 1301,
+      "latency": 1106,
+      "role": "tool",
+      "start_timestamp": 1771251172404328,
+      "timestamp": 1771251172741125,
+      "utterance_latency": 1301
+    },
+    {
+      "content": "Calling function: add_item({\"item_name\":\"small drink\",\"quantity\":1})",
+      "role": "system-log",
+      "timestamp": 1771251174284566
+    },
+    {
+      "content": "",
+      "end_timestamp": 1771251185737251,
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"item_name\":\"small drink\",\"quantity\":1}",
+            "name": "add_item"
+          },
+          "id": "308c5d71-d907-49ca-b2d8-c51062433f5b",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "audio_latency": 1543,
+      "content": "Tool result below. Remain in the same language.\nAdded Small Drink to your order. Your total is now thirteen dollars and sixteen cents.\n\n💡 Great news! I can upgrade your 2 tacos, chips & salsa, and drink to a Taco Combo and save you one dollar and ninety-seven cents! Just say 'yes' to save money.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251174284608,
+      "execution_latency": 1543,
+      "function_latency": 1283,
+      "latency": 1028,
+      "role": "tool",
+      "start_timestamp": 1771251174024604,
+      "timestamp": 1771251174284608,
+      "utterance_latency": 1283
+    },
+    {
+      "audio_latency": 1351,
+      "content": " Your order is looking great! Would you like to upgrade to the Taco Combo and save a dollar and ninety-seven cents?",
+      "end_timestamp": 1771251181727185,
+      "latency": 653,
+      "role": "assistant",
+      "start_timestamp": 1771251175636439,
+      "timestamp": 1771251181727172,
+      "utterance_latency": 931
+    },
+    {
+      "confidence": 0.988525,
+      "content": "Sure. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251184657149,
+      "role": "user",
+      "speaking_to_final_event": 1220,
+      "speaking_to_turn_detection": 900,
+      "start_timestamp": 1771251183437085,
+      "timestamp": 1771251184666737,
+      "turn_detection_to_final_event": 320
+    },
+    {
+      "content": "Calling function: upgrade_to_combo({\"combo_type\":\"taco\"})",
+      "role": "system-log",
+      "timestamp": 1771251185874899
+    },
+    {
+      "content": "",
+      "end_timestamp": 1771251197052084,
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"combo_type\":\"taco\"}",
+            "name": "upgrade_to_combo"
+          },
+          "id": "edbf2229-42bf-42b4-9d93-7db22d3839f2",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "audio_latency": 1207,
+      "content": "Tool result below. Remain in the same language.\nGreat choice! I've upgraded your order to the Taco Combo and saved you one dollar and ninety-seven cents! Your new total is ten dollars and ninety-nine cents.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251185874951,
+      "execution_latency": 1207,
+      "function_latency": 1070,
+      "latency": 716,
+      "role": "tool",
+      "start_timestamp": 1771251185737259,
+      "timestamp": 1771251185874951,
+      "utterance_latency": 1070
+    },
+    {
+      "audio_latency": 1401,
+      "content": " Awesome! Your Taco Combo is all set, and your new total is ten dollars and ninety-nine cents. Would you like to finalize your order?",
+      "end_timestamp": 1771251194320023,
+      "latency": 700,
+      "role": "assistant",
+      "start_timestamp": 1771251187276556,
+      "timestamp": 1771251194320007,
+      "utterance_latency": 930
+    },
+    {
+      "confidence": 0.918457,
+      "content": "Yes. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251196577142,
+      "role": "user",
+      "speaking_to_final_event": 1819,
+      "speaking_to_turn_detection": 1499,
+      "start_timestamp": 1771251194757198,
+      "timestamp": 1771251196579305,
+      "turn_detection_to_final_event": 320
+    },
+    {
+      "content": "Calling function: finalize_order({})",
+      "role": "system-log",
+      "timestamp": 1771251197178790
+    },
+    {
+      "content": "",
+      "end_timestamp": 1771251205451343,
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{}",
+            "name": "finalize_order"
+          },
+          "id": "9cda53a8-b9c2-482d-a253-9f0eecb7529e",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "audio_latency": 599,
+      "content": "Tool result below. Remain in the same language.\nAlright, your total comes to ten dollars and ninety-nine cents. Does everything on the screen look correct?",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251197178854,
+      "execution_latency": 599,
+      "function_latency": 472,
+      "latency": 454,
+      "role": "tool",
+      "start_timestamp": 1771251197052091,
+      "timestamp": 1771251197178854,
+      "utterance_latency": 472
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nConfirm the complete order\n\n## Instructions\n- The customer can see their order on the screen\n- DO NOT read back the items - they can see them\n- Just ask if the order on screen looks correct\n- If they confirm, use process_payment\n- If they want changes, use add_item or remove_item\n- Only mention the total price, not individual items\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nOrder is confirmed as correct\n",
+      "role": "system-log",
+      "timestamp": 1771251197179974
+    },
+    {
+      "audio_latency": 1436,
+      "content": " Your total is ten dollars and ninety-nine cents. Does everything on the screen look correct?",
+      "end_timestamp": 1771251202911911,
+      "latency": 658,
+      "role": "assistant",
+      "start_timestamp": 1771251198616455,
+      "timestamp": 1771251202911895,
+      "utterance_latency": 976
+    },
+    {
+      "confidence": 0.999512,
+      "content": "Yes. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251204717160,
+      "role": "user",
+      "speaking_to_final_event": 1360,
+      "speaking_to_turn_detection": 1039,
+      "start_timestamp": 1771251203357106,
+      "timestamp": 1771251204720716,
+      "turn_detection_to_final_event": 320
+    },
+    {
+      "content": "Calling function: process_payment({})",
+      "role": "system-log",
+      "timestamp": 1771251205573497
+    },
+    {
+      "content": "",
+      "end_timestamp": 1771251218283439,
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{}",
+            "name": "process_payment"
+          },
+          "id": "461f4707-9e16-46b1-a9b6-b3e3c80a0bd2",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "audio_latency": 852,
+      "content": "Tool result below. Remain in the same language.\nPerfect! Your order number is five seven nine.\nYour total is ten dollars and ninety-nine cents.\n\nPlease pull forward to the first window to pay.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251205573543,
+      "execution_latency": 852,
+      "function_latency": 730,
+      "latency": 703,
+      "role": "tool",
+      "start_timestamp": 1771251205451352,
+      "timestamp": 1771251205573543,
+      "utterance_latency": 730
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nDirect customer to payment\n\n## Instructions\n- Order number: 579\n- Total: $10.990000\n- Tell them to pull forward to the first window\n- Thank them for their order\n- Call complete_order to finish\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nPayment instructions given\n",
+      "role": "system-log",
+      "timestamp": 1771251205574604
+    },
+    {
+      "audio_latency": 1241,
+      "content": " Perfect! Your order number is five seven nine, and your total is ten dollars and ninety-nine cents. Please pull forward to the first window to pay. Thank you for your order!",
+      "end_timestamp": 1771251215684134,
+      "latency": 543,
+      "role": "assistant",
+      "start_timestamp": 1771251206816484,
+      "timestamp": 1771251215684114,
+      "utterance_latency": 773
+    },
+    {
+      "confidence": 0.833496,
+      "content": "Thank you. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251217557150,
+      "role": "user",
+      "speaking_to_final_event": 2960,
+      "speaking_to_turn_detection": 2940,
+      "start_timestamp": 1771251214597091,
+      "timestamp": 1771251217559969,
+      "turn_detection_to_final_event": 20
+    },
+    {
+      "content": "Calling function: complete_order({})",
+      "role": "system-log",
+      "timestamp": 1771251218412574
+    },
+    {
+      "content": "",
+      "end_timestamp": 1771251233861163,
+      "role": "assistant",
+      "start_timestamp": 1771251229916591,
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{}",
+            "name": "complete_order"
+          },
+          "id": "83f71f1b-1870-4c22-81a0-9c45f32aa48e",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "audio_latency": 852,
+      "content": "Tool result below. Remain in the same language.\nThank you for your order! Order number five seven nine is complete.\nHave a wonderful day!",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251218412621,
+      "execution_latency": 852,
+      "function_latency": 723,
+      "latency": 701,
+      "role": "tool",
+      "start_timestamp": 1771251218283450,
+      "timestamp": 1771251218412621,
+      "utterance_latency": 723
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nOrder is complete\n\n## Final Steps\n- Thank the customer\n- Wish them a great day\n- If they want another order, use new_order\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\n\n",
+      "role": "system-log",
+      "timestamp": 1771251218413500
+    },
+    {
+      "audio_latency": 1802,
+      "content": " Thank you for your order! Order number five seven nine is complete. Have a wonderful day! If you'd like to place another order, just let me know!",
+      "end_timestamp": 1771251227245267,
+      "latency": 864,
+      "role": "assistant",
+      "start_timestamp": 1771251220216447,
+      "timestamp": 1771251227245246,
+      "utterance_latency": 1339
+    },
+    {
+      "confidence": 0.975586,
+      "content": "Goodbye. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251228877132,
+      "role": "user",
+      "speaking_to_final_event": 11300,
+      "speaking_to_turn_detection": 11280,
+      "start_timestamp": 1771251217577011,
+      "timestamp": 1771251228880390,
+      "turn_detection_to_final_event": 20
+    },
+    {
+      "audio_latency": 1036,
+      "content": " Thank you for stopping by! I'm ending the call now. Have a great day! .",
+      "end_timestamp": 1771251233861100,
+      "latency": 305,
+      "role": "assistant",
+      "start_timestamp": 1771251229916591,
+      "timestamp": 1771251233861080,
+      "utterance_latency": 594
+    },
+    {
+      "content": "The conversation has been ended by the assistant.\n",
+      "role": "system",
+      "timestamp": 1771251233861274
+    },
+    {
+      "content": "The user ordered a Taco Combo that includes two beef tacos, chips, salsa, and a small drink. They accepted an upgrade to the Taco Combo to save money. The total for the order came to ten dollars and ninety-nine cents. The order number was five seven nine, and the user was instructed to pull forward to the first window to pay. The conversation ended with a thank you from both parties.",
+      "role": "assistant",
+      "timestamp": 1771251235556803
+    }
+  ],
+  "call_start_date": 1771251156693240,
+  "caller_id_name": "",
+  "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+  "content_disposition": "agent.summary",
+  "content_type": "text/json",
+  "conversation_type": "voice",
+  "global_data": {
+    "caller_id_name": "",
+    "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+    "order_state": {
+      "item_count": 0,
+      "items": [],
+      "order_number": 579,
+      "subtotal": 0,
+      "tax": 0,
+      "total": 0
+    },
+    "restaurant": "Holy Guacamole!"
+  },
+  "post_prompt_data": {
+    "parsed": [],
+    "raw": "The user ordered a Taco Combo that includes two beef tacos, chips, salsa, and a small drink. They accepted an upgrade to the Taco Combo to save money. The total for the order came to ten dollars and ninety-nine cents. The order number was five seven nine, and the user was instructed to pull forward to the first window to pay. The conversation ended with a thank you from both parties.",
+    "substituted": "The user ordered a Taco Combo that includes two beef tacos, chips, salsa, and a small drink. They accepted an upgrade to the Taco Combo to save money. The total for the order came to ten dollars and ninety-nine cents. The order number was five seven nine, and the user was instructed to pull forward to the first window to pay. The conversation ended with a thank you from both parties."
+  },
+  "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+  "raw_call_log": [
+    {
+      "content": "\n## Personality\n\nYou are Sigmond, the friendly order-taker at Holy Guacamole! Mexican drive-thru. You're warm, enthusiastic about the food, and help customers order efficiently. The customer has a screen showing their order, so NEVER read back the full order - they can see it! Just acknowledge items briefly as they're added. Keep responses concise and friendly. CRITICAL: When a customer orders multiple items in one sentence (like 'two tacos and a drink'), you MUST call add_item separately for EACH item. Never skip items! IMPORTANT MENU RULE: NEVER list specific menu items or say what drinks/options we have. If asked about menu items or options, say 'Please check the menu on your screen' or 'Everything we have is shown on the menu.' You can ONLY confirm what we have by attempting to add_item - let the function tell you if we have it or not.\n",
+      "role": "system",
+      "timestamp": 1771251158375270
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nWelcome the customer and start their order\n\n## Process\n- Welcome them warmly to Holy Guacamole!\n- Ask what they'd like to order\n- Mention combo meals save money\n- Listen for ALL items they mention\n- If they order multiple items (e.g. 'two tacos and a drink'), call add_item for EACH item separately\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCustomer has started ordering\n",
+      "role": "system-log",
+      "timestamp": 1771251158452420
+    },
+    {
+      "audio_latency": 983,
+      "content": " Welcome to Holy Guacamole! What would you like to order today? Remember, our combo meals can save you some money!",
+      "latency": 321,
+      "role": "assistant",
+      "timestamp": 1771251165361015,
+      "utterance_latency": 521
+    },
+    {
+      "confidence": 0.999023,
+      "content": "I want two beef tacos, chips, and salsa, and a small drink. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251170037202,
+      "role": "user",
+      "speaking_to_final_event": 3760,
+      "speaking_to_turn_detection": 3420,
+      "start_timestamp": 1771251166277019,
+      "timestamp": 1771251170043907,
+      "turn_detection_to_final_event": 340
+    },
+    {
+      "content": "Calling function: add_item({\"item_name\":\"beef taco\",\"quantity\":2})",
+      "role": "system-log",
+      "timestamp": 1771251171099747
+    },
+    {
+      "audio_latency": 1055,
+      "content": "Tool result below. Remain in the same language.\nAdded 2 Beef Tacos to your order. Your total is now seven dollars and sixty-eight cents.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251171099788,
+      "execution_latency": 1055,
+      "function_latency": 559,
+      "latency": 394,
+      "role": "tool",
+      "start_timestamp": 1771251170603189,
+      "timestamp": 1771251171099788,
+      "utterance_latency": 559
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nBuild the customer's order\n\n## IMPORTANT RULES\n- Current order has 2 items\n- Current total: $7.680000\n- 🔴 HIGHEST PRIORITY - Check for RESTART patterns FIRST:\n-   - 'I only want X', 'never mind just X', 'actually just X' = cancel_order() THEN add_item(X)\n-   - 'cancel', 'start over', 'never mind' = cancel_order()\n- When customer orders multiple items (e.g. 'two tacos and a drink'): CALL add_item FOR EACH ITEM SEPARATELY\n- CRITICAL: If customer says 'X and Y', you MUST call add_item twice - once for X and once for Y\n- ⚠️ CRITICAL PATTERN - Customer wants to RESTART with only one item:\n-   - TRIGGERS: 'never mind, I just want X', 'I only want X', 'forget everything, just X'\n-   - Also: 'actually just give me X', 'you know what, just X', 'scratch that, only X'\n-   - This means CLEAR ALL and keep ONLY the mentioned item\n-   - ACTION REQUIRED: 1) FIRST call cancel_order(), 2) THEN call add_item(X)\n-   - DO NOT use remove_item - MUST use cancel_order to clear everything\n- When customer explicitly wants to cancel entire order:\n-   - 'cancel my order', 'start over', 'never mind' (without mentioning another item)\n-   - ACTION: CALL cancel_order()\n- When customer wants to remove items:\n-   - 'remove one water/bottle': CALL remove_item('water', quantity=1)\n-   - 'remove 5 waters/bottles': CALL remove_item('water', quantity=5)\n-   - 'remove all the water/bottles': CALL remove_item('water', quantity=-1)\n-   - Default (no quantity specified): removes 1 item\n-   - IMPORTANT: 'bottles' usually means 'water' - use 'water' as item_name\n- When customer wants to change quantity: CALL modify_quantity function\n- When customer wants to see order: CALL review_order function\n- When customer is done: CALL finalize_order function\n- Acknowledge items briefly (don't read back the entire order)\n- 💡 COMBO UPGRADES: If add_item response includes 'Great news!' about a combo:\n-   - This means a money-saving combo is available\n-   - If customer says 'yes', 'sure', 'okay', 'upgrade' or agrees: CALL upgrade_to_combo\n-   - Determine combo type from the suggestion (taco, burrito, or both)\n-   - If response mentions TWO combos, use combo_type='both'\n- NEVER quote prices yourself - let the functions provide them\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCustomer says they're done ordering\n",
+      "role": "system-log",
+      "timestamp": 1771251171102291
+    },
+    {
+      "content": "Calling function: add_item({\"item_name\":\"chips\",\"quantity\":1})",
+      "role": "system-log",
+      "timestamp": 1771251172741085
+    },
+    {
+      "audio_latency": 1638,
+      "content": "Tool result below. Remain in the same language.\nAdded Chips & Salsa to your order. Your total is now ten dollars and ninety-seven cents.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251172741125,
+      "execution_latency": 1638,
+      "function_latency": 1301,
+      "latency": 1106,
+      "role": "tool",
+      "start_timestamp": 1771251172404328,
+      "timestamp": 1771251172741125,
+      "utterance_latency": 1301
+    },
+    {
+      "content": "Calling function: add_item({\"item_name\":\"small drink\",\"quantity\":1})",
+      "role": "system-log",
+      "timestamp": 1771251174284566
+    },
+    {
+      "audio_latency": 1543,
+      "content": "Tool result below. Remain in the same language.\nAdded Small Drink to your order. Your total is now thirteen dollars and sixteen cents.\n\n💡 Great news! I can upgrade your 2 tacos, chips & salsa, and drink to a Taco Combo and save you one dollar and ninety-seven cents! Just say 'yes' to save money.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251174284608,
+      "execution_latency": 1543,
+      "function_latency": 1283,
+      "latency": 1028,
+      "role": "tool",
+      "start_timestamp": 1771251174024604,
+      "timestamp": 1771251174284608,
+      "utterance_latency": 1283
+    },
+    {
+      "audio_latency": 1351,
+      "content": " Your order is looking great! Would you like to upgrade to the Taco Combo and save a dollar and ninety-seven cents?",
+      "latency": 653,
+      "role": "assistant",
+      "timestamp": 1771251181727172,
+      "utterance_latency": 931
+    },
+    {
+      "confidence": 0.988525,
+      "content": "Sure. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251184657149,
+      "role": "user",
+      "speaking_to_final_event": 1220,
+      "speaking_to_turn_detection": 900,
+      "start_timestamp": 1771251183437085,
+      "timestamp": 1771251184666737,
+      "turn_detection_to_final_event": 320
+    },
+    {
+      "content": "Calling function: upgrade_to_combo({\"combo_type\":\"taco\"})",
+      "role": "system-log",
+      "timestamp": 1771251185874899
+    },
+    {
+      "audio_latency": 1207,
+      "content": "Tool result below. Remain in the same language.\nGreat choice! I've upgraded your order to the Taco Combo and saved you one dollar and ninety-seven cents! Your new total is ten dollars and ninety-nine cents.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251185874951,
+      "execution_latency": 1207,
+      "function_latency": 1070,
+      "latency": 716,
+      "role": "tool",
+      "start_timestamp": 1771251185737259,
+      "timestamp": 1771251185874951,
+      "utterance_latency": 1070
+    },
+    {
+      "audio_latency": 1401,
+      "content": " Awesome! Your Taco Combo is all set, and your new total is ten dollars and ninety-nine cents. Would you like to finalize your order?",
+      "latency": 700,
+      "role": "assistant",
+      "timestamp": 1771251194320007,
+      "utterance_latency": 930
+    },
+    {
+      "confidence": 0.918457,
+      "content": "Yes. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251196577142,
+      "role": "user",
+      "speaking_to_final_event": 1819,
+      "speaking_to_turn_detection": 1499,
+      "start_timestamp": 1771251194757198,
+      "timestamp": 1771251196579305,
+      "turn_detection_to_final_event": 320
+    },
+    {
+      "content": "Calling function: finalize_order({})",
+      "role": "system-log",
+      "timestamp": 1771251197178790
+    },
+    {
+      "audio_latency": 599,
+      "content": "Tool result below. Remain in the same language.\nAlright, your total comes to ten dollars and ninety-nine cents. Does everything on the screen look correct?",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251197178854,
+      "execution_latency": 599,
+      "function_latency": 472,
+      "latency": 454,
+      "role": "tool",
+      "start_timestamp": 1771251197052091,
+      "timestamp": 1771251197178854,
+      "utterance_latency": 472
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nConfirm the complete order\n\n## Instructions\n- The customer can see their order on the screen\n- DO NOT read back the items - they can see them\n- Just ask if the order on screen looks correct\n- If they confirm, use process_payment\n- If they want changes, use add_item or remove_item\n- Only mention the total price, not individual items\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nOrder is confirmed as correct\n",
+      "role": "system-log",
+      "timestamp": 1771251197179974
+    },
+    {
+      "audio_latency": 1436,
+      "content": " Your total is ten dollars and ninety-nine cents. Does everything on the screen look correct?",
+      "latency": 658,
+      "role": "assistant",
+      "timestamp": 1771251202911895,
+      "utterance_latency": 976
+    },
+    {
+      "confidence": 0.999512,
+      "content": "Yes. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251204717160,
+      "role": "user",
+      "speaking_to_final_event": 1360,
+      "speaking_to_turn_detection": 1039,
+      "start_timestamp": 1771251203357106,
+      "timestamp": 1771251204720716,
+      "turn_detection_to_final_event": 320
+    },
+    {
+      "content": "Calling function: process_payment({})",
+      "role": "system-log",
+      "timestamp": 1771251205573497
+    },
+    {
+      "audio_latency": 852,
+      "content": "Tool result below. Remain in the same language.\nPerfect! Your order number is five seven nine.\nYour total is ten dollars and ninety-nine cents.\n\nPlease pull forward to the first window to pay.",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251205573543,
+      "execution_latency": 852,
+      "function_latency": 730,
+      "latency": 703,
+      "role": "tool",
+      "start_timestamp": 1771251205451352,
+      "timestamp": 1771251205573543,
+      "utterance_latency": 730
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nDirect customer to payment\n\n## Instructions\n- Order number: 579\n- Total: $10.990000\n- Tell them to pull forward to the first window\n- Thank them for their order\n- Call complete_order to finish\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nPayment instructions given\n",
+      "role": "system-log",
+      "timestamp": 1771251205574604
+    },
+    {
+      "audio_latency": 1241,
+      "content": " Perfect! Your order number is five seven nine, and your total is ten dollars and ninety-nine cents. Please pull forward to the first window to pay. Thank you for your order!",
+      "latency": 543,
+      "role": "assistant",
+      "timestamp": 1771251215684114,
+      "utterance_latency": 773
+    },
+    {
+      "confidence": 0.833496,
+      "content": "Thank you. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251217557150,
+      "role": "user",
+      "speaking_to_final_event": 2960,
+      "speaking_to_turn_detection": 2940,
+      "start_timestamp": 1771251214597091,
+      "timestamp": 1771251217559969,
+      "turn_detection_to_final_event": 20
+    },
+    {
+      "content": "Calling function: complete_order({})",
+      "role": "system-log",
+      "timestamp": 1771251218412574
+    },
+    {
+      "audio_latency": 852,
+      "content": "Tool result below. Remain in the same language.\nThank you for your order! Order number five seven nine is complete.\nHave a wonderful day!",
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "end_timestamp": 1771251218412621,
+      "execution_latency": 852,
+      "function_latency": 723,
+      "latency": 701,
+      "role": "tool",
+      "start_timestamp": 1771251218283450,
+      "timestamp": 1771251218412621,
+      "utterance_latency": 723
+    },
+    {
+      "content": "\n## Goal\n\nTake accurate food orders efficiently while providing excellent customer service.\n\n\n## Instructions to complete the Current Step\n## Current Task\nOrder is complete\n\n## Final Steps\n- Thank the customer\n- Wish them a great day\n- If they want another order, use new_order\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\n\n",
+      "role": "system-log",
+      "timestamp": 1771251218413500
+    },
+    {
+      "audio_latency": 1802,
+      "content": " Thank you for your order! Order number five seven nine is complete. Have a wonderful day! If you'd like to place another order, just let me know!",
+      "latency": 864,
+      "role": "assistant",
+      "timestamp": 1771251227245246,
+      "utterance_latency": 1339
+    },
+    {
+      "confidence": 0.975586,
+      "content": "Goodbye. ",
+      "content_type": "Detected Speech",
+      "end_timestamp": 1771251228877132,
+      "role": "user",
+      "speaking_to_final_event": 11300,
+      "speaking_to_turn_detection": 11280,
+      "start_timestamp": 1771251217577011,
+      "timestamp": 1771251228880390,
+      "turn_detection_to_final_event": 20
+    },
+    {
+      "audio_latency": 1036,
+      "content": " Thank you for stopping by! I'm ending the call now. Have a great day! .",
+      "latency": 305,
+      "role": "assistant",
+      "timestamp": 1771251233861080,
+      "utterance_latency": 594
+    },
+    {
+      "content": "The conversation has been ended by the assistant.\n",
+      "role": "system",
+      "timestamp": 1771251233861274
+    },
+    {
+      "content": "The user ordered a Taco Combo that includes two beef tacos, chips, salsa, and a small drink. They accepted an upgrade to the Taco Combo to save money. The total for the order came to ten dollars and ninety-nine cents. The order number was five seven nine, and the user was instructed to pull forward to the first window to pay. The conversation ended with a thank you from both parties.",
+      "role": "assistant",
+      "timestamp": 1771251235556803
+    }
+  ],
+  "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+  "swaig_log": [
+    {
+      "active_count": "endless",
+      "command_arg": "{\"item_name\":\"beef taco\",\"quantity\":2}",
+      "command_name": "add_item",
+      "epoch_time": 1771251170,
+      "post_data": {
+        "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+        "app_name": "swml app",
+        "argument": {
+          "parsed": [
+            {
+              "item_name": "beef taco",
+              "quantity": 2
+            }
+          ],
+          "raw": "{\"item_name\":\"beef taco\",\"quantity\":2}"
+        },
+        "argument_desc": {
+          "properties": {
+            "item_name": {
+              "description": "Name of the menu item",
+              "type": "string"
+            },
+            "quantity": {
+              "description": "How many to add",
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "item_name"
+          ],
+          "type": "object"
+        },
+        "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+        "caller_id_name": "",
+        "caller_id_num": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_disposition": "SWAIG Function",
+        "content_type": "text/swaig",
+        "description": "Add an item to the order",
+        "function": "add_item",
+        "global_data": {
+          "caller_id_name": "",
+          "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data": {
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data_token": "2c4f5952b5b59430a0fa83ea00a00a90",
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "version": "2.0"
+      },
+      "post_response": {
+        "action": [
+          {
+            "set_global_data": {
+              "caller_id_name": "",
+              "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+              "order_state": {
+                "item_count": 2,
+                "items": [
+                  {
+                    "description": "Seasoned ground beef, lettuce, cheese, and salsa in a crispy shell",
+                    "name": "Beef Taco",
+                    "price": 3.49,
+                    "quantity": 2,
+                    "sku": "T001",
+                    "total": 6.98
+                  }
+                ],
+                "order_number": null,
+                "subtotal": 6.98,
+                "tax": 0.7,
+                "total": 7.68
+              },
+              "restaurant": "Holy Guacamole!"
+            }
+          },
+          {
+            "SWML": {
+              "sections": {
+                "main": [
+                  {
+                    "user_event": {
+                      "event": {
+                        "item": {
+                          "description": "Seasoned ground beef, lettuce, cheese, and salsa in a crispy shell",
+                          "name": "Beef Taco",
+                          "price": 3.49,
+                          "quantity": 2,
+                          "sku": "T001",
+                          "total": 6.98
+                        },
+                        "item_count": 2,
+                        "order_total": 7.68,
+                        "subtotal": 6.98,
+                        "tax": 0.7,
+                        "type": "item_added"
+                      }
+                    }
+                  }
+                ]
+              },
+              "version": "1.0.0"
+            }
+          },
+          {
+            "change_step": "taking_order"
+          }
+        ],
+        "response": "Added 2 Beef Tacos to your order. Your total is now seven dollars and sixty-eight cents."
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=NDY0YmJlNzEtM2U0YS00NjQ1LTk0OGUtZjY4MzA0ZjMzNzVmLmFkZF9pdGVtLjE3NzEyNTQ3NTYuZjU5MGUwNTQuZGFlZTE0NWU3Mzg3MmYzOQ=="
+    },
+    {
+      "active_count": "endless",
+      "command_arg": "{\"item_name\":\"chips\",\"quantity\":1}",
+      "command_name": "add_item",
+      "epoch_time": 1771251172,
+      "post_data": {
+        "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+        "app_name": "swml app",
+        "argument": {
+          "parsed": [
+            {
+              "item_name": "chips",
+              "quantity": 1
+            }
+          ],
+          "raw": "{\"item_name\":\"chips\",\"quantity\":1}"
+        },
+        "argument_desc": {
+          "properties": {
+            "item_name": {
+              "description": "Name of the menu item",
+              "type": "string"
+            },
+            "quantity": {
+              "description": "How many to add",
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "item_name"
+          ],
+          "type": "object"
+        },
+        "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+        "caller_id_name": "",
+        "caller_id_num": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_disposition": "SWAIG Function",
+        "content_type": "text/swaig",
+        "description": "Add an item to the order",
+        "function": "add_item",
+        "global_data": {
+          "caller_id_name": "",
+          "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+          "order_state": {
+            "item_count": 2,
+            "items": [
+              {
+                "description": "Seasoned ground beef, lettuce, cheese, and salsa in a crispy shell",
+                "name": "Beef Taco",
+                "price": 3.49,
+                "quantity": 2,
+                "sku": "T001",
+                "total": 6.98
+              }
+            ],
+            "order_number": null,
+            "subtotal": 6.98,
+            "tax": 0.7,
+            "total": 7.68
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data": {
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data_token": "2c4f5952b5b59430a0fa83ea00a00a90",
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "version": "2.0"
+      },
+      "post_response": {
+        "action": [
+          {
+            "set_global_data": {
+              "caller_id_name": "",
+              "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+              "order_state": {
+                "item_count": 3,
+                "items": [
+                  {
+                    "description": "Seasoned ground beef, lettuce, cheese, and salsa in a crispy shell",
+                    "name": "Beef Taco",
+                    "price": 3.49,
+                    "quantity": 2,
+                    "sku": "T001",
+                    "total": 6.98
+                  },
+                  {
+                    "description": "Fresh tortilla chips with our house-made salsa",
+                    "name": "Chips & Salsa",
+                    "price": 2.99,
+                    "quantity": 1,
+                    "sku": "S001",
+                    "total": 2.99
+                  }
+                ],
+                "order_number": null,
+                "subtotal": 9.97,
+                "tax": 1,
+                "total": 10.97
+              },
+              "restaurant": "Holy Guacamole!"
+            }
+          },
+          {
+            "SWML": {
+              "sections": {
+                "main": [
+                  {
+                    "user_event": {
+                      "event": {
+                        "item": {
+                          "description": "Fresh tortilla chips with our house-made salsa",
+                          "name": "Chips & Salsa",
+                          "price": 2.99,
+                          "quantity": 1,
+                          "sku": "S001",
+                          "total": 2.99
+                        },
+                        "item_count": 3,
+                        "order_total": 10.97,
+                        "subtotal": 9.97,
+                        "tax": 1,
+                        "type": "item_added"
+                      }
+                    }
+                  }
+                ]
+              },
+              "version": "1.0.0"
+            }
+          },
+          {
+            "change_step": "taking_order"
+          }
+        ],
+        "response": "Added Chips & Salsa to your order. Your total is now ten dollars and ninety-seven cents."
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=NDY0YmJlNzEtM2U0YS00NjQ1LTk0OGUtZjY4MzA0ZjMzNzVmLmFkZF9pdGVtLjE3NzEyNTQ3NTYuZjU5MGUwNTQuZGFlZTE0NWU3Mzg3MmYzOQ=="
+    },
+    {
+      "active_count": "endless",
+      "command_arg": "{\"item_name\":\"small drink\",\"quantity\":1}",
+      "command_name": "add_item",
+      "epoch_time": 1771251174,
+      "post_data": {
+        "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+        "app_name": "swml app",
+        "argument": {
+          "parsed": [
+            {
+              "item_name": "small drink",
+              "quantity": 1
+            }
+          ],
+          "raw": "{\"item_name\":\"small drink\",\"quantity\":1}"
+        },
+        "argument_desc": {
+          "properties": {
+            "item_name": {
+              "description": "Name of the menu item",
+              "type": "string"
+            },
+            "quantity": {
+              "description": "How many to add",
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "item_name"
+          ],
+          "type": "object"
+        },
+        "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+        "caller_id_name": "",
+        "caller_id_num": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_disposition": "SWAIG Function",
+        "content_type": "text/swaig",
+        "description": "Add an item to the order",
+        "function": "add_item",
+        "global_data": {
+          "caller_id_name": "",
+          "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+          "order_state": {
+            "item_count": 3,
+            "items": [
+              {
+                "description": "Seasoned ground beef, lettuce, cheese, and salsa in a crispy shell",
+                "name": "Beef Taco",
+                "price": 3.49,
+                "quantity": 2,
+                "sku": "T001",
+                "total": 6.98
+              },
+              {
+                "description": "Fresh tortilla chips with our house-made salsa",
+                "name": "Chips & Salsa",
+                "price": 2.99,
+                "quantity": 1,
+                "sku": "S001",
+                "total": 2.99
+              }
+            ],
+            "order_number": null,
+            "subtotal": 9.97,
+            "tax": 1,
+            "total": 10.97
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data": {
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data_token": "2c4f5952b5b59430a0fa83ea00a00a90",
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "version": "2.0"
+      },
+      "post_response": {
+        "action": [
+          {
+            "set_global_data": {
+              "caller_id_name": "",
+              "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+              "order_state": {
+                "item_count": 4,
+                "items": [
+                  {
+                    "description": "Seasoned ground beef, lettuce, cheese, and salsa in a crispy shell",
+                    "name": "Beef Taco",
+                    "price": 3.49,
+                    "quantity": 2,
+                    "sku": "T001",
+                    "total": 6.98
+                  },
+                  {
+                    "description": "Fresh tortilla chips with our house-made salsa",
+                    "name": "Chips & Salsa",
+                    "price": 2.99,
+                    "quantity": 1,
+                    "sku": "S001",
+                    "total": 2.99
+                  },
+                  {
+                    "description": "16oz fountain drink of your choice",
+                    "name": "Small Drink",
+                    "price": 1.99,
+                    "quantity": 1,
+                    "sku": "D001",
+                    "total": 1.99
+                  }
+                ],
+                "order_number": null,
+                "subtotal": 11.96,
+                "tax": 1.2,
+                "total": 13.16
+              },
+              "restaurant": "Holy Guacamole!"
+            }
+          },
+          {
+            "SWML": {
+              "sections": {
+                "main": [
+                  {
+                    "user_event": {
+                      "event": {
+                        "item": {
+                          "description": "16oz fountain drink of your choice",
+                          "name": "Small Drink",
+                          "price": 1.99,
+                          "quantity": 1,
+                          "sku": "D001",
+                          "total": 1.99
+                        },
+                        "item_count": 4,
+                        "order_total": 13.16,
+                        "subtotal": 11.96,
+                        "tax": 1.2,
+                        "type": "item_added"
+                      }
+                    }
+                  }
+                ]
+              },
+              "version": "1.0.0"
+            }
+          },
+          {
+            "change_step": "taking_order"
+          }
+        ],
+        "response": "Added Small Drink to your order. Your total is now thirteen dollars and sixteen cents.\n\n💡 Great news! I can upgrade your 2 tacos, chips & salsa, and drink to a Taco Combo and save you one dollar and ninety-seven cents! Just say 'yes' to save money."
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=NDY0YmJlNzEtM2U0YS00NjQ1LTk0OGUtZjY4MzA0ZjMzNzVmLmFkZF9pdGVtLjE3NzEyNTQ3NTYuZjU5MGUwNTQuZGFlZTE0NWU3Mzg3MmYzOQ=="
+    },
+    {
+      "active_count": "endless",
+      "command_arg": "{\"combo_type\":\"taco\"}",
+      "command_name": "upgrade_to_combo",
+      "epoch_time": 1771251185,
+      "post_data": {
+        "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+        "app_name": "swml app",
+        "argument": {
+          "parsed": [
+            {
+              "combo_type": "taco"
+            }
+          ],
+          "raw": "{\"combo_type\":\"taco\"}"
+        },
+        "argument_desc": {
+          "properties": {
+            "combo_type": {
+              "description": "Type of combo: 'taco', 'burrito', or 'both'",
+              "type": "string"
+            }
+          },
+          "required": [
+            "combo_type"
+          ],
+          "type": "object"
+        },
+        "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+        "caller_id_name": "",
+        "caller_id_num": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_disposition": "SWAIG Function",
+        "content_type": "text/swaig",
+        "description": "Upgrade individual items to a combo meal",
+        "function": "upgrade_to_combo",
+        "global_data": {
+          "caller_id_name": "",
+          "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+          "order_state": {
+            "item_count": 4,
+            "items": [
+              {
+                "description": "Seasoned ground beef, lettuce, cheese, and salsa in a crispy shell",
+                "name": "Beef Taco",
+                "price": 3.49,
+                "quantity": 2,
+                "sku": "T001",
+                "total": 6.98
+              },
+              {
+                "description": "Fresh tortilla chips with our house-made salsa",
+                "name": "Chips & Salsa",
+                "price": 2.99,
+                "quantity": 1,
+                "sku": "S001",
+                "total": 2.99
+              },
+              {
+                "description": "16oz fountain drink of your choice",
+                "name": "Small Drink",
+                "price": 1.99,
+                "quantity": 1,
+                "sku": "D001",
+                "total": 1.99
+              }
+            ],
+            "order_number": null,
+            "subtotal": 11.96,
+            "tax": 1.2,
+            "total": 13.16
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data": {
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data_token": "f0744dc10cb021d1bef6b5e50945ce39",
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "version": "2.0"
+      },
+      "post_response": {
+        "action": [
+          {
+            "set_global_data": {
+              "caller_id_name": "",
+              "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+              "order_state": {
+                "item_count": 1,
+                "items": [
+                  {
+                    "description": "2 tacos (your choice) + chips & salsa + small drink",
+                    "name": "Taco Combo",
+                    "price": 9.99,
+                    "quantity": 1,
+                    "sku": "C001",
+                    "total": 9.99
+                  }
+                ],
+                "order_number": null,
+                "subtotal": 9.99,
+                "tax": 1,
+                "total": 10.99
+              },
+              "restaurant": "Holy Guacamole!"
+            }
+          },
+          {
+            "user_event": {
+              "added_combo": {
+                "description": "2 tacos (your choice) + chips & salsa + small drink",
+                "name": "Taco Combo",
+                "price": 9.99,
+                "quantity": 1,
+                "sku": "C001",
+                "total": 9.99
+              },
+              "item_count": 1,
+              "items": [
+                {
+                  "description": "2 tacos (your choice) + chips & salsa + small drink",
+                  "name": "Taco Combo",
+                  "price": 9.99,
+                  "quantity": 1,
+                  "sku": "C001",
+                  "total": 9.99
+                }
+              ],
+              "removed_items": [
+                {
+                  "name": "Beef Taco",
+                  "quantity": 2
+                },
+                {
+                  "name": "Chips & Salsa",
+                  "quantity": 1
+                },
+                {
+                  "name": "Small Drink",
+                  "quantity": 1
+                }
+              ],
+              "savings": 1.97,
+              "subtotal": 9.99,
+              "tax": 1,
+              "total": 10.99,
+              "type": "combo_upgraded"
+            }
+          }
+        ],
+        "response": "Great choice! I've upgraded your order to the Taco Combo and saved you one dollar and ninety-seven cents! Your new total is ten dollars and ninety-nine cents."
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=NDY0YmJlNzEtM2U0YS00NjQ1LTk0OGUtZjY4MzA0ZjMzNzVmLnVwZ3JhZGVfdG9fY29tYm8uMTc3MTI1NDc1Ni44ZWI5N2FiYy4wZDYwMTc1MDcwNTk5ODQ3"
+    },
+    {
+      "active_count": "endless",
+      "command_arg": "{}",
+      "command_name": "finalize_order",
+      "epoch_time": 1771251197,
+      "post_data": {
+        "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+        "app_name": "swml app",
+        "argument": {
+          "parsed": [
+            {}
+          ],
+          "raw": "{}"
+        },
+        "argument_desc": {
+          "properties": {},
+          "required": [],
+          "type": "object"
+        },
+        "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+        "caller_id_name": "",
+        "caller_id_num": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_disposition": "SWAIG Function",
+        "content_type": "text/swaig",
+        "description": "Finalize order and move to confirmation",
+        "function": "finalize_order",
+        "global_data": {
+          "caller_id_name": "",
+          "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+          "order_state": {
+            "item_count": 1,
+            "items": [
+              {
+                "description": "2 tacos (your choice) + chips & salsa + small drink",
+                "name": "Taco Combo",
+                "price": 9.99,
+                "quantity": 1,
+                "sku": "C001",
+                "total": 9.99
+              }
+            ],
+            "order_number": null,
+            "subtotal": 9.99,
+            "tax": 1,
+            "total": 10.99
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data": {
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data_token": "36cb795ae0e53412dcb5872c584e04e4",
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "version": "2.0"
+      },
+      "post_response": {
+        "action": [
+          {
+            "set_global_data": {
+              "caller_id_name": "",
+              "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+              "order_state": {
+                "item_count": 1,
+                "items": [
+                  {
+                    "description": "2 tacos (your choice) + chips & salsa + small drink",
+                    "name": "Taco Combo",
+                    "price": 9.99,
+                    "quantity": 1,
+                    "sku": "C001",
+                    "total": 9.99
+                  }
+                ],
+                "order_number": null,
+                "subtotal": 9.99,
+                "tax": 1,
+                "total": 10.99
+              },
+              "restaurant": "Holy Guacamole!"
+            }
+          },
+          {
+            "change_step": "confirming_order"
+          },
+          {
+            "user_event": {
+              "item_count": 1,
+              "items": [
+                {
+                  "description": "2 tacos (your choice) + chips & salsa + small drink",
+                  "name": "Taco Combo",
+                  "price": 9.99,
+                  "quantity": 1,
+                  "sku": "C001",
+                  "total": 9.99
+                }
+              ],
+              "subtotal": 9.99,
+              "tax": 1,
+              "total": 10.99,
+              "type": "order_finalized"
+            }
+          }
+        ],
+        "response": "Alright, your total comes to ten dollars and ninety-nine cents. Does everything on the screen look correct?"
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=NDY0YmJlNzEtM2U0YS00NjQ1LTk0OGUtZjY4MzA0ZjMzNzVmLmZpbmFsaXplX29yZGVyLjE3NzEyNTQ3NTYuZDRmOTBiNjEuZjlkZGYzNzY0NDRhZTNmMQ=="
+    },
+    {
+      "active_count": "endless",
+      "command_arg": "{}",
+      "command_name": "process_payment",
+      "epoch_time": 1771251205,
+      "post_data": {
+        "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+        "app_name": "swml app",
+        "argument": {
+          "parsed": [
+            {}
+          ],
+          "raw": "{}"
+        },
+        "argument_desc": {
+          "properties": {},
+          "required": [],
+          "type": "object"
+        },
+        "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+        "caller_id_name": "",
+        "caller_id_num": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_disposition": "SWAIG Function",
+        "content_type": "text/swaig",
+        "description": "Process the payment",
+        "function": "process_payment",
+        "global_data": {
+          "caller_id_name": "",
+          "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+          "order_state": {
+            "item_count": 1,
+            "items": [
+              {
+                "description": "2 tacos (your choice) + chips & salsa + small drink",
+                "name": "Taco Combo",
+                "price": 9.99,
+                "quantity": 1,
+                "sku": "C001",
+                "total": 9.99
+              }
+            ],
+            "order_number": null,
+            "subtotal": 9.99,
+            "tax": 1,
+            "total": 10.99
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data": {
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data_token": "de288f4c863780c4b5c343b72180d08a",
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "version": "2.0"
+      },
+      "post_response": {
+        "action": [
+          {
+            "set_global_data": {
+              "caller_id_name": "",
+              "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+              "order_state": {
+                "item_count": 1,
+                "items": [
+                  {
+                    "description": "2 tacos (your choice) + chips & salsa + small drink",
+                    "name": "Taco Combo",
+                    "price": 9.99,
+                    "quantity": 1,
+                    "sku": "C001",
+                    "total": 9.99
+                  }
+                ],
+                "order_number": 579,
+                "subtotal": 9.99,
+                "tax": 1,
+                "total": 10.99
+              },
+              "restaurant": "Holy Guacamole!"
+            }
+          },
+          {
+            "change_step": "payment_processing"
+          },
+          {
+            "user_event": {
+              "order_number": 579,
+              "total": 10.99,
+              "type": "payment_started"
+            }
+          }
+        ],
+        "response": "Perfect! Your order number is five seven nine.\nYour total is ten dollars and ninety-nine cents.\n\nPlease pull forward to the first window to pay."
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=NDY0YmJlNzEtM2U0YS00NjQ1LTk0OGUtZjY4MzA0ZjMzNzVmLnByb2Nlc3NfcGF5bWVudC4xNzcxMjU0NzU2LjQ2YjdkZjkyLmM5MjQzMmQ5NjRmNzNmYTM="
+    },
+    {
+      "active_count": "endless",
+      "command_arg": "{}",
+      "command_name": "complete_order",
+      "epoch_time": 1771251218,
+      "post_data": {
+        "ai_session_id": "8fd797a7-2e5a-482d-a7f3-b18a04a47d91",
+        "app_name": "swml app",
+        "argument": {
+          "parsed": [
+            {}
+          ],
+          "raw": "{}"
+        },
+        "argument_desc": {
+          "properties": {},
+          "required": [],
+          "type": "object"
+        },
+        "call_id": "464bbe71-3e4a-4645-948e-f68304f3375f",
+        "caller_id_name": "",
+        "caller_id_num": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_disposition": "SWAIG Function",
+        "content_type": "text/swaig",
+        "description": "Complete the order",
+        "function": "complete_order",
+        "global_data": {
+          "caller_id_name": "",
+          "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+          "order_state": {
+            "item_count": 1,
+            "items": [
+              {
+                "description": "2 tacos (your choice) + chips & salsa + small drink",
+                "name": "Taco Combo",
+                "price": 9.99,
+                "quantity": 1,
+                "sku": "C001",
+                "total": 9.99
+              }
+            ],
+            "order_number": 579,
+            "subtotal": 9.99,
+            "tax": 1,
+            "total": 10.99
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data": {
+          "order_state": {
+            "item_count": 0,
+            "items": [],
+            "order_number": null,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "restaurant": "Holy Guacamole!"
+        },
+        "meta_data_token": "64a1879e001d1547ca1574af9b990a21",
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "version": "2.0"
+      },
+      "post_response": {
+        "action": [
+          {
+            "set_global_data": {
+              "caller_id_name": "",
+              "caller_id_number": "sip:guest-55f852f4-9645-41d3-9d2d-f612c594958d@37d8414f-60d1-4e7b-bf04-b5569535011b.call.swire.io;context=guest",
+              "order_state": {
+                "item_count": 0,
+                "items": [],
+                "order_number": 579,
+                "subtotal": 0,
+                "tax": 0,
+                "total": 0
+              },
+              "restaurant": "Holy Guacamole!"
+            }
+          },
+          {
+            "change_step": "order_complete"
+          },
+          {
+            "user_event": {
+              "order_number": 579,
+              "type": "order_completed"
+            }
+          }
+        ],
+        "response": "Thank you for your order! Order number five seven nine is complete.\nHave a wonderful day!"
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=NDY0YmJlNzEtM2U0YS00NjQ1LTk0OGUtZjY4MzA0ZjMzNzVmLmNvbXBsZXRlX29yZGVyLjE3NzEyNTQ3NTYuZmJmYmEwN2QuNjRiOTQxYTBhODY0OWU4ZQ=="
+    },
+    {
+      "command_arg": "null",
+      "command_name": "hangup",
+      "epoch_time": 1771251233,
+      "native": true
+    }
+  ],
+  "times": [
+    {
+      "answer_time": 0.769,
+      "avg_tps": 37.711313,
+      "response": " Welcome to Holy Guacamole! What would you like to order today? Remember, our combo meals can save you some money!",
+      "response_word_count": 20,
+      "token_time": 0.445,
+      "tokens": 29,
+      "tps": 65.168539
+    },
+    {
+      "answer_time": 0.554,
+      "avg_tps": 23.465704,
+      "response": "",
+      "response_word_count": 0,
+      "token_time": 0.153,
+      "tokens": 13,
+      "tps": 84.96732
+    },
+    {
+      "answer_time": 1.297,
+      "avg_tps": 8.48111,
+      "response": "",
+      "response_word_count": 0,
+      "token_time": 0.188,
+      "tokens": 11,
+      "tps": 58.510638
+    },
+    {
+      "answer_time": 1.275,
+      "avg_tps": 9.411765,
+      "response": "",
+      "response_word_count": 0,
+      "token_time": 0.242,
+      "tokens": 12,
+      "tps": 49.586777
+    },
+    {
+      "answer_time": 1.182,
+      "avg_tps": 24.534687,
+      "response": " Your order is looking great! Would you like to upgrade to the Taco Combo and save a dollar and ninety-seven cents?",
+      "response_word_count": 21,
+      "token_time": 0.526,
+      "tokens": 29,
+      "tps": 55.13308
+    },
+    {
+      "answer_time": 1.063,
+      "avg_tps": 7.52587,
+      "response": "",
+      "response_word_count": 0,
+      "token_time": 0.34,
+      "tokens": 8,
+      "tps": 23.529412
+    },
+    {
+      "answer_time": 1.223,
+      "avg_tps": 26.982829,
+      "response": " Awesome! Your Taco Combo is all set, and your new total is ten dollars and ninety-nine cents. Would you like to finalize your order?",
+      "response_word_count": 24,
+      "token_time": 0.521,
+      "tokens": 33,
+      "tps": 63.339731
+    },
+    {
+      "answer_time": 0.464,
+      "avg_tps": 4.310345,
+      "response": "",
+      "response_word_count": 0,
+      "token_time": 0.007,
+      "tokens": 2,
+      "tps": 285.714286
+    },
+    {
+      "answer_time": 1.055,
+      "avg_tps": 21.800948,
+      "response": " Your total is ten dollars and ninety-nine cents. Does everything on the screen look correct?",
+      "response_word_count": 15,
+      "token_time": 0.402,
+      "tokens": 23,
+      "tps": 57.21393
+    },
+    {
+      "answer_time": 0.72,
+      "avg_tps": 2.777778,
+      "response": "",
+      "response_word_count": 0,
+      "token_time": 0.013,
+      "tokens": 2,
+      "tps": 153.846154
+    },
+    {
+      "answer_time": 1.584,
+      "avg_tps": 25.883838,
+      "response": " Perfect! Your order number is five seven nine, and your total is ten dollars and ninety-nine cents. Please pull forward to the first window to pay. Thank you for your order!",
+      "response_word_count": 31,
+      "token_time": 1.047,
+      "tokens": 41,
+      "tps": 39.159503
+    },
+    {
+      "answer_time": 0.713,
+      "avg_tps": 2.805049,
+      "response": "",
+      "response_word_count": 0,
+      "token_time": 0.01,
+      "tokens": 2,
+      "tps": 200
+    },
+    {
+      "answer_time": 2.212,
+      "avg_tps": 15.822785,
+      "response": " Thank you for your order! Order number five seven nine is complete. Have a wonderful day! If you'd like to place another order, just let me know!",
+      "response_word_count": 27,
+      "token_time": 1.356,
+      "tokens": 35,
+      "tps": 25.811209
+    },
+    {
+      "answer_time": 0.864,
+      "avg_tps": 28.935185,
+      "response": " Thank you for stopping by! I'm ending the call now. Have a great day! .",
+      "response_word_count": 15,
+      "token_time": 0.567,
+      "tokens": 25,
+      "tps": 44.091711
+    }
+  ],
+  "total_asr_cost_factor": 0.801833,
+  "total_asr_minutes": 1.603667,
+  "total_input_tokens": 45521,
+  "total_minutes": 2,
+  "total_output_tokens": 265,
+  "total_tts_chars": 824,
+  "total_tts_chars_per_min": 412,
+  "total_wire_input_tokens": 27887,
+  "total_wire_input_tokens_per_minute": 13943.5,
+  "total_wire_output_tokens": 359,
+  "total_wire_output_tokens_per_minute": 179.5
+}
