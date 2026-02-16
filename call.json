@@ -1,0 +1,3601 @@
+{
+  "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+  "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+  "content_type": "text/json",
+  "content_disposition": "agent.summary",
+  "conversation_type": "voice",
+  "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+  "app_name": "swml app",
+  "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+  "ai_id_tag": "08ff60bacc753b64279b7c16407f6751",
+  "action": "post_conversation",
+  "call_log": [
+    {
+      "role": "system",
+      "content": "\n## Personality\n\nYou are Voyager, a friendly AI travel concierge who helps callers find and book flights. Keep it warm and brief \u2014 the occasional travel quip is welcome.\n\n## Rules\n\n- This is a PHONE CALL. Keep every response to 1-2 short sentences.\n- Use airline names not codes ('Delta' not 'DL'). Say times naturally ('seven thirty PM' not '19:30').\n- Spell confirmation codes using the NATO phonetic alphabet.\n- Avoid commas in speech \u2014 use 'and' or 'or' instead. Keep sentences short and direct.\n\n## Passenger Profile\n\n{\n\t\"phone\":\t\"+19184249378\",\n\t\"first_name\":\t\"Brian\",\n\t\"last_name\":\t\"West\",\n\t\"date_of_birth\":\t\"1977-02-18\",\n\t\"gender\":\t\"MALE\",\n\t\"email\":\t\"brian.west@gmail.com\",\n\t\"seat_preference\":\t\"AISLE\",\n\t\"cabin_preference\":\t\"ECONOMY\",\n\t\"home_airport_iata\":\t\"TUL\",\n\t\"home_airport_name\":\t\"Tulsa International (TUL)\"\n}\n",
+      "timestamp": 1771269168270614
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269168272822,
+      "content": "## Instructions to complete the Current Step\n## Task\nWelcome returning caller and confirm origin\n\n## Process\n- Say: 'Welcome back Brian!'\n- Ask: 'Are you flying from Tulsa International (TUL) or somewhere else?'\n- If Tulsa International (TUL), call resolve_location with 'Tulsa International (TUL)' and location_type='origin'\n- If different, ask where and call resolve_location\n- After resolve_location, confirm with caller and proceed to get_destination\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nOrigin resolved\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269175264923,
+      "latency": 744,
+      "utterance_latency": 1078,
+      "audio_latency": 1612,
+      "start_timestamp": 1771269169885758,
+      "end_timestamp": 1771269175264934,
+      "content": " Welcome back Brian! Are you flying from Tulsa International or somewhere else?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269177684880,
+      "confidence": 0.987305,
+      "speaking_to_turn_detection": 1260,
+      "turn_detection_to_final_event": 20,
+      "speaking_to_final_event": 1280,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269176399030,
+      "end_timestamp": 1771269177679104,
+      "content": "Tulsa International. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269179777287,
+      "content": "Calling function: resolve_location({\"location_text\":\"Tulsa International (TUL)\",\"location_type\":\"origin\"})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269191360164,
+      "tool_calls": [
+        {
+          "id": "d1fcaae1-d78a-4d98-acec-09d213c9c7b2",
+          "type": "function",
+          "function": {
+            "name": "resolve_location",
+            "arguments": "{\"location_text\":\"Tulsa International (TUL)\",\"location_type\":\"origin\"}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269179777327,
+      "latency": 717,
+      "utterance_latency": 973,
+      "audio_latency": 2092,
+      "function_latency": 973,
+      "execution_latency": 2092,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269178658822,
+      "end_timestamp": 1771269179777327,
+      "content": "Tool result below. Remain in the same language.\nThe closest major airport is Tulsa International (TUL) in Tulsa. Saved as origin. Tell the caller and ask if that's correct before proceeding."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269179778341,
+      "content": "## Instructions to complete the Current Step\n## Task\nCollect the arrival city or airport\n\n## Process\n- Ask where they're flying to \u2014 or if they already said a destination, call resolve_location right away with location_type='destination'\n- After resolve_location returns, tell the caller which airport was found and ask if that's correct\n- If they confirm, move to collect_trip_type\n- If multiple airports are returned, move to disambiguate_destination\n- If no match, ask the caller for clarification\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nDestination airport resolved and confirmed\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269187020653,
+      "latency": 479,
+      "utterance_latency": 772,
+      "audio_latency": 1587,
+      "start_timestamp": 1771269181365739,
+      "end_timestamp": 1771269187020664,
+      "content": " Great! I have Tulsa International as your departure airport. Where are you flying to?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269190722628,
+      "confidence": 0.940674,
+      "speaking_to_turn_detection": 2099,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 2379,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269188339412,
+      "end_timestamp": 1771269190719303,
+      "content": "San Francisco, California. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269192194545,
+      "content": "Calling function: resolve_location({\"location_text\":\"San Francisco, California\",\"location_type\":\"destination\"})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269208217776,
+      "tool_calls": [
+        {
+          "id": "5b8d18e1-d9e2-4fb5-9b53-b756325ae697",
+          "type": "function",
+          "function": {
+            "name": "resolve_location",
+            "arguments": "{\"location_text\":\"San Francisco, California\",\"location_type\":\"destination\"}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269192194578,
+      "latency": 398,
+      "utterance_latency": 637,
+      "audio_latency": 1471,
+      "function_latency": 637,
+      "execution_latency": 1471,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269191360170,
+      "end_timestamp": 1771269192194578,
+      "content": "Tool result below. Remain in the same language.\nFound multiple airports: San Francisco International (SFO), Oakland International (OAK), San Jose International (SJC). Ask the caller which they prefer."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269192195546,
+      "content": "## Instructions to complete the Current Step\n## Task\nAsk the caller to choose between multiple destination airports\n\n## Process\n- Present the airports by name and ask which they prefer\n- Call select_airport with location_type='destination' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nDestination airport stored via select_airport\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269203024351,
+      "latency": 552,
+      "utterance_latency": 789,
+      "audio_latency": 1350,
+      "start_timestamp": 1771269193545740,
+      "end_timestamp": 1771269203024367,
+      "content": " You have a few options for San Francisco. Would you prefer San Francisco International, Oakland International, or San Jose International?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269207541541,
+      "confidence": 0.914795,
+      "speaking_to_turn_detection": 1900,
+      "turn_detection_to_final_event": 279,
+      "speaking_to_final_event": 2180,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269205359045,
+      "end_timestamp": 1771269207539060,
+      "content": "San Francisco International. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269208865392,
+      "content": "Calling function: select_airport({\"location_type\":\"destination\",\"iata_code\":\"SFO\"})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269216127678,
+      "tool_calls": [
+        {
+          "id": "b826090b-8da5-43f2-a993-86ac9ed0e0d8",
+          "type": "function",
+          "function": {
+            "name": "select_airport",
+            "arguments": "{\"location_type\":\"destination\",\"iata_code\":\"SFO\"}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269208865432,
+      "latency": 515,
+      "utterance_latency": 676,
+      "audio_latency": 1323,
+      "function_latency": 676,
+      "execution_latency": 1323,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269208217784,
+      "end_timestamp": 1771269208865432,
+      "content": "Tool result below. Remain in the same language.\nSan Francisco International (SFO) selected as destination."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269208866465,
+      "content": "## Instructions to complete the Current Step\n## Task\nAsk whether this is a round-trip or one-way flight\n\n## Process\n- Ask the caller: 'Is this a round-trip or one-way?'\n- Read back their answer and ask them to confirm it is correct\n- Call select_trip_type with trip_type 'round_trip' or 'one_way' and their confirmation\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nTrip type confirmed and submitted via select_trip_type\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269213892215,
+      "latency": 1399,
+      "utterance_latency": 1592,
+      "audio_latency": 2139,
+      "start_timestamp": 1771269211005725,
+      "end_timestamp": 1771269213892228,
+      "content": " Is this a round-trip or one-way flight?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269215322104,
+      "confidence": 0.987305,
+      "speaking_to_turn_detection": 759,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1040,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269214279070,
+      "end_timestamp": 1771269215319089,
+      "content": "Round trip. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269216255158,
+      "content": "Calling function: select_trip_type({\"trip_type\":\"round_trip\",\"confirmed\":true})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269225508695,
+      "tool_calls": [
+        {
+          "id": "2a8e13ac-6992-46d1-a4cb-873f07f14f3b",
+          "type": "function",
+          "function": {
+            "name": "select_trip_type",
+            "arguments": "{\"trip_type\":\"round_trip\",\"confirmed\":true}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269216255217,
+      "latency": 494,
+      "utterance_latency": 805,
+      "audio_latency": 932,
+      "function_latency": 805,
+      "execution_latency": 932,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269216127687,
+      "end_timestamp": 1771269216255217,
+      "content": "Tool result below. Remain in the same language.\nAsk the caller: 'Is this a round-trip or one-way flight?' Wait for their answer, then call select_trip_type with their choice and confirmed set to true."
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269223480053,
+      "latency": 1073,
+      "utterance_latency": 1446,
+      "audio_latency": 1970,
+      "start_timestamp": 1771269218225730,
+      "end_timestamp": 1771269223480067,
+      "content": " Just to confirm, you want a round-trip flight. Is that correct?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269224920038,
+      "confidence": 0.999512,
+      "speaking_to_turn_detection": 760,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1040,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269223878989,
+      "end_timestamp": 1771269224919078,
+      "content": "Yes. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269225657605,
+      "content": "Calling function: select_trip_type({\"trip_type\":\"round_trip\",\"confirmed\":true})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269237995650,
+      "tool_calls": [
+        {
+          "id": "e4b492e2-174f-47cb-a2c1-76393d6dc7c0",
+          "type": "function",
+          "function": {
+            "name": "select_trip_type",
+            "arguments": "{\"trip_type\":\"round_trip\",\"confirmed\":true}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269225657648,
+      "latency": 435,
+      "utterance_latency": 588,
+      "audio_latency": 737,
+      "function_latency": 588,
+      "execution_latency": 737,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269225508706,
+      "end_timestamp": 1771269225657648,
+      "content": "Tool result below. Remain in the same language.\nGot it \u2014 round trip."
+    },
+    {
+      "role": "system",
+      "timestamp": 1771269225657870,
+      "content": "Now let's plan your trip."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269225658713,
+      "content": "Ask the user: \"When would you like to depart?\"\nYou MUST read the answer back to the user and get their explicit confirmation before submitting. Set `confirmed_by_user` to \"true\" in gather_submit only after the user confirms.\nWhen you have the answer, call the `gather_submit` function.\nAccept natural language but submit in YYYY-MM-DD format. Must be a future date.\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269228510773,
+      "latency": 344,
+      "utterance_latency": 491,
+      "audio_latency": 1066,
+      "start_timestamp": 1771269226725756,
+      "end_timestamp": 1771269228510789,
+      "content": " When would you like to depart?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269231302497,
+      "confidence": 0.92041,
+      "speaking_to_turn_detection": 2160,
+      "turn_detection_to_final_event": 19,
+      "speaking_to_final_event": 2180,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269229119089,
+      "end_timestamp": 1771269231299104,
+      "content": "August first, please. "
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269236736183,
+      "latency": 370,
+      "utterance_latency": 853,
+      "audio_latency": 1403,
+      "start_timestamp": 1771269232705805,
+      "end_timestamp": 1771269236736209,
+      "content": " You'd like to depart on August first. Is that correct?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269237109121,
+      "confidence": 0.995117,
+      "speaking_to_turn_detection": 379,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 659,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269236439608,
+      "end_timestamp": 1771269237099261,
+      "content": "Yep. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269237996430,
+      "content": "Steps function: gather_submit({\"answer\":\"2026-08-01\",\"confirmed_by_user\":\"true\"}}\nAnswer recorded. Proceeding to next question."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269237997476,
+      "content": "Ask the user: \"When would you like to return?\"\nYou MUST read the answer back to the user and get their explicit confirmation before submitting. Set `confirmed_by_user` to \"true\" in gather_submit only after the user confirms.\nWhen you have the answer, call the `gather_submit` function.\nAccept natural language but submit in YYYY-MM-DD format. Must be after departure date. For one-way trips, submit the word ONEWAY instead of a date.\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269238993906,
+      "end_timestamp": 1771269238993925,
+      "content": " When would you like to return from San Francisco?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269238993967,
+      "confidence": 1,
+      "speaking_to_turn_detection": -299,
+      "turn_detection_to_final_event": 1194,
+      "speaking_to_final_event": 894,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269238099062,
+      "end_timestamp": 1771269238993928,
+      "content": "Yes. "
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269244219964,
+      "latency": 450,
+      "utterance_latency": 694,
+      "audio_latency": 1171,
+      "start_timestamp": 1771269240165828,
+      "end_timestamp": 1771269244219986,
+      "content": " I need a specific date for your return. When would you like to come back?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269244783178,
+      "confidence": 0.994141,
+      "speaking_to_turn_detection": 1180,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1460,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269243319007,
+      "end_timestamp": 1771269244779209,
+      "content": "August fifteenth. "
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269250658968,
+      "latency": 712,
+      "utterance_latency": 1283,
+      "audio_latency": 1942,
+      "start_timestamp": 1771269246725830,
+      "end_timestamp": 1771269250658988,
+      "content": " You'd like to return on August fifteenth. Is that correct?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269252087672,
+      "confidence": 0.999512,
+      "speaking_to_turn_detection": 640,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 920,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269251159034,
+      "end_timestamp": 1771269252079228,
+      "content": "Yes. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269252799414,
+      "content": "Steps function: gather_submit({\"answer\":\"2026-08-15\",\"confirmed_by_user\":\"true\"}}\nAnswer recorded. Proceeding to next question."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269252800011,
+      "content": "Ask the user: \"How many passengers?\"\nThe answer must be a integer value.\nWhen you have the answer, call the `gather_submit` function.\nMust be 1-8 passengers\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269256921087,
+      "latency": 853,
+      "utterance_latency": 981,
+      "audio_latency": 1485,
+      "start_timestamp": 1771269254285730,
+      "end_timestamp": 1771269256921111,
+      "content": " How many passengers will be traveling?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269258548220,
+      "confidence": 1,
+      "speaking_to_turn_detection": -5439,
+      "turn_detection_to_final_event": 6740,
+      "speaking_to_final_event": 1300,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269257238989,
+      "end_timestamp": 1771269258539074,
+      "content": "One "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269259140081,
+      "content": "Steps function: gather_submit({\"answer\":1}}\nAnswer recorded. Proceeding to next question."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269259141110,
+      "content": "Ask the user: \"What cabin class?\"\nWhen you have the answer, call the `gather_submit` function.\nOptions: ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST. Suggest the passenger's stored preference if available in {\n\t\"phone\":\t\"+19184249378\",\n\t\"first_name\":\t\"Brian\",\n\t\"last_name\":\t\"West\",\n\t\"date_of_birth\":\t\"1977-02-18\",\n\t\"gender\":\t\"MALE\",\n\t\"email\":\t\"brian.west@gmail.com\",\n\t\"seat_preference\":\t\"AISLE\",\n\t\"cabin_preference\":\t\"ECONOMY\",\n\t\"home_airport_iata\":\t\"TUL\",\n\t\"home_airport_name\":\t\"Tulsa International (TUL)\"\n}\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269263694468,
+      "latency": 535,
+      "utterance_latency": 751,
+      "audio_latency": 1264,
+      "start_timestamp": 1771269260405852,
+      "end_timestamp": 1771269263694491,
+      "content": " What cabin class would you like? You can choose from economy, premium economy, business, or first. Your preference is economy. Would you like to stick with that?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269263966742,
+      "confidence": 0.999023,
+      "speaking_to_turn_detection": 799,
+      "turn_detection_to_final_event": 279,
+      "speaking_to_final_event": 1079,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269262879586,
+      "end_timestamp": 1771269263959087,
+      "content": "First class. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269264505955,
+      "content": "Steps function: gather_submit({\"answer\":\"FIRST\"}}\nAll questions answered. Information gathered successfully."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269264506822,
+      "content": "## Instructions to complete the Current Step\n## Task\nSearch for available flights\n\n## Process\n- Booking details are in {\n\t\"departure_date\":\t\"2026-08-01\",\n\t\"return_date\":\t\"2026-08-15\",\n\t\"adults\":\t1,\n\t\"cabin_class\":\t\"FIRST\"\n}\n- Call search_flights to find available flights\n- The search will return up to 3 options and transition to present_options\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nSearch completed\n"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269265155348,
+      "content": "Calling function: search_flights({})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269298964030,
+      "tool_calls": [
+        {
+          "id": "dd9137f2-c6f9-404d-a0e1-daab1e7c7c0b",
+          "type": "function",
+          "function": {
+            "name": "search_flights",
+            "arguments": "{}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269265155398,
+      "latency": 473,
+      "utterance_latency": 489,
+      "audio_latency": 648,
+      "function_latency": 489,
+      "execution_latency": 648,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269264996914,
+      "end_timestamp": 1771269265155398,
+      "content": "Tool result below. Remain in the same language.\nI found 3 options. Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD | Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD | Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD. Read ALL options to the caller, then ask which one they prefer. When they choose, call select_flight with the option number (1, 2, or 3)."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269265156545,
+      "content": "## Instructions to complete the Current Step\n## Task\nPresent up to 3 flight options and let the caller pick one\n\n## Process\n- Read each flight option from booking_state.flight_summaries \u2014 include airline, stops, times, duration, and price\n- Label them 'Option 1' then 'Option 2' then 'Option 3'\n- Ask which option they'd like or if they want to try different dates or a different route\n- When the caller picks one, call select_flight with that option_number\n- If caller wants different dates or a different route, call restart_search\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCaller selects an option via select_flight or requests new search via restart_search\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269297176013,
+      "latency": 903,
+      "utterance_latency": 1255,
+      "audio_latency": 1949,
+      "start_timestamp": 1771269267105733,
+      "end_timestamp": 1771269297176048,
+      "content": " Here are your flight options:   Option 1: Outbound with Alaska Airlines, one stop, departs at one PM and arrives at six thirty-eight PM. The total travel time is eight hours and fifty-nine minutes. The return flight also with Alaska Airlines, one stop, departs at nine PM and arrives at three fifty AM. The price is two thousand five hundred thirteen dollars and twenty-six cents.  Option 2: Outbound with United Airlines, one stop, departs at seven PM and arrives at eleven forty PM. The total travel time is seven hours and thirty-four minutes. The return flight with United Airlines is nonstop, departing at one PM and arriving at six twenty-five PM. The price is two thousand seven hundred seventy-eight dollars and thirty cents.  Option 3: Outbound with Frontier Airlines, nonstop, departs at six AM and arrives at seven twenty-five AM. The return flight also with Frontier Airlines is nonstop, departing at ten AM and arriving at three twenty-five PM. The price is three thousand fifty-one dollars and eighty cents.  Which option would you like or do you want to try different dates or a different route?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269298143107,
+      "confidence": 0.994141,
+      "speaking_to_turn_detection": 1659,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1939,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269296199582,
+      "end_timestamp": 1771269298139154,
+      "content": "Book the cheapest option. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269299124774,
+      "content": "Calling function: select_flight({\"option_number\":1})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269299667246,
+      "tool_calls": [
+        {
+          "id": "cc62056b-e202-4d15-9375-7417ef9c0bc7",
+          "type": "function",
+          "function": {
+            "name": "select_flight",
+            "arguments": "{\"option_number\":1}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269299124833,
+      "latency": 739,
+      "utterance_latency": 820,
+      "audio_latency": 981,
+      "function_latency": 820,
+      "execution_latency": 981,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269298964045,
+      "end_timestamp": 1771269299124833,
+      "content": "Tool result below. Remain in the same language.\nOption 1 selected. Now confirm the price \u2014 move to confirm_price step."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269299125910,
+      "content": "## Instructions to complete the Current Step\n## Task\nConfirm the live price on the selected flight\n\n## Process\n- Call get_flight_price to confirm the live fare\n- Read back the confirmed price and baggage allowance to the caller\n- Ask: 'Shall I go ahead and book this?'\n- If they say yes, call confirm_booking\n- If they say no, call decline_booking\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCaller confirms or declines via confirm_booking or decline_booking\n"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269299817486,
+      "content": "Calling function: get_flight_price({})"
+    },
+    {
+      "role": "assistant",
+      "end_timestamp": 1771269315851782,
+      "tool_calls": [
+        {
+          "id": "9d2fe5b5-7dd0-44c9-a80a-e181d4932b77",
+          "type": "function",
+          "function": {
+            "name": "get_flight_price",
+            "arguments": "{}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269299817538,
+      "latency": 520,
+      "utterance_latency": 541,
+      "audio_latency": 691,
+      "function_latency": 541,
+      "execution_latency": 691,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269299667258,
+      "end_timestamp": 1771269299817538,
+      "content": "Tool result below. Remain in the same language.\nThe confirmed price is $2537.44 USD per person including taxes. Carry-on only, checked bags extra. Tell the caller the price and ask: 'Shall I go ahead and book this?' If they say yes, call confirm_booking. If they say no, call decline_booking."
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269313651733,
+      "latency": 381,
+      "utterance_latency": 734,
+      "audio_latency": 1408,
+      "start_timestamp": 1771269301225754,
+      "end_timestamp": 1771269313651759,
+      "content": " The confirmed price is two thousand five hundred thirty-seven dollars and forty-four cents per person including taxes. You can take a carry-on but checked bags are extra. Shall I go ahead and book this?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269315320167,
+      "confidence": 0.999023,
+      "speaking_to_turn_detection": 800,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1080,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269314239023,
+      "end_timestamp": 1771269315319223,
+      "content": "Yes, please. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269316003398,
+      "content": "Calling function: confirm_booking({})"
+    },
+    {
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "2b3eecc7-efa1-4063-ae2c-b92308dffd75",
+          "type": "function",
+          "function": {
+            "name": "confirm_booking",
+            "arguments": "{}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269316003460,
+      "latency": 511,
+      "utterance_latency": 531,
+      "audio_latency": 682,
+      "function_latency": 531,
+      "execution_latency": 682,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269315851798,
+      "end_timestamp": 1771269316003460,
+      "content": "Tool result below. Remain in the same language.\nProceeding to book the flight."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269316004709,
+      "content": "## Instructions to complete the Current Step\n## Task\nBook the flight and wrap up\n\n## Process\n- Call book_flight to create the reservation\n- Read the PNR back to the caller using the NATO phonetic spelling provided\n- Let them know the confirmation has been texted to their phone\n- Thank them and say goodbye\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nBooking created, PNR read back, call ending\n"
+    },
+    {
+      "role": "assistant-manual",
+      "timestamp": 1771269316633066,
+      "start_timestamp": 1771269317205735,
+      "end_timestamp": 1771269318905822,
+      "content": "Booking that for you now"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269318926572,
+      "content": "Calling function: book_flight({})"
+    },
+    {
+      "role": "assistant",
+      "start_timestamp": 1771269320945834,
+      "end_timestamp": 1771269343666004,
+      "tool_calls": [
+        {
+          "id": "3b37a638-1f96-46dc-b7a1-86c6ac9cd243",
+          "type": "function",
+          "function": {
+            "name": "book_flight",
+            "arguments": "{}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269318926628,
+      "latency": 628,
+      "utterance_latency": 660,
+      "audio_latency": 2921,
+      "function_latency": 660,
+      "execution_latency": 2921,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269316665377,
+      "end_timestamp": 1771269318926628,
+      "content": "Tool result below. Remain in the same language.\nBooked! Confirmation code is 8O05AI \u2014 that's Eight Oscar Zero Five Alpha India. Flight Tulsa International to San Francisco International, departing 2026-08-01, $2537.44. A confirmation text has been sent to the caller's phone. Read the confirmation code using the phonetic spelling, let them know the details have been texted, thank them, and end the call."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269318927522,
+      "content": "## Instructions to complete the Current Step\n## Task\nEnd the call\n\n## Process\n- Say a brief, warm goodbye: 'Thanks for flying with Voyager \u2014 have an amazing trip!'\n- End the call\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\n\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269343665921,
+      "latency": 1228,
+      "utterance_latency": 1462,
+      "audio_latency": 2018,
+      "start_timestamp": 1771269320945834,
+      "end_timestamp": 1771269343665952,
+      "content": " Your flight is booked! Your confirmation code is Eight Oscar Zero Five Alpha India. That's from Tulsa International to San Francisco International, departing on August first for two thousand five hundred thirty-seven dollars and forty-four cents. A confirmation text has been sent to your phone. Thanks for flying with Voyager \u2014 have an amazing trip!"
+    },
+    {
+      "role": "system",
+      "timestamp": 1771269343666097,
+      "content": "The conversation has been ended by the assistant.\n"
+    },
+    {
+      "role": "system",
+      "timestamp": 1771269343738950,
+      "content": "The conversation has ended. Call the summarize_conversation function now with information from the conversation.\nSummarize the conversation.\n"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269346025064,
+      "content": "Calling function: summarize_conversation({\"summary\":\"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\"})"
+    },
+    {
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "ab070840-e6d1-4558-b660-e0c9a81d2eb6",
+          "type": "function",
+          "function": {
+            "name": "summarize_conversation",
+            "arguments": "{\"summary\":\"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\"}"
+          }
+        }
+      ],
+      "content": ""
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269346025138,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269345893662,
+      "end_timestamp": 1771269346025138,
+      "content": "Tool result below. Remain in the same language.\n{\"summary\": \"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\", \"origin\": \"TUL\", \"destination\": \"SFO\", \"departure_date\": \"2026-08-01\", \"return_date\": \"2026-08-15\", \"booking\": {\"pnr\": \"8O05AI\", \"passenger\": \"Brian West\", \"price\": \"2537.44\"}}"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269346025242,
+      "content": "The summarize_conversation function was executed."
+    }
+  ],
+  "raw_call_log": [
+    {
+      "role": "system",
+      "content": "\n## Personality\n\nYou are Voyager, a friendly AI travel concierge who helps callers find and book flights. Keep it warm and brief \u2014 the occasional travel quip is welcome.\n\n## Rules\n\n- This is a PHONE CALL. Keep every response to 1-2 short sentences.\n- Use airline names not codes ('Delta' not 'DL'). Say times naturally ('seven thirty PM' not '19:30').\n- Spell confirmation codes using the NATO phonetic alphabet.\n- Avoid commas in speech \u2014 use 'and' or 'or' instead. Keep sentences short and direct.\n\n## Passenger Profile\n\n{\n\t\"phone\":\t\"+19184249378\",\n\t\"first_name\":\t\"Brian\",\n\t\"last_name\":\t\"West\",\n\t\"date_of_birth\":\t\"1977-02-18\",\n\t\"gender\":\t\"MALE\",\n\t\"email\":\t\"brian.west@gmail.com\",\n\t\"seat_preference\":\t\"AISLE\",\n\t\"cabin_preference\":\t\"ECONOMY\",\n\t\"home_airport_iata\":\t\"TUL\",\n\t\"home_airport_name\":\t\"Tulsa International (TUL)\"\n}\n",
+      "timestamp": 1771269168270614
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269168272822,
+      "content": "## Instructions to complete the Current Step\n## Task\nWelcome returning caller and confirm origin\n\n## Process\n- Say: 'Welcome back Brian!'\n- Ask: 'Are you flying from Tulsa International (TUL) or somewhere else?'\n- If Tulsa International (TUL), call resolve_location with 'Tulsa International (TUL)' and location_type='origin'\n- If different, ask where and call resolve_location\n- After resolve_location, confirm with caller and proceed to get_destination\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nOrigin resolved\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269175264923,
+      "latency": 744,
+      "utterance_latency": 1078,
+      "audio_latency": 1612,
+      "content": " Welcome back Brian! Are you flying from Tulsa International or somewhere else?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269177684880,
+      "confidence": 0.987305,
+      "speaking_to_turn_detection": 1260,
+      "turn_detection_to_final_event": 20,
+      "speaking_to_final_event": 1280,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269176399030,
+      "end_timestamp": 1771269177679104,
+      "content": "Tulsa International. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269179777287,
+      "content": "Calling function: resolve_location({\"location_text\":\"Tulsa International (TUL)\",\"location_type\":\"origin\"})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269179777327,
+      "latency": 717,
+      "utterance_latency": 973,
+      "audio_latency": 2092,
+      "function_latency": 973,
+      "execution_latency": 2092,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269178658822,
+      "end_timestamp": 1771269179777327,
+      "content": "Tool result below. Remain in the same language.\nThe closest major airport is Tulsa International (TUL) in Tulsa. Saved as origin. Tell the caller and ask if that's correct before proceeding."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269179778341,
+      "content": "## Instructions to complete the Current Step\n## Task\nCollect the arrival city or airport\n\n## Process\n- Ask where they're flying to \u2014 or if they already said a destination, call resolve_location right away with location_type='destination'\n- After resolve_location returns, tell the caller which airport was found and ask if that's correct\n- If they confirm, move to collect_trip_type\n- If multiple airports are returned, move to disambiguate_destination\n- If no match, ask the caller for clarification\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nDestination airport resolved and confirmed\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269187020653,
+      "latency": 479,
+      "utterance_latency": 772,
+      "audio_latency": 1587,
+      "content": " Great! I have Tulsa International as your departure airport. Where are you flying to?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269190722628,
+      "confidence": 0.940674,
+      "speaking_to_turn_detection": 2099,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 2379,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269188339412,
+      "end_timestamp": 1771269190719303,
+      "content": "San Francisco, California. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269192194545,
+      "content": "Calling function: resolve_location({\"location_text\":\"San Francisco, California\",\"location_type\":\"destination\"})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269192194578,
+      "latency": 398,
+      "utterance_latency": 637,
+      "audio_latency": 1471,
+      "function_latency": 637,
+      "execution_latency": 1471,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269191360170,
+      "end_timestamp": 1771269192194578,
+      "content": "Tool result below. Remain in the same language.\nFound multiple airports: San Francisco International (SFO), Oakland International (OAK), San Jose International (SJC). Ask the caller which they prefer."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269192195546,
+      "content": "## Instructions to complete the Current Step\n## Task\nAsk the caller to choose between multiple destination airports\n\n## Process\n- Present the airports by name and ask which they prefer\n- Call select_airport with location_type='destination' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nDestination airport stored via select_airport\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269203024351,
+      "latency": 552,
+      "utterance_latency": 789,
+      "audio_latency": 1350,
+      "content": " You have a few options for San Francisco. Would you prefer San Francisco International, Oakland International, or San Jose International?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269207541541,
+      "confidence": 0.914795,
+      "speaking_to_turn_detection": 1900,
+      "turn_detection_to_final_event": 279,
+      "speaking_to_final_event": 2180,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269205359045,
+      "end_timestamp": 1771269207539060,
+      "content": "San Francisco International. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269208865392,
+      "content": "Calling function: select_airport({\"location_type\":\"destination\",\"iata_code\":\"SFO\"})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269208865432,
+      "latency": 515,
+      "utterance_latency": 676,
+      "audio_latency": 1323,
+      "function_latency": 676,
+      "execution_latency": 1323,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269208217784,
+      "end_timestamp": 1771269208865432,
+      "content": "Tool result below. Remain in the same language.\nSan Francisco International (SFO) selected as destination."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269208866465,
+      "content": "## Instructions to complete the Current Step\n## Task\nAsk whether this is a round-trip or one-way flight\n\n## Process\n- Ask the caller: 'Is this a round-trip or one-way?'\n- Read back their answer and ask them to confirm it is correct\n- Call select_trip_type with trip_type 'round_trip' or 'one_way' and their confirmation\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nTrip type confirmed and submitted via select_trip_type\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269213892215,
+      "latency": 1399,
+      "utterance_latency": 1592,
+      "audio_latency": 2139,
+      "content": " Is this a round-trip or one-way flight?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269215322104,
+      "confidence": 0.987305,
+      "speaking_to_turn_detection": 759,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1040,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269214279070,
+      "end_timestamp": 1771269215319089,
+      "content": "Round trip. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269216255158,
+      "content": "Calling function: select_trip_type({\"trip_type\":\"round_trip\",\"confirmed\":true})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269216255217,
+      "latency": 494,
+      "utterance_latency": 805,
+      "audio_latency": 932,
+      "function_latency": 805,
+      "execution_latency": 932,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269216127687,
+      "end_timestamp": 1771269216255217,
+      "content": "Tool result below. Remain in the same language.\nAsk the caller: 'Is this a round-trip or one-way flight?' Wait for their answer, then call select_trip_type with their choice and confirmed set to true."
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269223480053,
+      "latency": 1073,
+      "utterance_latency": 1446,
+      "audio_latency": 1970,
+      "content": " Just to confirm, you want a round-trip flight. Is that correct?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269224920038,
+      "confidence": 0.999512,
+      "speaking_to_turn_detection": 760,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1040,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269223878989,
+      "end_timestamp": 1771269224919078,
+      "content": "Yes. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269225657605,
+      "content": "Calling function: select_trip_type({\"trip_type\":\"round_trip\",\"confirmed\":true})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269225657648,
+      "latency": 435,
+      "utterance_latency": 588,
+      "audio_latency": 737,
+      "function_latency": 588,
+      "execution_latency": 737,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269225508706,
+      "end_timestamp": 1771269225657648,
+      "content": "Tool result below. Remain in the same language.\nGot it \u2014 round trip."
+    },
+    {
+      "role": "system",
+      "timestamp": 1771269225657870,
+      "content": "Now let's plan your trip."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269225658713,
+      "content": "Ask the user: \"When would you like to depart?\"\nYou MUST read the answer back to the user and get their explicit confirmation before submitting. Set `confirmed_by_user` to \"true\" in gather_submit only after the user confirms.\nWhen you have the answer, call the `gather_submit` function.\nAccept natural language but submit in YYYY-MM-DD format. Must be a future date.\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269228510773,
+      "latency": 344,
+      "utterance_latency": 491,
+      "audio_latency": 1066,
+      "content": " When would you like to depart?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269231302497,
+      "confidence": 0.92041,
+      "speaking_to_turn_detection": 2160,
+      "turn_detection_to_final_event": 19,
+      "speaking_to_final_event": 2180,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269229119089,
+      "end_timestamp": 1771269231299104,
+      "content": "August first, please. "
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269236736183,
+      "latency": 370,
+      "utterance_latency": 853,
+      "audio_latency": 1403,
+      "content": " You'd like to depart on August first. Is that correct?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269237109121,
+      "confidence": 0.995117,
+      "speaking_to_turn_detection": 379,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 659,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269236439608,
+      "end_timestamp": 1771269237099261,
+      "content": "Yep. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269237996430,
+      "content": "Steps function: gather_submit({\"answer\":\"2026-08-01\",\"confirmed_by_user\":\"true\"}}\nAnswer recorded. Proceeding to next question."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269237997476,
+      "content": "Ask the user: \"When would you like to return?\"\nYou MUST read the answer back to the user and get their explicit confirmation before submitting. Set `confirmed_by_user` to \"true\" in gather_submit only after the user confirms.\nWhen you have the answer, call the `gather_submit` function.\nAccept natural language but submit in YYYY-MM-DD format. Must be after departure date. For one-way trips, submit the word ONEWAY instead of a date.\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269238993906,
+      "content": " When would you like to return from San Francisco?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269238993967,
+      "confidence": 1,
+      "speaking_to_turn_detection": -299,
+      "turn_detection_to_final_event": 1194,
+      "speaking_to_final_event": 894,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269238099062,
+      "end_timestamp": 1771269238993928,
+      "content": "Yes. "
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269244219964,
+      "latency": 450,
+      "utterance_latency": 694,
+      "audio_latency": 1171,
+      "content": " I need a specific date for your return. When would you like to come back?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269244783178,
+      "confidence": 0.994141,
+      "speaking_to_turn_detection": 1180,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1460,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269243319007,
+      "end_timestamp": 1771269244779209,
+      "content": "August fifteenth. "
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269250658968,
+      "latency": 712,
+      "utterance_latency": 1283,
+      "audio_latency": 1942,
+      "content": " You'd like to return on August fifteenth. Is that correct?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269252087672,
+      "confidence": 0.999512,
+      "speaking_to_turn_detection": 640,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 920,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269251159034,
+      "end_timestamp": 1771269252079228,
+      "content": "Yes. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269252799414,
+      "content": "Steps function: gather_submit({\"answer\":\"2026-08-15\",\"confirmed_by_user\":\"true\"}}\nAnswer recorded. Proceeding to next question."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269252800011,
+      "content": "Ask the user: \"How many passengers?\"\nThe answer must be a integer value.\nWhen you have the answer, call the `gather_submit` function.\nMust be 1-8 passengers\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269256921087,
+      "latency": 853,
+      "utterance_latency": 981,
+      "audio_latency": 1485,
+      "content": " How many passengers will be traveling?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269258548220,
+      "confidence": 1,
+      "speaking_to_turn_detection": -5439,
+      "turn_detection_to_final_event": 6740,
+      "speaking_to_final_event": 1300,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269257238989,
+      "end_timestamp": 1771269258539074,
+      "content": "One "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269259140081,
+      "content": "Steps function: gather_submit({\"answer\":1}}\nAnswer recorded. Proceeding to next question."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269259141110,
+      "content": "Ask the user: \"What cabin class?\"\nWhen you have the answer, call the `gather_submit` function.\nOptions: ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST. Suggest the passenger's stored preference if available in {\n\t\"phone\":\t\"+19184249378\",\n\t\"first_name\":\t\"Brian\",\n\t\"last_name\":\t\"West\",\n\t\"date_of_birth\":\t\"1977-02-18\",\n\t\"gender\":\t\"MALE\",\n\t\"email\":\t\"brian.west@gmail.com\",\n\t\"seat_preference\":\t\"AISLE\",\n\t\"cabin_preference\":\t\"ECONOMY\",\n\t\"home_airport_iata\":\t\"TUL\",\n\t\"home_airport_name\":\t\"Tulsa International (TUL)\"\n}\nDo not ask the user any other questions.\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269263694468,
+      "latency": 535,
+      "utterance_latency": 751,
+      "audio_latency": 1264,
+      "content": " What cabin class would you like? You can choose from economy, premium economy, business, or first. Your preference is economy. Would you like to stick with that?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269263966742,
+      "confidence": 0.999023,
+      "speaking_to_turn_detection": 799,
+      "turn_detection_to_final_event": 279,
+      "speaking_to_final_event": 1079,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269262879586,
+      "end_timestamp": 1771269263959087,
+      "content": "First class. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269264505955,
+      "content": "Steps function: gather_submit({\"answer\":\"FIRST\"}}\nAll questions answered. Information gathered successfully."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269264506822,
+      "content": "## Instructions to complete the Current Step\n## Task\nSearch for available flights\n\n## Process\n- Booking details are in {\n\t\"departure_date\":\t\"2026-08-01\",\n\t\"return_date\":\t\"2026-08-15\",\n\t\"adults\":\t1,\n\t\"cabin_class\":\t\"FIRST\"\n}\n- Call search_flights to find available flights\n- The search will return up to 3 options and transition to present_options\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nSearch completed\n"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269265155348,
+      "content": "Calling function: search_flights({})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269265155398,
+      "latency": 473,
+      "utterance_latency": 489,
+      "audio_latency": 648,
+      "function_latency": 489,
+      "execution_latency": 648,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269264996914,
+      "end_timestamp": 1771269265155398,
+      "content": "Tool result below. Remain in the same language.\nI found 3 options. Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD | Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD | Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD. Read ALL options to the caller, then ask which one they prefer. When they choose, call select_flight with the option number (1, 2, or 3)."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269265156545,
+      "content": "## Instructions to complete the Current Step\n## Task\nPresent up to 3 flight options and let the caller pick one\n\n## Process\n- Read each flight option from booking_state.flight_summaries \u2014 include airline, stops, times, duration, and price\n- Label them 'Option 1' then 'Option 2' then 'Option 3'\n- Ask which option they'd like or if they want to try different dates or a different route\n- When the caller picks one, call select_flight with that option_number\n- If caller wants different dates or a different route, call restart_search\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCaller selects an option via select_flight or requests new search via restart_search\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269297176013,
+      "latency": 903,
+      "utterance_latency": 1255,
+      "audio_latency": 1949,
+      "content": " Here are your flight options:   Option 1: Outbound with Alaska Airlines, one stop, departs at one PM and arrives at six thirty-eight PM. The total travel time is eight hours and fifty-nine minutes. The return flight also with Alaska Airlines, one stop, departs at nine PM and arrives at three fifty AM. The price is two thousand five hundred thirteen dollars and twenty-six cents.  Option 2: Outbound with United Airlines, one stop, departs at seven PM and arrives at eleven forty PM. The total travel time is seven hours and thirty-four minutes. The return flight with United Airlines is nonstop, departing at one PM and arriving at six twenty-five PM. The price is two thousand seven hundred seventy-eight dollars and thirty cents.  Option 3: Outbound with Frontier Airlines, nonstop, departs at six AM and arrives at seven twenty-five AM. The return flight also with Frontier Airlines is nonstop, departing at ten AM and arriving at three twenty-five PM. The price is three thousand fifty-one dollars and eighty cents.  Which option would you like or do you want to try different dates or a different route?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269298143107,
+      "confidence": 0.994141,
+      "speaking_to_turn_detection": 1659,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1939,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269296199582,
+      "end_timestamp": 1771269298139154,
+      "content": "Book the cheapest option. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269299124774,
+      "content": "Calling function: select_flight({\"option_number\":1})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269299124833,
+      "latency": 739,
+      "utterance_latency": 820,
+      "audio_latency": 981,
+      "function_latency": 820,
+      "execution_latency": 981,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269298964045,
+      "end_timestamp": 1771269299124833,
+      "content": "Tool result below. Remain in the same language.\nOption 1 selected. Now confirm the price \u2014 move to confirm_price step."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269299125910,
+      "content": "## Instructions to complete the Current Step\n## Task\nConfirm the live price on the selected flight\n\n## Process\n- Call get_flight_price to confirm the live fare\n- Read back the confirmed price and baggage allowance to the caller\n- Ask: 'Shall I go ahead and book this?'\n- If they say yes, call confirm_booking\n- If they say no, call decline_booking\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nCaller confirms or declines via confirm_booking or decline_booking\n"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269299817486,
+      "content": "Calling function: get_flight_price({})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269299817538,
+      "latency": 520,
+      "utterance_latency": 541,
+      "audio_latency": 691,
+      "function_latency": 541,
+      "execution_latency": 691,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269299667258,
+      "end_timestamp": 1771269299817538,
+      "content": "Tool result below. Remain in the same language.\nThe confirmed price is $2537.44 USD per person including taxes. Carry-on only, checked bags extra. Tell the caller the price and ask: 'Shall I go ahead and book this?' If they say yes, call confirm_booking. If they say no, call decline_booking."
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269313651733,
+      "latency": 381,
+      "utterance_latency": 734,
+      "audio_latency": 1408,
+      "content": " The confirmed price is two thousand five hundred thirty-seven dollars and forty-four cents per person including taxes. You can take a carry-on but checked bags are extra. Shall I go ahead and book this?"
+    },
+    {
+      "role": "user",
+      "timestamp": 1771269315320167,
+      "confidence": 0.999023,
+      "speaking_to_turn_detection": 800,
+      "turn_detection_to_final_event": 280,
+      "speaking_to_final_event": 1080,
+      "content_type": "Detected Speech",
+      "start_timestamp": 1771269314239023,
+      "end_timestamp": 1771269315319223,
+      "content": "Yes, please. "
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269316003398,
+      "content": "Calling function: confirm_booking({})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269316003460,
+      "latency": 511,
+      "utterance_latency": 531,
+      "audio_latency": 682,
+      "function_latency": 531,
+      "execution_latency": 682,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269315851798,
+      "end_timestamp": 1771269316003460,
+      "content": "Tool result below. Remain in the same language.\nProceeding to book the flight."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269316004709,
+      "content": "## Instructions to complete the Current Step\n## Task\nBook the flight and wrap up\n\n## Process\n- Call book_flight to create the reservation\n- Read the PNR back to the caller using the NATO phonetic spelling provided\n- Let them know the confirmation has been texted to their phone\n- Thank them and say goodbye\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\nThe Current Step is not complete until the following criteria has been met:\nBooking created, PNR read back, call ending\n"
+    },
+    {
+      "role": "assistant-manual",
+      "timestamp": 1771269316633066,
+      "content": "Booking that for you now"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269318926572,
+      "content": "Calling function: book_flight({})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269318926628,
+      "latency": 628,
+      "utterance_latency": 660,
+      "audio_latency": 2921,
+      "function_latency": 660,
+      "execution_latency": 2921,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269316665377,
+      "end_timestamp": 1771269318926628,
+      "content": "Tool result below. Remain in the same language.\nBooked! Confirmation code is 8O05AI \u2014 that's Eight Oscar Zero Five Alpha India. Flight Tulsa International to San Francisco International, departing 2026-08-01, $2537.44. A confirmation text has been sent to the caller's phone. Read the confirmation code using the phonetic spelling, let them know the details have been texted, thank them, and end the call."
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269318927522,
+      "content": "## Instructions to complete the Current Step\n## Task\nEnd the call\n\n## Process\n- Say a brief, warm goodbye: 'Thanks for flying with Voyager \u2014 have an amazing trip!'\n- End the call\n\nDo not mention to the user that you are following steps, or the names of the steps.\nDo not ask the user any questions not explicitly related to these instructions.\nDo not end the conversation when this step is complete.\n\n"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269343665921,
+      "latency": 1228,
+      "utterance_latency": 1462,
+      "audio_latency": 2018,
+      "content": " Your flight is booked! Your confirmation code is Eight Oscar Zero Five Alpha India. That's from Tulsa International to San Francisco International, departing on August first for two thousand five hundred thirty-seven dollars and forty-four cents. A confirmation text has been sent to your phone. Thanks for flying with Voyager \u2014 have an amazing trip!"
+    },
+    {
+      "role": "system",
+      "timestamp": 1771269343666097,
+      "content": "The conversation has been ended by the assistant.\n"
+    },
+    {
+      "role": "system",
+      "timestamp": 1771269343738950,
+      "content": "The conversation has ended. Call the summarize_conversation function now with information from the conversation.\nSummarize the conversation.\n"
+    },
+    {
+      "role": "system-log",
+      "timestamp": 1771269346025064,
+      "content": "Calling function: summarize_conversation({\"summary\":\"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\"})"
+    },
+    {
+      "role": "tool",
+      "timestamp": 1771269346025138,
+      "deprecation_warning": "fields utterance_latency, audio_latency deprecated in tool calls",
+      "start_timestamp": 1771269345893662,
+      "end_timestamp": 1771269346025138,
+      "content": "Tool result below. Remain in the same language.\n{\"summary\": \"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\", \"origin\": \"TUL\", \"destination\": \"SFO\", \"departure_date\": \"2026-08-01\", \"return_date\": \"2026-08-15\", \"booking\": {\"pnr\": \"8O05AI\", \"passenger\": \"Brian West\", \"price\": \"2537.44\"}}"
+    },
+    {
+      "role": "assistant",
+      "timestamp": 1771269346025242,
+      "content": "The summarize_conversation function was executed."
+    }
+  ],
+  "call_start_date": 1771269167329337,
+  "call_answer_date": 1771269168143331,
+  "call_end_date": 1771269344760339,
+  "ai_start_date": 1771269168270614,
+  "ai_end_date": 1771269343738627,
+  "caller_id_name": "+19184249378",
+  "caller_id_number": "+19184249378",
+  "times": [
+    {
+      "response": " Welcome back Brian! Are you flying from Tulsa International or somewhere else?",
+      "response_word_count": 12,
+      "answer_time": 1.278,
+      "token_time": 0.536,
+      "tokens": 19,
+      "avg_tps": 14.86698,
+      "tps": 35.447761
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.969,
+      "token_time": 0.247,
+      "tokens": 18,
+      "avg_tps": 18.575851,
+      "tps": 72.874494
+    },
+    {
+      "response": " Great! I have Tulsa International as your departure airport. Where are you flying to?",
+      "response_word_count": 14,
+      "answer_time": 0.844,
+      "token_time": 0.357,
+      "tokens": 22,
+      "avg_tps": 26.066351,
+      "tps": 61.62465
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.631,
+      "token_time": 0.225,
+      "tokens": 15,
+      "avg_tps": 23.771791,
+      "tps": 66.666667
+    },
+    {
+      "response": " You have a few options for San Francisco. Would you prefer San Francisco International, Oakland International, or San Jose International?",
+      "response_word_count": 20,
+      "answer_time": 1.15,
+      "token_time": 0.602,
+      "tokens": 28,
+      "avg_tps": 24.347826,
+      "tps": 46.511628
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.669,
+      "token_time": 0.148,
+      "tokens": 13,
+      "avg_tps": 19.431988,
+      "tps": 87.837838
+    },
+    {
+      "response": " Is this a round-trip or one-way flight?",
+      "response_word_count": 7,
+      "answer_time": 1.587,
+      "token_time": 0.193,
+      "tokens": 16,
+      "avg_tps": 10.081916,
+      "tps": 82.901554
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.798,
+      "token_time": 0.3,
+      "tokens": 12,
+      "avg_tps": 15.037594,
+      "tps": 40
+    },
+    {
+      "response": " Just to confirm, you want a round-trip flight. Is that correct?",
+      "response_word_count": 11,
+      "answer_time": 1.718,
+      "token_time": 0.636,
+      "tokens": 19,
+      "avg_tps": 11.059371,
+      "tps": 29.874214
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.581,
+      "token_time": 0.143,
+      "tokens": 12,
+      "avg_tps": 20.654045,
+      "tps": 83.916084
+    },
+    {
+      "response": " When would you like to depart?",
+      "response_word_count": 6,
+      "answer_time": 0.496,
+      "token_time": 0.147,
+      "tokens": 13,
+      "avg_tps": 26.209677,
+      "tps": 88.435374
+    },
+    {
+      "response": " You'd like to depart on August first. Is that correct?",
+      "response_word_count": 10,
+      "answer_time": 0.871,
+      "token_time": 0.495,
+      "tokens": 18,
+      "avg_tps": 20.665901,
+      "tps": 36.363636
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.879,
+      "token_time": 0.314,
+      "tokens": 17,
+      "avg_tps": 19.340159,
+      "tps": 54.140127
+    },
+    {
+      "response": " When would you like to return from San Francisco?",
+      "response_word_count": 9,
+      "answer_time": 0.968,
+      "token_time": 0.279,
+      "tokens": 16,
+      "avg_tps": 16.528926,
+      "tps": 57.34767
+    },
+    {
+      "response": " I need a specific date for your return. When would you like to come back?",
+      "response_word_count": 15,
+      "answer_time": 0.825,
+      "token_time": 0.381,
+      "tokens": 23,
+      "avg_tps": 27.878788,
+      "tps": 60.367454
+    },
+    {
+      "response": " You'd like to return on August fifteenth. Is that correct?",
+      "response_word_count": 10,
+      "answer_time": 1.299,
+      "token_time": 0.593,
+      "tokens": 19,
+      "avg_tps": 14.626636,
+      "tps": 32.040472
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.703,
+      "token_time": 0.223,
+      "tokens": 17,
+      "avg_tps": 24.182077,
+      "tps": 76.233184
+    },
+    {
+      "response": " How many passengers will be traveling?",
+      "response_word_count": 6,
+      "answer_time": 0.985,
+      "token_time": 0.128,
+      "tokens": 13,
+      "avg_tps": 13.19797,
+      "tps": 101.5625
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.583,
+      "token_time": 0.039,
+      "tokens": 6,
+      "avg_tps": 10.291595,
+      "tps": 153.846154
+    },
+    {
+      "response": " What cabin class would you like? You can choose from economy, premium economy, business, or first. Your preference is economy. Would you like to stick with that?",
+      "response_word_count": 27,
+      "answer_time": 1.117,
+      "token_time": 0.577,
+      "tokens": 36,
+      "avg_tps": 32.229185,
+      "tps": 62.391681
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.53,
+      "token_time": 0.071,
+      "tokens": 6,
+      "avg_tps": 11.320755,
+      "tps": 84.507042
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.482,
+      "token_time": 0.007,
+      "tokens": 2,
+      "avg_tps": 4.149378,
+      "tps": 285.714286
+    },
+    {
+      "response": " Here are your flight options:   Option 1: Outbound with Alaska Airlines, one stop, departs at one PM and arrives at six thirty-eight PM. The total travel time is eight hours and fifty-nine minutes. The return flight also with Alaska Airlines, one stop, departs at nine PM and arrives at three fifty AM. The price is two thousand five hundred thirteen dollars and twenty-six cents.  Option 2: Outbound with United Airlines, one stop, departs at seven PM and arrives at eleven forty PM. The total travel time is seven hours and thirty-four minutes. The return flight with United Airlines is nonstop, departing at one PM and arriving at six twenty-five PM. The price is two thousand seven hundred seventy-eight dollars and thirty cents.  Option 3: Outbound with Frontier Airlines, nonstop, departs at six AM and arrives at seven twenty-five AM. The return flight also with Frontier Airlines is nonstop, departing at ten AM and arriving at three twenty-five PM. The price is three thousand fifty-one dollars and eighty cents.  Which option would you like or do you want to try different dates or a different route?",
+      "response_word_count": 185,
+      "answer_time": 4.609,
+      "token_time": 3.712,
+      "tokens": 234,
+      "avg_tps": 50.770232,
+      "tps": 63.038793
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.812,
+      "token_time": 0.07,
+      "tokens": 7,
+      "avg_tps": 8.62069,
+      "tps": 100
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.532,
+      "token_time": 0.009,
+      "tokens": 2,
+      "avg_tps": 3.759398,
+      "tps": 222.222222
+    },
+    {
+      "response": " The confirmed price is two thousand five hundred thirty-seven dollars and forty-four cents per person including taxes. You can take a carry-on but checked bags are extra. Shall I go ahead and book this?",
+      "response_word_count": 34,
+      "answer_time": 0.98,
+      "token_time": 0.608,
+      "tokens": 44,
+      "avg_tps": 44.897959,
+      "tps": 72.368421
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.521,
+      "token_time": 0.009,
+      "tokens": 2,
+      "avg_tps": 3.838772,
+      "tps": 222.222222
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 0.65,
+      "token_time": 0.016,
+      "tokens": 2,
+      "avg_tps": 3.076923,
+      "tps": 125
+    },
+    {
+      "response": " Your flight is booked! Your confirmation code is Eight Oscar Zero Five Alpha India. That's from Tulsa International to San Francisco International, departing on August first for two thousand five hundred thirty-seven dollars and forty-four cents. A confirmation text has been sent to your phone. Thanks for flying with Voyager \u2014 have an amazing trip!",
+      "response_word_count": 55,
+      "answer_time": 2.426,
+      "token_time": 1.195,
+      "tokens": 68,
+      "avg_tps": 28.029678,
+      "tps": 56.903766
+    },
+    {
+      "response": "",
+      "response_word_count": 0,
+      "answer_time": 2.142,
+      "token_time": 1.267,
+      "tokens": 74,
+      "avg_tps": 34.547152,
+      "tps": 58.405683
+    }
+  ],
+  "SWMLVars": {
+    "record_control_id": "15db498b-9a91-49fa-adf0-101864ce343e",
+    "record_call_start": "1771269168260497",
+    "record_call_url": "https://files.swire.io/f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787/37d8414f-60d1-4e7b-bf04-b5569535011b/recordings/60821f09-d926-45e8-a4e3-14799e34be59.wav",
+    "record_call_result": "success",
+    "answer_result": "success",
+    "script_error": "{\"document\":\"{\\\"version\\\":\\\"1.0.0\\\",\\\"sections\\\":{\\\"main\\\":[{\\\"send_sms\\\":{\\\"to_number\\\":\\\"+19184249378\\\",\\\"from_number\\\":\\\"+12086946247\\\",\\\"body\\\":\\\"Voyager - Flight Confirmed!\\\\nPNR: 8O05AI\\\\nRoute: Tulsa International to San Francisco International\\\\nDeparture: 2026-08-01 | Return: 2026-08-15\\\\nPrice: $2537.44\\\\nPassenger: Brian West\\\\nThank you for using Voyager!\\\"}}]}}\",\"section\":\"main\",\"method\":\"send_sms\",\"warning\":\"relay_script_method_execute_failed\",\"message\":\"Method \\\"send_sms\\\" has an internal server error\"}",
+    "send_sms_result": "failed",
+    "ai_result": "success"
+  },
+  "SWMLCall": {
+    "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+    "node_id": "tony-ai@",
+    "segment_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+    "call_state": "answered",
+    "direction": "inbound",
+    "type": "phone",
+    "from": "+19184249378",
+    "to": "+12068655443",
+    "from_number": "+19184249378",
+    "to_number": "+12068655443",
+    "headers": [],
+    "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+    "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787"
+  },
+  "post_prompt_data": {
+    "parsed": [],
+    "raw": "The summarize_conversation function was executed.",
+    "substituted": "The summarize_conversation function was executed."
+  },
+  "global_data": {
+    "passenger_profile": {
+      "phone": "+19184249378",
+      "first_name": "Brian",
+      "last_name": "West",
+      "date_of_birth": "1977-02-18",
+      "gender": "MALE",
+      "email": "brian.west@gmail.com",
+      "seat_preference": "AISLE",
+      "cabin_preference": "ECONOMY",
+      "home_airport_iata": "TUL",
+      "home_airport_name": "Tulsa International (TUL)"
+    },
+    "is_new_caller": false,
+    "caller_phone": "+19184249378",
+    "caller_id_name": "+19184249378",
+    "caller_id_number": "+19184249378",
+    "booking_answers": {
+      "departure_date": "2026-08-01",
+      "return_date": "2026-08-15",
+      "adults": 1,
+      "cabin_class": "FIRST"
+    },
+    "booking_state": {
+      "origin": {
+        "iata": "TUL",
+        "name": "Tulsa International",
+        "city": "Tulsa",
+        "lat": 36.155138,
+        "lng": -95.989501
+      },
+      "destination": {
+        "iata": "SFO",
+        "name": "San Francisco International",
+        "city": "San Francisco"
+      },
+      "destination_candidates": [
+        {
+          "iata": "SFO",
+          "name": "San Francisco International",
+          "city": "San Francisco"
+        },
+        {
+          "iata": "OAK",
+          "name": "Oakland International",
+          "city": "Oakland"
+        },
+        {
+          "iata": "SJC",
+          "name": "San Jose International",
+          "city": "San Jose"
+        }
+      ],
+      "departure_date": "2026-08-01",
+      "return_date": "2026-08-15",
+      "adults": 1,
+      "cabin_class": "FIRST",
+      "has_flight_offers": true,
+      "has_flight_offer": true,
+      "has_priced_offer": true,
+      "flight_summaries": [
+        "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+        "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+        "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+      ],
+      "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+      "confirmed_price": "$2537.44 USD",
+      "booking": {
+        "pnr": "8O05AI",
+        "phonetic": "Eight Oscar Zero Five Alpha India",
+        "route": "TUL to SFO",
+        "departure": "2026-08-01",
+        "price": "2537.44",
+        "passenger": "Brian West",
+        "email": "brian.west@gmail.com",
+        "phone": "+19184249378",
+        "return": "2026-08-15"
+      }
+    }
+  },
+  "swaig_log": [
+    {
+      "command_name": "resolve_location",
+      "command_arg": "{\"location_text\":\"Tulsa International (TUL)\",\"location_type\":\"origin\"}",
+      "epoch_time": 1771269178,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378"
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "resolve_location",
+        "argument": {
+          "parsed": [
+            {
+              "location_text": "Tulsa International (TUL)",
+              "location_type": "origin"
+            }
+          ],
+          "raw": "{\"location_text\":\"Tulsa International (TUL)\",\"location_type\":\"origin\"}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {
+            "location_text": {
+              "type": "string",
+              "description": "The city, airport, or place name spoken by the caller"
+            },
+            "location_type": {
+              "type": "string",
+              "description": "Whether this is an 'origin' or 'destination'",
+              "enum": [
+                "origin",
+                "destination"
+              ]
+            },
+            "mode": {
+              "type": "string",
+              "description": "normal = resolve and change step (default). verify = resolve and return result without changing step.",
+              "enum": [
+                "normal",
+                "verify"
+              ]
+            }
+          },
+          "required": [
+            "location_text"
+          ]
+        },
+        "description": "Resolve a spoken city or place name",
+        "meta_data_token": "793a6301cf07d2b7b3fda7eb30f2a4be",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnJlc29sdmVfbG9jYXRpb24uMTc3MTI3Mjc2Ny42YmRiZTk4OC42NDRmMzMwYjkyMjU1MDEx",
+      "post_response": {
+        "response": "The closest major airport is Tulsa International (TUL) in Tulsa. Saved as origin. Tell the caller and ask if that's correct before proceeding.",
+        "action": [
+          {
+            "add_dynamic_hints": [
+              "Tulsa International",
+              "Tulsa"
+            ]
+          },
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "adults": 1,
+                "cabin_class": "ECONOMY",
+                "has_flight_offers": false,
+                "has_flight_offer": false,
+                "has_priced_offer": false
+              }
+            }
+          },
+          {
+            "change_step": "get_destination"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "resolve_location",
+      "command_arg": "{\"location_text\":\"San Francisco, California\",\"location_type\":\"destination\"}",
+      "epoch_time": 1771269191,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "adults": 1,
+            "cabin_class": "ECONOMY",
+            "has_flight_offers": false,
+            "has_flight_offer": false,
+            "has_priced_offer": false
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "resolve_location",
+        "argument": {
+          "parsed": [
+            {
+              "location_text": "San Francisco, California",
+              "location_type": "destination"
+            }
+          ],
+          "raw": "{\"location_text\":\"San Francisco, California\",\"location_type\":\"destination\"}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {
+            "location_text": {
+              "type": "string",
+              "description": "The city, airport, or place name spoken by the caller"
+            },
+            "location_type": {
+              "type": "string",
+              "description": "Whether this is an 'origin' or 'destination'",
+              "enum": [
+                "origin",
+                "destination"
+              ]
+            },
+            "mode": {
+              "type": "string",
+              "description": "normal = resolve and change step (default). verify = resolve and return result without changing step.",
+              "enum": [
+                "normal",
+                "verify"
+              ]
+            }
+          },
+          "required": [
+            "location_text"
+          ]
+        },
+        "description": "Resolve a spoken city or place name",
+        "meta_data_token": "793a6301cf07d2b7b3fda7eb30f2a4be",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnJlc29sdmVfbG9jYXRpb24uMTc3MTI3Mjc2Ny42YmRiZTk4OC42NDRmMzMwYjkyMjU1MDEx",
+      "post_response": {
+        "response": "Found multiple airports: San Francisco International (SFO), Oakland International (OAK), San Jose International (SJC). Ask the caller which they prefer.",
+        "action": [
+          {
+            "add_dynamic_hints": [
+              "San Francisco International",
+              "San Francisco",
+              "Oakland International",
+              "Oakland",
+              "San Jose International",
+              "San Jose"
+            ]
+          },
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "destination_candidates": [
+                  {
+                    "iata": "SFO",
+                    "name": "San Francisco International",
+                    "city": "San Francisco"
+                  },
+                  {
+                    "iata": "OAK",
+                    "name": "Oakland International",
+                    "city": "Oakland"
+                  },
+                  {
+                    "iata": "SJC",
+                    "name": "San Jose International",
+                    "city": "San Jose"
+                  }
+                ],
+                "adults": 1,
+                "cabin_class": "ECONOMY",
+                "has_flight_offers": false,
+                "has_flight_offer": false,
+                "has_priced_offer": false
+              }
+            }
+          },
+          {
+            "change_step": "disambiguate_destination"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "select_airport",
+      "command_arg": "{\"location_type\":\"destination\",\"iata_code\":\"SFO\"}",
+      "epoch_time": 1771269208,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "adults": 1,
+            "cabin_class": "ECONOMY",
+            "has_flight_offers": false,
+            "has_flight_offer": false,
+            "has_priced_offer": false
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "select_airport",
+        "argument": {
+          "parsed": [
+            {
+              "location_type": "destination",
+              "iata_code": "SFO"
+            }
+          ],
+          "raw": "{\"location_type\":\"destination\",\"iata_code\":\"SFO\"}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {
+            "location_type": {
+              "type": "string",
+              "description": "Whether this is an 'origin' or 'destination'",
+              "enum": [
+                "origin",
+                "destination"
+              ]
+            },
+            "iata_code": {
+              "type": "string",
+              "description": "The IATA code of the selected airport from the candidates list"
+            }
+          },
+          "required": [
+            "location_type",
+            "iata_code"
+          ]
+        },
+        "description": "Select an airport from the disambiguation candidates.",
+        "meta_data_token": "2f9fd93e44dd82abccda51d2f2264974",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlbGVjdF9haXJwb3J0LjE3NzEyNzI3NjguYjZhNjljZmMuMTY4MjlkMTRmZmJhNGI4Ng%3D%3D",
+      "post_response": {
+        "response": "San Francisco International (SFO) selected as destination.",
+        "action": [
+          {
+            "add_dynamic_hints": [
+              "San Francisco International",
+              "San Francisco"
+            ]
+          },
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "destination": {
+                  "iata": "SFO",
+                  "name": "San Francisco International",
+                  "city": "San Francisco"
+                },
+                "destination_candidates": [
+                  {
+                    "iata": "SFO",
+                    "name": "San Francisco International",
+                    "city": "San Francisco"
+                  },
+                  {
+                    "iata": "OAK",
+                    "name": "Oakland International",
+                    "city": "Oakland"
+                  },
+                  {
+                    "iata": "SJC",
+                    "name": "San Jose International",
+                    "city": "San Jose"
+                  }
+                ],
+                "adults": 1,
+                "cabin_class": "ECONOMY",
+                "has_flight_offers": false,
+                "has_flight_offer": false,
+                "has_priced_offer": false
+              }
+            }
+          },
+          {
+            "change_step": "collect_trip_type"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "select_trip_type",
+      "command_arg": "{\"trip_type\":\"round_trip\",\"confirmed\":true}",
+      "epoch_time": 1771269216,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "adults": 1,
+            "cabin_class": "ECONOMY",
+            "has_flight_offers": false,
+            "has_flight_offer": false,
+            "has_priced_offer": false
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "select_trip_type",
+        "argument": {
+          "parsed": [
+            {
+              "trip_type": "round_trip",
+              "confirmed": true
+            }
+          ],
+          "raw": "{\"trip_type\":\"round_trip\",\"confirmed\":true}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {
+            "trip_type": {
+              "type": "string",
+              "description": "round_trip or one_way",
+              "enum": [
+                "round_trip",
+                "one_way"
+              ]
+            },
+            "confirmed": {
+              "type": "boolean",
+              "description": "Set true only after the caller explicitly confirmed"
+            }
+          },
+          "required": [
+            "trip_type"
+          ]
+        },
+        "description": "Record whether this is a round-trip or one-way flight.",
+        "meta_data_token": "e9f415310e586573d035b34f8a6d7b2c",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlbGVjdF90cmlwX3R5cGUuMTc3MTI3Mjc2OC41ZDExYjcyOS5iMTNhZTRhNTMwNzJmYjhi",
+      "post_response": {
+        "response": "Ask the caller: 'Is this a round-trip or one-way flight?' Wait for their answer, then call select_trip_type with their choice and confirmed set to true."
+      }
+    },
+    {
+      "command_name": "select_trip_type",
+      "command_arg": "{\"trip_type\":\"round_trip\",\"confirmed\":true}",
+      "epoch_time": 1771269225,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "adults": 1,
+            "cabin_class": "ECONOMY",
+            "has_flight_offers": false,
+            "has_flight_offer": false,
+            "has_priced_offer": false
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "select_trip_type",
+        "argument": {
+          "parsed": [
+            {
+              "trip_type": "round_trip",
+              "confirmed": true
+            }
+          ],
+          "raw": "{\"trip_type\":\"round_trip\",\"confirmed\":true}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {
+            "trip_type": {
+              "type": "string",
+              "description": "round_trip or one_way",
+              "enum": [
+                "round_trip",
+                "one_way"
+              ]
+            },
+            "confirmed": {
+              "type": "boolean",
+              "description": "Set true only after the caller explicitly confirmed"
+            }
+          },
+          "required": [
+            "trip_type"
+          ]
+        },
+        "description": "Record whether this is a round-trip or one-way flight.",
+        "meta_data_token": "e9f415310e586573d035b34f8a6d7b2c",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlbGVjdF90cmlwX3R5cGUuMTc3MTI3Mjc2OC41ZDExYjcyOS5iMTNhZTRhNTMwNzJmYjhi",
+      "post_response": {
+        "response": "Got it \u2014 round trip.",
+        "action": [
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "destination": {
+                  "iata": "SFO",
+                  "name": "San Francisco International",
+                  "city": "San Francisco"
+                },
+                "destination_candidates": [
+                  {
+                    "iata": "SFO",
+                    "name": "San Francisco International",
+                    "city": "San Francisco"
+                  },
+                  {
+                    "iata": "OAK",
+                    "name": "Oakland International",
+                    "city": "Oakland"
+                  },
+                  {
+                    "iata": "SJC",
+                    "name": "San Jose International",
+                    "city": "San Jose"
+                  }
+                ],
+                "adults": 1,
+                "cabin_class": "ECONOMY",
+                "has_flight_offers": false,
+                "has_flight_offer": false,
+                "has_priced_offer": false
+              }
+            }
+          },
+          {
+            "change_step": "collect_booking"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "gather_submit",
+      "command_arg": "{\"answer\":\"2026-08-01\",\"confirmed_by_user\":\"true\"}",
+      "epoch_time": 1771269237,
+      "native": true
+    },
+    {
+      "command_name": "gather_submit",
+      "command_arg": "{\"answer\":\"2026-08-15\",\"confirmed_by_user\":\"true\"}",
+      "epoch_time": 1771269252,
+      "native": true
+    },
+    {
+      "command_name": "gather_submit",
+      "command_arg": "{\"answer\":1}",
+      "epoch_time": 1771269259,
+      "native": true
+    },
+    {
+      "command_name": "gather_submit",
+      "command_arg": "{\"answer\":\"FIRST\"}",
+      "epoch_time": 1771269264,
+      "native": true
+    },
+    {
+      "command_name": "search_flights",
+      "command_arg": "{}",
+      "epoch_time": 1771269264,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "adults": 1,
+            "cabin_class": "ECONOMY",
+            "has_flight_offers": false,
+            "has_flight_offer": false,
+            "has_priced_offer": false
+          },
+          "booking_answers": {
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST"
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "search_flights",
+        "argument": {
+          "parsed": [
+            {}
+          ],
+          "raw": "{}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "description": "Search for available flights and return up to 3 options.",
+        "meta_data_token": "f318c9a1033b6e6bb393a6a4f7a1fa40",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlYXJjaF9mbGlnaHRzLjE3NzEyNzI3NjguNTczMzYxYWIuMzNlOWU0OTg3ZjNjNTFjYw%3D%3D",
+      "post_response": {
+        "response": "I found 3 options. Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD | Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD | Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD. Read ALL options to the caller, then ask which one they prefer. When they choose, call select_flight with the option number (1, 2, or 3).",
+        "action": [
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "destination": {
+                  "iata": "SFO",
+                  "name": "San Francisco International",
+                  "city": "San Francisco"
+                },
+                "destination_candidates": [
+                  {
+                    "iata": "SFO",
+                    "name": "San Francisco International",
+                    "city": "San Francisco"
+                  },
+                  {
+                    "iata": "OAK",
+                    "name": "Oakland International",
+                    "city": "Oakland"
+                  },
+                  {
+                    "iata": "SJC",
+                    "name": "San Jose International",
+                    "city": "San Jose"
+                  }
+                ],
+                "departure_date": "2026-08-01",
+                "return_date": "2026-08-15",
+                "adults": 1,
+                "cabin_class": "FIRST",
+                "has_flight_offers": true,
+                "has_flight_offer": false,
+                "has_priced_offer": false,
+                "flight_summaries": [
+                  "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+                  "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+                  "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+                ]
+              }
+            }
+          },
+          {
+            "change_step": "present_options"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "select_flight",
+      "command_arg": "{\"option_number\":1}",
+      "epoch_time": 1771269298,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_answers": {
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST"
+          },
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST",
+            "has_flight_offers": true,
+            "has_flight_offer": false,
+            "has_priced_offer": false,
+            "flight_summaries": [
+              "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+              "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+              "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+            ]
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "select_flight",
+        "argument": {
+          "parsed": [
+            {
+              "option_number": 1
+            }
+          ],
+          "raw": "{\"option_number\":1}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {
+            "option_number": {
+              "type": "integer",
+              "description": "The option number the caller chose",
+              "enum": [
+                1,
+                2,
+                3
+              ]
+            }
+          },
+          "required": [
+            "option_number"
+          ]
+        },
+        "description": "Select one of the flight options returned by search_flights. Call this after the caller picks option 1, 2, or 3.",
+        "meta_data_token": "0565dd10a82c023b5b3dcb1e52ace591",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlbGVjdF9mbGlnaHQuMTc3MTI3Mjc2OC5hNTZjYTczNi4wM2E1YWVhN2EyMDY0MmRl",
+      "post_response": {
+        "response": "Option 1 selected. Now confirm the price \u2014 move to confirm_price step.",
+        "action": [
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "destination": {
+                  "iata": "SFO",
+                  "name": "San Francisco International",
+                  "city": "San Francisco"
+                },
+                "destination_candidates": [
+                  {
+                    "iata": "SFO",
+                    "name": "San Francisco International",
+                    "city": "San Francisco"
+                  },
+                  {
+                    "iata": "OAK",
+                    "name": "Oakland International",
+                    "city": "Oakland"
+                  },
+                  {
+                    "iata": "SJC",
+                    "name": "San Jose International",
+                    "city": "San Jose"
+                  }
+                ],
+                "departure_date": "2026-08-01",
+                "return_date": "2026-08-15",
+                "adults": 1,
+                "cabin_class": "FIRST",
+                "has_flight_offers": true,
+                "has_flight_offer": true,
+                "has_priced_offer": false,
+                "flight_summaries": [
+                  "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+                  "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+                  "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+                ],
+                "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD"
+              }
+            }
+          },
+          {
+            "change_step": "confirm_price"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "get_flight_price",
+      "command_arg": "{}",
+      "epoch_time": 1771269299,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_answers": {
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST"
+          },
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST",
+            "has_flight_offers": true,
+            "has_flight_offer": true,
+            "has_priced_offer": false,
+            "flight_summaries": [
+              "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+              "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+              "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+            ],
+            "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD"
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "get_flight_price",
+        "argument": {
+          "parsed": [
+            {}
+          ],
+          "raw": "{}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "description": "Confirm the exact price for the flight selected via select_flight.",
+        "meta_data_token": "5d645f79a539a84378d9ce694bfd6093",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmdldF9mbGlnaHRfcHJpY2UuMTc3MTI3Mjc2OC40OTE0YzczZi4wMjcyMDJmMDM0NjE4ZjRl",
+      "post_response": {
+        "response": "The confirmed price is $2537.44 USD per person including taxes. Carry-on only, checked bags extra. Tell the caller the price and ask: 'Shall I go ahead and book this?' If they say yes, call confirm_booking. If they say no, call decline_booking.",
+        "action": [
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "destination": {
+                  "iata": "SFO",
+                  "name": "San Francisco International",
+                  "city": "San Francisco"
+                },
+                "destination_candidates": [
+                  {
+                    "iata": "SFO",
+                    "name": "San Francisco International",
+                    "city": "San Francisco"
+                  },
+                  {
+                    "iata": "OAK",
+                    "name": "Oakland International",
+                    "city": "Oakland"
+                  },
+                  {
+                    "iata": "SJC",
+                    "name": "San Jose International",
+                    "city": "San Jose"
+                  }
+                ],
+                "departure_date": "2026-08-01",
+                "return_date": "2026-08-15",
+                "adults": 1,
+                "cabin_class": "FIRST",
+                "has_flight_offers": true,
+                "has_flight_offer": true,
+                "has_priced_offer": true,
+                "flight_summaries": [
+                  "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+                  "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+                  "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+                ],
+                "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+                "confirmed_price": "$2537.44 USD"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "confirm_booking",
+      "command_arg": "{}",
+      "epoch_time": 1771269315,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_answers": {
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST"
+          },
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST",
+            "has_flight_offers": true,
+            "has_flight_offer": true,
+            "has_priced_offer": true,
+            "flight_summaries": [
+              "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+              "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+              "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+            ],
+            "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+            "confirmed_price": "$2537.44 USD"
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "confirm_booking",
+        "argument": {
+          "parsed": [
+            {}
+          ],
+          "raw": "{}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "description": "Caller accepted the price \u2014 proceed to booking.",
+        "meta_data_token": "470123ef14c72cc005339fc70a82d5b3",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmNvbmZpcm1fYm9va2luZy4xNzcxMjcyNzY4LmExMzlmZGQwLjkzMDA5YTQ1NDFiNjljNjU%3D",
+      "post_response": {
+        "response": "Proceeding to book the flight.",
+        "action": [
+          {
+            "change_step": "create_booking"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "book_flight",
+      "command_arg": "{}",
+      "epoch_time": 1771269316,
+      "active_count": "endless",
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_answers": {
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST"
+          },
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST",
+            "has_flight_offers": true,
+            "has_flight_offer": true,
+            "has_priced_offer": true,
+            "flight_summaries": [
+              "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+              "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+              "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+            ],
+            "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+            "confirmed_price": "$2537.44 USD"
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": true,
+        "channel_offhook": true,
+        "channel_ready": true,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "book_flight",
+        "argument": {
+          "parsed": [
+            {}
+          ],
+          "raw": "{}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        },
+        "description": "Book the confirmed flight and create a PNR.",
+        "meta_data_token": "e846280f7a3765c1ffc6ca9b88701a44",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmJvb2tfZmxpZ2h0LjE3NzEyNzI3NjguYzA4MmU4YmQuMzgxZjZiOGEzNDdjMDY4Yg%3D%3D",
+      "post_response": {
+        "response": "Booked! Confirmation code is 8O05AI \u2014 that's Eight Oscar Zero Five Alpha India. Flight Tulsa International to San Francisco International, departing 2026-08-01, $2537.44. A confirmation text has been sent to the caller's phone. Read the confirmation code using the phonetic spelling, let them know the details have been texted, thank them, and end the call.",
+        "action": [
+          {
+            "SWML": {
+              "version": "1.0.0",
+              "sections": {
+                "main": [
+                  {
+                    "send_sms": {
+                      "to_number": "+19184249378",
+                      "from_number": "+12086946247",
+                      "body": "Voyager - Flight Confirmed!\nPNR: 8O05AI\nRoute: Tulsa International to San Francisco International\nDeparture: 2026-08-01 | Return: 2026-08-15\nPrice: $2537.44\nPassenger: Brian West\nThank you for using Voyager!"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "set_global_data": {
+              "booking_state": {
+                "origin": {
+                  "iata": "TUL",
+                  "name": "Tulsa International",
+                  "city": "Tulsa",
+                  "lat": 36.155138,
+                  "lng": -95.989501
+                },
+                "destination": {
+                  "iata": "SFO",
+                  "name": "San Francisco International",
+                  "city": "San Francisco"
+                },
+                "destination_candidates": [
+                  {
+                    "iata": "SFO",
+                    "name": "San Francisco International",
+                    "city": "San Francisco"
+                  },
+                  {
+                    "iata": "OAK",
+                    "name": "Oakland International",
+                    "city": "Oakland"
+                  },
+                  {
+                    "iata": "SJC",
+                    "name": "San Jose International",
+                    "city": "San Jose"
+                  }
+                ],
+                "departure_date": "2026-08-01",
+                "return_date": "2026-08-15",
+                "adults": 1,
+                "cabin_class": "FIRST",
+                "has_flight_offers": true,
+                "has_flight_offer": true,
+                "has_priced_offer": true,
+                "flight_summaries": [
+                  "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+                  "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+                  "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+                ],
+                "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+                "confirmed_price": "$2537.44 USD",
+                "booking": {
+                  "pnr": "8O05AI",
+                  "phonetic": "Eight Oscar Zero Five Alpha India",
+                  "route": "TUL to SFO",
+                  "departure": "2026-08-01",
+                  "price": "2537.44",
+                  "passenger": "Brian West",
+                  "email": "brian.west@gmail.com",
+                  "phone": "+19184249378",
+                  "return": "2026-08-15"
+                }
+              }
+            }
+          },
+          {
+            "change_step": "wrap_up"
+          }
+        ]
+      }
+    },
+    {
+      "command_name": "hangup",
+      "command_arg": "null",
+      "epoch_time": 1771269343,
+      "native": true
+    },
+    {
+      "command_name": "summarize_conversation",
+      "command_arg": "{\"summary\":\"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\"}",
+      "epoch_time": 1771269345,
+      "active_count": 0,
+      "post_data": {
+        "app_name": "swml app",
+        "global_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378",
+          "caller_id_name": "+19184249378",
+          "caller_id_number": "+19184249378",
+          "booking_answers": {
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST"
+          },
+          "booking_state": {
+            "origin": {
+              "iata": "TUL",
+              "name": "Tulsa International",
+              "city": "Tulsa",
+              "lat": 36.155138,
+              "lng": -95.989501
+            },
+            "destination": {
+              "iata": "SFO",
+              "name": "San Francisco International",
+              "city": "San Francisco"
+            },
+            "destination_candidates": [
+              {
+                "iata": "SFO",
+                "name": "San Francisco International",
+                "city": "San Francisco"
+              },
+              {
+                "iata": "OAK",
+                "name": "Oakland International",
+                "city": "Oakland"
+              },
+              {
+                "iata": "SJC",
+                "name": "San Jose International",
+                "city": "San Jose"
+              }
+            ],
+            "departure_date": "2026-08-01",
+            "return_date": "2026-08-15",
+            "adults": 1,
+            "cabin_class": "FIRST",
+            "has_flight_offers": true,
+            "has_flight_offer": true,
+            "has_priced_offer": true,
+            "flight_summaries": [
+              "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+              "Option 2: Outbound: United Airlines, 1 stop, departs 7 PM, arrives 11:40 PM, 7h 34m, Return: United Airlines, nonstop, departs 1 PM, arrives 6:25 PM, 3h 25m. $2778.30 USD",
+              "Option 3: Outbound: Frontier Airlines, nonstop, departs 6 AM, arrives 7:25 AM, 3h 25m, Return: Frontier Airlines, nonstop, departs 10 AM, arrives 3:25 PM, 3h 25m. $3051.80 USD"
+            ],
+            "flight_summary": "Option 1: Outbound: Alaska Airlines, 1 stop, departs 1 PM, arrives 6:38 PM, 8h 59m, Return: Alaska Airlines, 1 stop, departs 9 PM, arrives 3:50 AM, 8h 1m. $2513.26 USD",
+            "confirmed_price": "$2537.44 USD",
+            "booking": {
+              "pnr": "8O05AI",
+              "phonetic": "Eight Oscar Zero Five Alpha India",
+              "route": "TUL to SFO",
+              "departure": "2026-08-01",
+              "price": "2537.44",
+              "passenger": "Brian West",
+              "email": "brian.west@gmail.com",
+              "phone": "+19184249378",
+              "return": "2026-08-15"
+            }
+          }
+        },
+        "project_id": "37d8414f-60d1-4e7b-bf04-b5569535011b",
+        "space_id": "f6e0ee46-4bd4-4856-99bb-0f3bc3d3e787",
+        "caller_id_name": "+19184249378",
+        "caller_id_num": "+19184249378",
+        "channel_active": false,
+        "channel_offhook": false,
+        "channel_ready": false,
+        "content_type": "text/swaig",
+        "version": "2.0",
+        "content_disposition": "SWAIG Function",
+        "function": "summarize_conversation",
+        "argument": {
+          "parsed": [
+            {
+              "summary": "Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India."
+            }
+          ],
+          "raw": "{\"summary\":\"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\"}"
+        },
+        "call_id": "201e6db3-c95f-4bfa-9660-3da2aa16037d",
+        "ai_session_id": "916ed09a-27e1-4ebf-b743-c90bdbf0e954",
+        "argument_desc": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string",
+              "description": "Brief description of what happened during the call"
+            }
+          },
+          "required": [
+            "summary"
+          ]
+        },
+        "description": "Generate a structured call summary. Called automatically when the conversation ends.",
+        "meta_data_token": "c4e27bcedb92786a61f27eaaf110a408",
+        "meta_data": {
+          "passenger_profile": {
+            "phone": "+19184249378",
+            "first_name": "Brian",
+            "last_name": "West",
+            "date_of_birth": "1977-02-18",
+            "gender": "MALE",
+            "email": "brian.west@gmail.com",
+            "seat_preference": "AISLE",
+            "cabin_preference": "ECONOMY",
+            "home_airport_iata": "TUL",
+            "home_airport_name": "Tulsa International (TUL)"
+          },
+          "is_new_caller": false,
+          "caller_phone": "+19184249378"
+        }
+      },
+      "url": "https://briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnN1bW1hcml6ZV9jb252ZXJzYXRpb24uMTc3MTI3Mjc2OC5mZTUwNTBjMi4zZTYyNDIxNmVjYzcyZjg4",
+      "post_response": {
+        "response": "{\"summary\": \"Brian West called to book a round-trip flight from Tulsa International to San Francisco International. He chose to depart on August first and return on August fifteenth, traveling in first class. The cheapest option was booked with Alaska Airlines for two thousand five hundred thirty-seven dollars and forty-four cents, with a confirmation code of Eight Oscar Zero Five Alpha India.\", \"origin\": \"TUL\", \"destination\": \"SFO\", \"departure_date\": \"2026-08-01\", \"return_date\": \"2026-08-15\", \"booking\": {\"pnr\": \"8O05AI\", \"passenger\": \"Brian West\", \"price\": \"2537.44\"}}"
+      }
+    }
+  ],
+  "total_minutes": 3,
+  "total_input_tokens": 121331,
+  "total_output_tokens": 793,
+  "total_wire_input_tokens": 61440,
+  "total_wire_input_tokens_per_minute": 20480,
+  "total_wire_output_tokens": 800,
+  "total_wire_output_tokens_per_minute": 266.666667,
+  "total_tts_chars": 2555,
+  "total_tts_chars_per_min": 851.666667,
+  "total_asr_minutes": 2.297156,
+  "total_asr_cost_factor": 0.765719
+}

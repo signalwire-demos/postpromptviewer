@@ -30,8 +30,8 @@ async function captureScreenshots() {
   await page.screenshot({ path: join(imagesDir, '01-drop-zone.png'), fullPage: false });
 
   // 2. Load conversation JSON
-  console.log('📂 Loading conversation JSON...');
-  const conversationFile = join(__dirname, 'conversation_0bac6a96-3407-4fbf-9f95-22dee264f679.json');
+  console.log('📂 Loading call.json...');
+  const conversationFile = join(__dirname, 'call.json');
 
   const fileInput = await page.locator('#postprompt-input');
   await fileInput.setInputFiles(conversationFile);
@@ -76,7 +76,25 @@ async function captureScreenshots() {
   }
   await page.screenshot({ path: join(imagesDir, '06-swaig-inspector.png'), fullPage: false });
 
-  // 8. Global Data tab
+  // 8. Post-Prompt tab
+  console.log('📷 Capturing Post-Prompt...');
+  await page.click('.tab[data-tab="post-prompt"]');
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(imagesDir, '07-post-prompt.png'), fullPage: false });
+
+  // 9. State Flow tab
+  console.log('📷 Capturing State Flow...');
+  await page.click('.tab[data-tab="state-flow"]');
+  await page.waitForTimeout(1000); // Wait for mermaid to render
+  await page.screenshot({ path: join(imagesDir, '08-state-flow.png'), fullPage: false });
+
+  // 10. Recording tab
+  console.log('📷 Capturing Recording...');
+  await page.click('.tab[data-tab="recording"]');
+  await page.waitForTimeout(3000); // Wait longer for waveform to render
+  await page.screenshot({ path: join(imagesDir, '09-recording.png'), fullPage: false });
+
+  // 11. Global Data tab
   console.log('📷 Capturing Global Data...');
   await page.click('.tab[data-tab="global-data"]');
   await page.waitForTimeout(500);
@@ -86,15 +104,9 @@ async function captureScreenshots() {
     await firstSection.click();
     await page.waitForTimeout(300);
   }
-  await page.screenshot({ path: join(imagesDir, '07-global-data.png'), fullPage: false });
+  await page.screenshot({ path: join(imagesDir, '10-global-data.png'), fullPage: false });
 
-  // 9. State Flow tab
-  console.log('📷 Capturing State Flow...');
-  await page.click('.tab[data-tab="state-flow"]');
-  await page.waitForTimeout(1000); // Wait for mermaid to render
-  await page.screenshot({ path: join(imagesDir, '08-state-flow.png'), fullPage: false });
-
-  // 10. Load SWML file
+  // 12. Load SWML file
   console.log('📂 Loading SWML JSON (voyager.json)...');
   await page.goto('http://localhost:5176');
   await page.waitForLoadState('networkidle');
@@ -107,15 +119,27 @@ async function captureScreenshots() {
   await page.waitForSelector('.tabs', { timeout: 5000 });
   await page.waitForTimeout(1000);
 
-  // 11. SWML Overview tab (automatically selected)
+  // 13. SWML Overview tab (automatically selected)
   console.log('📷 Capturing SWML Overview...');
-  await page.screenshot({ path: join(imagesDir, '09-swml-overview.png'), fullPage: false });
+  await page.screenshot({ path: join(imagesDir, '11-swml-overview.png'), fullPage: false });
 
-  // 12. SWML Prompts tab
+  // 14. SWML Prompts tab
   console.log('📷 Capturing SWML Prompts...');
   await page.click('.tab[data-tab="swml-prompts"]');
+  await page.waitForTimeout(1500); // Wait for mermaid diagrams to render
+  await page.screenshot({ path: join(imagesDir, '12-swml-prompts.png'), fullPage: false });
+
+  // 15. SWML Functions tab
+  console.log('📷 Capturing SWML Functions...');
+  await page.click('.tab[data-tab="swml-functions"]');
   await page.waitForTimeout(500);
-  await page.screenshot({ path: join(imagesDir, '10-swml-prompts.png'), fullPage: false });
+  await page.screenshot({ path: join(imagesDir, '13-swml-functions.png'), fullPage: false });
+
+  // 16. SWML Config tab
+  console.log('📷 Capturing SWML Config...');
+  await page.click('.tab[data-tab="swml-config"]');
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(imagesDir, '14-swml-config.png'), fullPage: false });
 
   console.log('✅ Screenshot capture complete!');
   console.log(`📁 Images saved to: ${imagesDir}`);

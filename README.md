@@ -36,25 +36,45 @@ Expandable accordion of every SWAIG function call made during the session. Each 
 
 <img src="images/06-swaig-inspector.png" alt="SWAIG Inspector — function call request/response details" width="800" />
 
-### Global Data
-Expandable JSON view of session state at end of call, including `global_data` (set by SWAIG `set_global_data` actions), `SWMLVars` (runtime call variables), and `SWMLCall` signaling-layer metadata. Includes search with auto-expand and field-level filtering.
+### Post-Prompt
+Displays the post-prompt execution result with Raw and Substituted sub-tabs. Shows what the AI agent executed after the conversation ended (e.g., summary functions, data extraction).
 
-<img src="images/07-global-data.png" alt="Global Data — session state and call metadata JSON" width="800" />
+<img src="images/07-post-prompt.png" alt="Post-Prompt — post-conversation function results" width="800" />
 
 ### State Flow
 Interactive Mermaid diagram visualizing the conversation flow as a state machine. Shows the progression through states, functions, and prompts with scrollable viewport and PNG export capability.
 
 <img src="images/08-state-flow.png" alt="State Flow — conversation state machine diagram" width="800" />
 
+### Recording
+Stereo waveform visualization powered by wavesurfer.js with color-coded overlay regions (user speech, endpointing, assistant, tool calls, thinking, manual say, barge-in). Includes synced video playback, speed controls, and a scrubbing cursor that displays the matching transcript line.
+
+<img src="images/09-recording.png" alt="Recording — stereo waveform with overlay regions and video" width="800" />
+
+### Global Data
+Expandable JSON view of session state at end of call, including `global_data` (set by SWAIG `set_global_data` actions), `SWMLVars` (runtime call variables), and `SWMLCall` signaling-layer metadata. Includes search with auto-expand and field-level filtering.
+
+<img src="images/10-global-data.png" alt="Global Data — session state and call metadata JSON" width="800" />
+
 ### SWML Overview
 Inspector for SignalWire Markup Language (SWML) configuration files. Overview tab shows general configuration, sections, and high-level structure.
 
-<img src="images/09-swml-overview.png" alt="SWML Overview — configuration summary" width="800" />
+<img src="images/11-swml-overview.png" alt="SWML Overview — configuration summary" width="800" />
 
 ### SWML Prompts & Steps
 Detailed view of SWML prompts and steps with interactive Mermaid state diagrams. Supports both text and bullet-point prompt formats with PNG export for diagrams.
 
-<img src="images/10-swml-prompts.png" alt="SWML Prompts — prompts and state flow visualization" width="800" />
+<img src="images/12-swml-prompts.png" alt="SWML Prompts — prompts and state flow visualization" width="800" />
+
+### SWML Functions
+Expandable list of all SWML functions with their parameters, purposes, and metadata arguments.
+
+<img src="images/13-swml-functions.png" alt="SWML Functions — function definitions and parameters" width="800" />
+
+### SWML Configuration
+Raw JSON view of SWML configuration including parameters, hints, language settings, and other top-level configuration options.
+
+<img src="images/14-swml-config.png" alt="SWML Configuration — raw configuration JSON" width="800" />
 
 ## What This Does
 
@@ -74,7 +94,14 @@ This viewer parses that payload and presents it across nine interactive tabs:
 | **Recording** | Stereo waveform visualization with call-log regions overlaid, synced video playback for MP4 recordings, playback controls with speed adjustment |
 | **Global Data** | Expandable JSON view of `global_data`, `SWMLVars`, `SWMLCall`, and other top-level payload fields with search and field-level filtering |
 
-Additionally, the viewer supports **SWML Inspector** mode for analyzing SignalWire Markup Language configuration files with four dedicated tabs: Overview, Prompts & Steps (with interactive state diagrams), Functions, and Configuration.
+Additionally, the viewer supports **SWML Inspector** mode for analyzing SignalWire Markup Language configuration files with four dedicated tabs:
+
+| SWML Tab | What It Shows |
+|----------|---------------|
+| **Overview** | General configuration summary, sections, and high-level structure |
+| **Prompts & Steps** | Interactive Mermaid state diagrams showing prompt flow with PNG export |
+| **Functions** | Expandable list of all functions with parameters and metadata |
+| **Configuration** | Raw JSON view of all SWML configuration options |
 
 ## Quick Start
 
