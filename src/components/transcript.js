@@ -415,6 +415,11 @@ export function renderTranscript(container, payload) {
     const toggleStyle = 'padding:0.5rem 1rem;font-size:0.8rem;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text-muted);border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s';
     const activeStyle = 'padding:0.5rem 1rem;font-size:0.8rem;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text-primary);border-bottom:2px solid var(--accent)';
 
+    // Save focus state before innerHTML wipes the DOM
+    const focusedId = document.activeElement?.id;
+    const selStart = document.activeElement?.selectionStart ?? null;
+    const selEnd = document.activeElement?.selectionEnd ?? null;
+
     container.innerHTML = `
       <div class="transcript">
         ${renderSearchBar(allMessages)}
@@ -433,6 +438,17 @@ export function renderTranscript(container, payload) {
         `}
       </div>
     `;
+
+    // Restore focus and cursor after innerHTML replacement
+    if (focusedId) {
+      const restored = container.querySelector(`#${focusedId}`);
+      if (restored) {
+        restored.focus();
+        if (selStart !== null) {
+          try { restored.setSelectionRange(selStart, selEnd ?? selStart); } catch {}
+        }
+      }
+    }
 
     // Toggle handlers for log switching
     container.querySelectorAll('.transcript__log-toggle').forEach(btn => {

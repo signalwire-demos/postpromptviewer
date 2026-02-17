@@ -65,7 +65,7 @@ export async function renderStateFlow(container, payload) {
       <div class="state-flow__stats">
         <div class="swml-stat-card">
           <div class="swml-stat-card__label">Total Transitions</div>
-          <div class="swml-stat-card__value">${flowData.transitions.length}</div>
+          <div class="swml-stat-card__value">${flowData.transitionCount}</div>
         </div>
         <div class="swml-stat-card">
           <div class="swml-stat-card__label">Unique States</div>
@@ -80,7 +80,7 @@ export async function renderStateFlow(container, payload) {
           <div class="swml-stat-card__value" style="color:#f59e0b">${flowData.toolForced}</div>
         </div>
         <div class="swml-stat-card">
-          <div class="swml-stat-card__label">Functions Called</div>
+          <div class="swml-stat-card__label">Tool Calls</div>
           <div class="swml-stat-card__value">${flowData.totalFunctions}</div>
         </div>
         <div class="swml-stat-card">
@@ -271,20 +271,44 @@ function extractStateFlow(payload) {
   const allStepChanges = [];
 
   // 1. Extract step changes from call_log using new structured format
+  // Build a flat list of system-log entries for look-ahead
+  const systemLogEntries = callLog.filter(e => e.role === 'system-log' && e.action);
+
+  systemLogEntries.forEach((entry, idx) => {
+    if (entry.action === 'change_step' && entry.name) {
+      // Distinguish AI-initiated (next_step) from tool-forced:
+      // When a function's SWAIG response contains change_step, the call_function (or
+      // gather_submit) entry is logged within microseconds AFTER the change_step entry.
+      // When the AI calls the native next_step command, there is no function entry
+      // immediately after — next_step is never logged as call_function.
+      const TOOL_WINDOW_US = 50000; // 50ms in microseconds
+      const nextEntry = systemLogEntries[idx + 1];
+      const isFunctionEntry = nextEntry && (
+        nextEntry.action === 'call_function' ||
+        nextEntry.action === 'gather_submit'
+      );
+      const isToolForced = isFunctionEntry &&
+        (nextEntry.timestamp - entry.timestamp) < TOOL_WINDOW_US;
+
+      const source = isToolForced ? 'tool' : 'ai';
+      const triggeredBy = isToolForced
+        ? `${nextEntry.function || nextEntry.action} → change_step`
+        : 'AI: next_step';
+
+      allStepChanges.push({
+        timestamp: entry.timestamp,
+        step: entry.name,
+        stepIndex: entry.index || null,
+        triggeredBy,
+        source,
+      });
+    }
+  });
+
+  // LEGACY: Parse from content string (next_step, change_context)
   callLog.forEach(entry => {
     if (entry.role === 'system-log' && entry.action) {
-      // NEW FORMAT: Explicit change_step action with name field
-      if (entry.action === 'change_step' && entry.name) {
-        allStepChanges.push({
-          timestamp: entry.timestamp,
-          step: entry.name,
-          stepIndex: entry.index || null,
-          triggeredBy: `Step change`,
-          source: 'explicit',
-        });
-      }
-      // LEGACY: Parse from content string (next_step, change_context)
-      else if (entry.content) {
+      if (entry.content) {
         const nextStepMatch = entry.content.match(/Calling function: next_step\(([^)]+)\)/);
         const changeContextMatch = entry.content.match(/Calling function: change_context\(([^)]+)\)/);
 
@@ -585,11 +609,12 @@ function extractStateFlow(payload) {
   }
 
 
-  // Calculate stats
-  const uniqueStates = new Set(transitions.map(t => t.toState));
+  // Calculate stats — exclude synthetic implicit initial state from counts
+  const realTransitions = transitions.filter(t => t.source !== 'implicit');
+  const uniqueStates = new Set(realTransitions.map(t => t.toState));
   const totalFunctions = transitions.reduce((sum, trans) => sum + (trans.totalFunctionCalls || trans.functionsInState.length), 0);
-  const aiInitiated = transitions.filter(t => t.source === 'ai').length;
-  const toolForced = transitions.filter(t => t.source === 'tool').length;
+  const aiInitiated = realTransitions.filter(t => t.source === 'ai').length;
+  const toolForced = realTransitions.filter(t => t.source === 'tool').length;
 
   let duration = 'N/A';
   if (transitions.length > 0) {
@@ -635,6 +660,7 @@ function extractStateFlow(payload) {
     transitions,
     detailedTimeline,
     uniqueStates,
+    transitionCount: realTransitions.length,
     totalFunctions,
     aiInitiated,
     toolForced,

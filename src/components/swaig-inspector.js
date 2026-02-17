@@ -186,6 +186,11 @@ export function renderSwaigInspector(container, payload) {
       `;
     }).join('');
 
+    // Save focus state before innerHTML wipes the DOM
+    const focusedId = document.activeElement?.id;
+    const selStart = document.activeElement?.selectionStart ?? null;
+    const selEnd = document.activeElement?.selectionEnd ?? null;
+
     container.innerHTML = `
       <div class="swaig-inspector">
         ${renderSearchBar(entries.length, filteredEntries.length)}
@@ -198,6 +203,17 @@ export function renderSwaigInspector(container, payload) {
         `}
       </div>
     `;
+
+    // Restore focus and cursor after innerHTML replacement
+    if (focusedId) {
+      const restored = container.querySelector(`#${focusedId}`);
+      if (restored) {
+        restored.focus();
+        if (selStart !== null) {
+          try { restored.setSelectionRange(selStart, selEnd ?? selStart); } catch {}
+        }
+      }
+    }
 
     // Search input handler (debounced)
     const searchInput = container.querySelector('#swaig-search-input');

@@ -157,6 +157,11 @@ export function renderGlobalData(container, payload) {
     lastSearchQuery = search.activeTab === 'globalData' ? search.query : '';
     const isSearching = search.query && search.activeTab === 'globalData';
 
+    // Save focus state before innerHTML wipes the DOM
+    const focusedId = document.activeElement?.id;
+    const selStart = document.activeElement?.selectionStart ?? null;
+    const selEnd = document.activeElement?.selectionEnd ?? null;
+
     container.innerHTML = `
       <div class="global-data-viewer">
         ${renderSearchBar(allSections.length, filteredSections.length)}
@@ -210,6 +215,17 @@ export function renderGlobalData(container, payload) {
         `}
       </div>
     `;
+
+    // Restore focus and cursor after innerHTML replacement
+    if (focusedId) {
+      const restored = container.querySelector(`#${focusedId}`);
+      if (restored) {
+        restored.focus();
+        if (selStart !== null) {
+          try { restored.setSelectionRange(selStart, selEnd ?? selStart); } catch {}
+        }
+      }
+    }
 
     // Search input handler (debounced)
     const searchInput = container.querySelector('#global-data-search-input');
