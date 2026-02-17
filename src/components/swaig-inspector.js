@@ -1,4 +1,4 @@
-import { debounce, matchesSearch, highlightMatches, searchInObject, filterDataBySearch, escapeHtml } from '../../lib/search-filter.js';
+import { debounce, matchesSearch, highlightMatches, searchInObject, escapeHtml } from '../../lib/search-filter.js';
 import { getState, update, subscribe } from '../state.js';
 
 export function renderSwaigInspector(container, payload) {
@@ -121,16 +121,7 @@ export function renderSwaigInspector(container, payload) {
           </div>
         `;
       } else {
-        // Filter data when searching to show only matching fields
-        const filteredPostData = isSearching && entry.post_data
-          ? filterDataBySearch(entry.post_data, search.query, search.caseSensitive)
-          : entry.post_data;
-
-        const filteredPostResponse = isSearching && entry.post_response
-          ? filterDataBySearch(entry.post_response, search.query, search.caseSensitive)
-          : entry.post_response;
-
-        const postDataHtml = filteredPostData
+        const postDataHtml = entry.post_data
           ? `<div class="swaig-entry__section">
               <div class="swaig-entry__section-header">
                 <span class="swaig-entry__section-title">Request (post_data)</span>
@@ -141,9 +132,9 @@ export function renderSwaigInspector(container, payload) {
                   </svg>
                 </button>
               </div>
-              ${renderDataItems(filteredPostData, `swaig-${idx}-req`, search.query, search.caseSensitive, isSearching)}
+              <pre class="swaig-entry__json">${escapeHtml(formatJson(entry.post_data))}</pre>
             </div>` : '';
-        const postResponseHtml = filteredPostResponse
+        const postResponseHtml = entry.post_response
           ? `<div class="swaig-entry__section">
               <div class="swaig-entry__section-header">
                 <span class="swaig-entry__section-title">Response (post_response)</span>
@@ -154,7 +145,7 @@ export function renderSwaigInspector(container, payload) {
                   </svg>
                 </button>
               </div>
-              ${renderDataItems(filteredPostResponse, `swaig-${idx}-resp`, search.query, search.caseSensitive, isSearching)}
+              <pre class="swaig-entry__json">${escapeHtml(formatJson(entry.post_response))}</pre>
             </div>` : '';
         bodyHtml = postDataHtml + postResponseHtml;
       }
@@ -281,34 +272,6 @@ export function renderSwaigInspector(container, payload) {
     addCopyHandler('.swaig-entry__copy-btn');
     addCopyHandler('.swaig-entry__copy-all');
 
-    // Copy item button handlers
-    container.querySelectorAll('.swaig-data-item-copy').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const value = btn.dataset.value;
-        navigator.clipboard.writeText(value).then(() => {
-          const originalHtml = btn.innerHTML;
-          btn.innerHTML = `
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          `;
-          setTimeout(() => {
-            btn.innerHTML = originalHtml;
-          }, 2000);
-        });
-      });
-    });
-
-    // Add expand/collapse nested objects
-    container.querySelectorAll('.swaig-data-nested-toggle').forEach(toggle => {
-      toggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const item = toggle.closest('.swaig-data-item');
-        item.classList.toggle('expanded');
-      });
-    });
-
     // Subscribe to state changes (only set up once)
     if (!unsubscribe) {
       unsubscribe = subscribe((state) => {
@@ -325,75 +288,6 @@ export function renderSwaigInspector(container, payload) {
   render();
 }
 
-function renderDataItems(data, parentKey = '', query = '', caseSensitive = false, isSearching = false) {
-  if (data === null || data === undefined) {
-    return `<div class="swaig-data-items"><div class="swaig-data-value-only">${formatValue(data)}</div></div>`;
-  }
-
-  if (Array.isArray(data)) {
-    return `
-      <div class="swaig-data-items">
-        ${data.map((item, idx) => {
-          const itemKey = `${parentKey}[${idx}]`;
-          return renderDataItem(idx, item, itemKey, query, caseSensitive, isSearching);
-        }).join('')}
-      </div>
-    `;
-  }
-
-  if (typeof data === 'object' && data !== null) {
-    return `
-      <div class="swaig-data-items">
-        ${Object.entries(data).map(([key, value]) => {
-          const itemKey = parentKey ? `${parentKey}.${key}` : key;
-          return renderDataItem(key, value, itemKey, query, caseSensitive, isSearching);
-        }).join('')}
-      </div>
-    `;
-  }
-
-  return `<div class="swaig-data-items"><div class="swaig-data-value-only">${escapeHtml(formatValue(data))}</div></div>`;
-}
-
-function renderDataItem(key, value, fullKey, query = '', caseSensitive = false, isSearching = false) {
-  const isObject = typeof value === 'object' && value !== null;
-  const isArray = Array.isArray(value);
-  const displayValue = isObject ? (isArray ? `Array[${value.length}]` : 'Object') : formatValue(value);
-  const valueString = JSON.stringify(value, null, 2);
-
-  // Check if this item's subtree contains search matches
-  const containsMatch = isSearching && isObject && searchInObject(value, query, caseSensitive);
-
-  return `
-    <div class="swaig-data-item ${isObject ? 'has-nested' : ''} ${containsMatch ? 'expanded' : ''}" data-key="${escapeHtml(fullKey || key)}">
-      <div class="swaig-data-item-row">
-        ${isObject ? '<span class="swaig-data-nested-toggle">&#x25B6;</span>' : '<span class="swaig-data-item-spacer"></span>'}
-        <span class="swaig-data-item-key">${escapeHtml(String(key))}</span>
-        <span class="swaig-data-item-value ${isObject ? 'is-object' : ''}">${escapeHtml(displayValue)}</span>
-        <button class="swaig-data-item-copy" data-value="${escapeHtml(valueString)}" title="Copy value">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        </button>
-      </div>
-      ${isObject ? `
-        <div class="swaig-data-item-nested">
-          ${renderDataItems(value, fullKey || key, query, caseSensitive, isSearching)}
-        </div>
-      ` : ''}
-    </div>
-  `;
-}
-
-function formatValue(value) {
-  if (value === null) return 'null';
-  if (value === undefined) return 'undefined';
-  if (typeof value === 'string') return `"${value}"`;
-  if (typeof value === 'boolean') return value.toString();
-  if (typeof value === 'number') return value.toString();
-  return String(value);
-}
 
 function formatJson(obj) {
   try {
