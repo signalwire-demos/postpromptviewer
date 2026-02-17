@@ -232,7 +232,11 @@ export async function renderSwmlPrompts(container, swml) {
       const svg = container.querySelector('#step-mermaid-container svg');
       if (svg) {
         try {
-          await downloadSvgAsImage(svg, 'swml-step-flow-diagram.png', 'SWML Step Flow Diagram');
+          await downloadSvgAsImage(svg, 'swml-step-flow-diagram.png', 'SWML Step Flow Diagram', [
+            { color: '#3b82f6', stroke: '#2563eb', label: 'Step / State' },
+            { color: '#f59e0b', stroke: '#d97706', label: 'Function' },
+            { color: '#6b7280', stroke: '#4b5563', label: 'Gather / Q&A' },
+          ]);
           downloadImageBtn.textContent = 'Downloaded!';
           setTimeout(() => {
             downloadImageBtn.textContent = 'Download Image';
@@ -524,7 +528,7 @@ function getPromptCopyValue(prompt) {
   return prompt.body || '';
 }
 
-async function downloadSvgAsImage(svgElement, filename, title = 'SWML Step Flow Diagram') {
+async function downloadSvgAsImage(svgElement, filename, title = 'SWML Step Flow Diagram', legendItems = []) {
   const BG = '#0f172a';
   const TITLE_PAD = 80; // room for title line + legend line below it
 
@@ -605,6 +609,30 @@ async function downloadSvgAsImage(svgElement, filename, title = 'SWML Step Flow 
   titleEl.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
   titleEl.textContent = title;
   clonedSvg.appendChild(titleEl);
+
+  // Legend — upper-right, on the line below the title
+  if (legendItems.length > 0) {
+    const ITEM_BOX = 18, BOX_GAP = 8, ITEM_GAP = 20, CHAR_W = 7.5;
+    const totalLegendW = legendItems.reduce((sum, item, i) =>
+      sum + ITEM_BOX + BOX_GAP + item.label.length * CHAR_W + (i < legendItems.length - 1 ? ITEM_GAP : 0), 0);
+    let lx = vx + width - totalLegendW - 20;
+    const ly = vy - TITLE_PAD + 58;
+    legendItems.forEach(item => {
+      const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      r.setAttribute('x', lx); r.setAttribute('y', ly - 12);
+      r.setAttribute('width', ITEM_BOX); r.setAttribute('height', ITEM_BOX);
+      r.setAttribute('fill', item.color); r.setAttribute('stroke', item.stroke);
+      r.setAttribute('stroke-width', '1.5'); r.setAttribute('rx', '3');
+      clonedSvg.appendChild(r);
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', lx + ITEM_BOX + BOX_GAP); t.setAttribute('y', ly + 2);
+      t.setAttribute('fill', '#9ca3af'); t.setAttribute('font-size', '13');
+      t.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
+      t.textContent = item.label;
+      clonedSvg.appendChild(t);
+      lx += ITEM_BOX + BOX_GAP + item.label.length * CHAR_W + ITEM_GAP;
+    });
+  }
 
   // Serialize SVG to string and encode as data URI
   const svgString = new XMLSerializer().serializeToString(clonedSvg);
