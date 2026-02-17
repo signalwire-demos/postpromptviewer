@@ -2,7 +2,6 @@ import { epochToDate, formatTimestamp, truncate } from '../../lib/utils.js';
 import { debounce, matchesSearch, highlightMatches, scrollToElement, escapeHtml } from '../../lib/search-filter.js';
 import { getState, update, subscribe } from '../state.js';
 
-const LONG_CONTENT_THRESHOLD = 200;
 
 // Labels for non-standard/non-printable whitespace characters
 const GARBAGE_CHAR_LABELS = {
@@ -173,7 +172,6 @@ export function renderTranscript(container, payload) {
       const role = msg.role || 'unknown';
       const roleClass = role.replace(/[^a-z-]/g, '');
       const isGarbage = isGarbageContent(msg.content);
-      const isLong = msg.content && msg.content.length > LONG_CONTENT_THRESHOLD;
       const time = msg.timestamp ? formatTimestamp(epochToDate(msg.timestamp)) : '';
       const contentDisplay = msg.content || '';
 
@@ -249,10 +247,9 @@ export function renderTranscript(container, payload) {
         <div class="transcript__msg transcript__msg--${roleClass}" ${dataAttrs}>
           <div class="transcript__role">${role}</div>
           <div class="transcript__body">
-            <div class="transcript__content${isLong ? ' transcript__content--truncated' : ''}${isGarbage ? ' transcript__content--garbage' : ''}" id="msg-content-${idx}">
+            <div class="transcript__content${isGarbage ? ' transcript__content--garbage' : ''}" id="msg-content-${idx}">
               ${displayContent}
             </div>
-            ${isLong ? `<button class="transcript__toggle" data-idx="${idx}">Show more</button>` : ''}
             ${toolCallsHtml}
             ${metaTags.length > 0 ? `
               <div class="transcript__meta">
@@ -455,17 +452,6 @@ export function renderTranscript(container, payload) {
       btn.addEventListener('click', () => {
         activeLog = btn.dataset.log;
         renderLog();
-      });
-    });
-
-    // Toggle handlers for show more/less
-    container.querySelectorAll('.transcript__toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = btn.dataset.idx;
-        const content = document.getElementById(`msg-content-${idx}`);
-        const isTruncated = content.classList.contains('transcript__content--truncated');
-        content.classList.toggle('transcript__content--truncated');
-        btn.textContent = isTruncated ? 'Show less' : 'Show more';
       });
     });
 

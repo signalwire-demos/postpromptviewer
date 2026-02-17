@@ -293,6 +293,9 @@ function generateStepFlowDiagram(steps) {
   let nodeId = 0;
   const stepNodes = {};
 
+  // START node
+  lines.push(`    ST["START"]:::stepNode`);
+
   // Create all step nodes
   steps.forEach(step => {
     const stepNodeId = `S${nodeId++}`;
@@ -302,6 +305,11 @@ function generateStepFlowDiagram(steps) {
   });
 
   lines.push('');
+
+  // Connect START to first step
+  if (steps.length > 0) {
+    lines.push(`    ST --> ${stepNodes[steps[0].name]}`);
+  }
 
   // Draw step→step transitions via valid_steps
   steps.forEach(step => {
