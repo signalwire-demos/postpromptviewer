@@ -90,6 +90,12 @@ export async function renderStateFlow(container, payload) {
       </div>
 
       <div class="state-flow__diagram-wrapper">
+        <div class="flow-legend">
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function Call</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>SWML Action</span>
+        </div>
         <div class="state-flow__zoom-controls">
           <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
           <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
@@ -205,7 +211,7 @@ export async function renderStateFlow(container, payload) {
     const svg = container.querySelector('#flow-mermaid-container svg');
     if (svg) {
       try {
-        await downloadSvgAsImage(svg, 'state-flow-diagram.png');
+        await downloadSvgAsImage(svg, 'state-flow-diagram.png', 'State Flow Diagram');
         downloadImageBtn.textContent = 'Downloaded!';
         setTimeout(() => {
           downloadImageBtn.textContent = 'Download Image';
@@ -1012,90 +1018,44 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-async function downloadSvgAsImage(svgElement, filename) {
+async function downloadSvgAsImage(svgElement, filename, title = 'State Flow Diagram') {
+  const BG = '#0f172a';
+  const TITLE_PAD = 80; // room for title line + legend line below it
+
   // Clone SVG to avoid modifying the original
   const clonedSvg = svgElement.cloneNode(true);
 
-  // Remove any transforms from the main group to get true dimensions
+  // Remove any pan/zoom transforms from the main group to get true dimensions
   const g = clonedSvg.querySelector('g');
   if (g) {
     g.removeAttribute('transform');
   }
 
-  // Make ALL paths/lines highly visible with dark color
+  // Make edge paths visible
   const allPaths = clonedSvg.querySelectorAll('path');
   allPaths.forEach(path => {
     const currentStroke = path.getAttribute('stroke');
-    // Only modify paths that are lines (not fills)
     if (currentStroke && currentStroke !== 'none') {
-      path.setAttribute('stroke', '#1e293b'); // Very dark, highly visible
-      path.setAttribute('stroke-width', '3');
-      path.removeAttribute('stroke-dasharray'); // Remove all dashing
+      path.setAttribute('stroke', '#4b5563');
+      path.setAttribute('stroke-width', '2');
     }
   });
 
-  // Make start node green and prominent
-  const startNodes = clonedSvg.querySelectorAll('.start-state circle, [id*="start"] circle, .node circle');
-  startNodes.forEach((circle, idx) => {
-    if (idx === 0) {
-      circle.setAttribute('fill', '#10b981');
-      circle.setAttribute('stroke', '#059669');
-      circle.setAttribute('stroke-width', '3');
-    }
-  });
-
-  // Style state boxes with rounded corners
-  const stateRects = clonedSvg.querySelectorAll('.node rect, rect.state');
-  stateRects.forEach(rect => {
-    rect.setAttribute('fill', '#1e293b');
-    rect.setAttribute('stroke', '#3b82f6');
-    rect.setAttribute('stroke-width', '2');
-    rect.setAttribute('rx', '8'); // More rounded
-  });
-
-  // HIDE all function note boxes completely - show only text
-  const noteRects = clonedSvg.querySelectorAll('.note rect, [class*="note"] rect, [class*="Note"] rect');
-  noteRects.forEach(rect => {
-    rect.setAttribute('fill', 'none'); // Completely transparent
-    rect.setAttribute('stroke', 'none'); // No border
-    rect.setAttribute('opacity', '0'); // Invisible
-  });
-
-  // Make note text stand out since there's no box
-  const noteTexts = clonedSvg.querySelectorAll('.note text, [class*="note"] text, [class*="Note"] text');
-  noteTexts.forEach(text => {
-    text.setAttribute('fill', '#64748b'); // Medium gray, subtle
-    text.setAttribute('font-size', '13');
-    text.setAttribute('font-weight', '400');
-    text.setAttribute('font-style', 'italic'); // Italicize to distinguish
-  });
-
-  // Make all other text larger and bolder
+  // Make all text legible
   const texts = clonedSvg.querySelectorAll('text');
   texts.forEach(text => {
     const currentSize = parseFloat(text.getAttribute('font-size') || '14');
-    text.setAttribute('font-size', Math.max(currentSize * 1.3, 16));
+    text.setAttribute('font-size', Math.max(currentSize * 1.2, 14));
     text.setAttribute('font-weight', '600');
-    // Only change to light if not already set by note styling
-    if (!text.closest('.note') && !text.closest('[class*="note"]')) {
-      text.setAttribute('fill', '#f1f5f9');
-    }
+    text.setAttribute('fill', '#f1f5f9');
   });
 
-  // Clean edge labels - simple white background, no border
+  // Clean edge label backgrounds
   const edgeLabelRects = clonedSvg.querySelectorAll('.edgeLabel rect, .edge-label rect');
   edgeLabelRects.forEach(rect => {
-    rect.setAttribute('fill', '#ffffff');
-    rect.setAttribute('fill-opacity', '0.95');
-    rect.setAttribute('stroke', 'none'); // Remove border
-    rect.setAttribute('rx', '4');
-  });
-
-  const edgeLabels = clonedSvg.querySelectorAll('.edgeLabel text, .edge-label text');
-  edgeLabels.forEach(label => {
-    label.setAttribute('font-size', '14');
-    label.setAttribute('font-weight', '600');
-    label.setAttribute('fill', '#1e293b');
+    rect.setAttribute('fill', '#1f2937');
+    rect.setAttribute('stroke', 'none');
+    rect.setAttribute('rx', '3');
   });
 
   // Get true bounding box of all content
@@ -1106,25 +1066,39 @@ async function downloadSvgAsImage(svgElement, filename) {
   tempDiv.appendChild(clonedSvg);
 
   const bbox = clonedSvg.getBBox();
-  const padding = 40; // Add padding around the diagram
+  const padding = 40;
+  const vx = bbox.x - padding / 2;
+  const vy = bbox.y - padding / 2;
   const width = Math.ceil(bbox.width + bbox.x * 2 + padding);
   const height = Math.ceil(bbox.height + bbox.y * 2 + padding);
+  const totalHeight = height + TITLE_PAD;
 
   document.body.removeChild(tempDiv);
 
-  // Prepare final SVG
+  // Extend viewBox: TITLE_PAD above the diagram holds title + legend
   clonedSvg.setAttribute('width', width);
-  clonedSvg.setAttribute('height', height);
-  clonedSvg.setAttribute('viewBox', `${bbox.x - padding/2} ${bbox.y - padding/2} ${width} ${height}`);
+  clonedSvg.setAttribute('height', totalHeight);
+  clonedSvg.setAttribute('viewBox', `${vx} ${vy - TITLE_PAD} ${width} ${totalHeight}`);
 
-  // Add white background to SVG
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', bbox.x - padding/2);
-  rect.setAttribute('y', bbox.y - padding/2);
-  rect.setAttribute('width', width);
-  rect.setAttribute('height', height);
-  rect.setAttribute('fill', '#ffffff');
-  clonedSvg.insertBefore(rect, clonedSvg.firstChild);
+  // Background covering the full extended area
+  const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  bgRect.setAttribute('x', vx);
+  bgRect.setAttribute('y', vy - TITLE_PAD);
+  bgRect.setAttribute('width', width);
+  bgRect.setAttribute('height', totalHeight);
+  bgRect.setAttribute('fill', BG);
+  clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
+
+  // Title — top-left of the header band
+  const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  titleEl.setAttribute('x', vx + 20);
+  titleEl.setAttribute('y', vy - TITLE_PAD + 28);
+  titleEl.setAttribute('fill', '#e5e7eb');
+  titleEl.setAttribute('font-size', '18');
+  titleEl.setAttribute('font-weight', 'bold');
+  titleEl.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
+  titleEl.textContent = title;
+  clonedSvg.appendChild(titleEl);
 
   // Serialize SVG to string and encode as data URI
   const svgString = new XMLSerializer().serializeToString(clonedSvg);
@@ -1133,7 +1107,7 @@ async function downloadSvgAsImage(svgElement, filename) {
   // Create image from SVG data URI
   const img = new Image();
   img.width = width;
-  img.height = height;
+  img.height = totalHeight;
 
   return new Promise((resolve, reject) => {
     img.onload = () => {
@@ -1141,7 +1115,7 @@ async function downloadSvgAsImage(svgElement, filename) {
         // Create canvas
         const canvas = document.createElement('canvas');
         canvas.width = width * 2; // 2x for better quality
-        canvas.height = height * 2;
+        canvas.height = totalHeight * 2;
         const ctx = canvas.getContext('2d');
 
         // Draw SVG (background already in SVG)

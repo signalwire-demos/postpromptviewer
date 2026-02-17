@@ -1228,6 +1228,36 @@
 .state-flow__diagram-wrapper {
   position: relative;
 }
+.flow-legend {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 10px;
+  pointer-events: none;
+}
+.flow-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+.flow-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border-width: 1.5px;
+  border-style: solid;
+  flex-shrink: 0;
+}
 .state-flow__zoom-controls {
   position: absolute;
   top: 1rem;

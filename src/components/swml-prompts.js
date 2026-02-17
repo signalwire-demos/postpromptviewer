@@ -63,6 +63,11 @@ export async function renderSwmlPrompts(container, swml) {
             </div>
           </div>
           <div class="swml-step-flow-diagram-wrapper">
+            <div class="flow-legend">
+              <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
+              <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function</span>
+              <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
+            </div>
             <div class="swml-zoom-controls">
               <button class="zoom-btn" id="swml-zoom-in" title="Zoom In">+</button>
               <button class="zoom-btn" id="swml-zoom-out" title="Zoom Out">−</button>
@@ -227,7 +232,7 @@ export async function renderSwmlPrompts(container, swml) {
       const svg = container.querySelector('#step-mermaid-container svg');
       if (svg) {
         try {
-          await downloadSvgAsImage(svg, 'swml-step-flow-diagram.png');
+          await downloadSvgAsImage(svg, 'swml-step-flow-diagram.png', 'SWML Step Flow Diagram');
           downloadImageBtn.textContent = 'Downloaded!';
           setTimeout(() => {
             downloadImageBtn.textContent = 'Download Image';
@@ -519,7 +524,10 @@ function getPromptCopyValue(prompt) {
   return prompt.body || '';
 }
 
-async function downloadSvgAsImage(svgElement, filename) {
+async function downloadSvgAsImage(svgElement, filename, title = 'SWML Step Flow Diagram') {
+  const BG = '#0f172a';
+  const TITLE_PAD = 80; // room for title line + legend line below it
+
   // Clone SVG to avoid modifying the original
   const clonedSvg = svgElement.cloneNode(true);
 
@@ -529,17 +537,17 @@ async function downloadSvgAsImage(svgElement, filename) {
     g.removeAttribute('transform');
   }
 
-  // Make edge paths visible with dark color on white background
+  // Make edge paths visible
   const allPaths = clonedSvg.querySelectorAll('path');
   allPaths.forEach(path => {
     const currentStroke = path.getAttribute('stroke');
     if (currentStroke && currentStroke !== 'none') {
-      path.setAttribute('stroke', '#374151');
+      path.setAttribute('stroke', '#4b5563');
       path.setAttribute('stroke-width', '2');
     }
   });
 
-  // Make all text larger and bolder
+  // Make all text legible
   const texts = clonedSvg.querySelectorAll('text');
   texts.forEach(text => {
     const currentSize = parseFloat(text.getAttribute('font-size') || '14');
@@ -564,25 +572,39 @@ async function downloadSvgAsImage(svgElement, filename) {
   tempDiv.appendChild(clonedSvg);
 
   const bbox = clonedSvg.getBBox();
-  const padding = 40; // Add padding around the diagram
+  const padding = 40;
+  const vx = bbox.x - padding / 2;
+  const vy = bbox.y - padding / 2;
   const width = Math.ceil(bbox.width + bbox.x * 2 + padding);
   const height = Math.ceil(bbox.height + bbox.y * 2 + padding);
+  const totalHeight = height + TITLE_PAD;
 
   document.body.removeChild(tempDiv);
 
-  // Prepare final SVG
+  // Extend viewBox: TITLE_PAD above the diagram holds title + legend
   clonedSvg.setAttribute('width', width);
-  clonedSvg.setAttribute('height', height);
-  clonedSvg.setAttribute('viewBox', `${bbox.x - padding/2} ${bbox.y - padding/2} ${width} ${height}`);
+  clonedSvg.setAttribute('height', totalHeight);
+  clonedSvg.setAttribute('viewBox', `${vx} ${vy - TITLE_PAD} ${width} ${totalHeight}`);
 
-  // Add dark background to SVG (matching app theme)
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', bbox.x - padding/2);
-  rect.setAttribute('y', bbox.y - padding/2);
-  rect.setAttribute('width', width);
-  rect.setAttribute('height', height);
-  rect.setAttribute('fill', '#0f172a');
-  clonedSvg.insertBefore(rect, clonedSvg.firstChild);
+  // Background covering the full extended area
+  const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  bgRect.setAttribute('x', vx);
+  bgRect.setAttribute('y', vy - TITLE_PAD);
+  bgRect.setAttribute('width', width);
+  bgRect.setAttribute('height', totalHeight);
+  bgRect.setAttribute('fill', BG);
+  clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
+
+  // Title — top-left of the header band
+  const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  titleEl.setAttribute('x', vx + 20);
+  titleEl.setAttribute('y', vy - TITLE_PAD + 28);
+  titleEl.setAttribute('fill', '#e5e7eb');
+  titleEl.setAttribute('font-size', '18');
+  titleEl.setAttribute('font-weight', 'bold');
+  titleEl.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
+  titleEl.textContent = title;
+  clonedSvg.appendChild(titleEl);
 
   // Serialize SVG to string and encode as data URI
   const svgString = new XMLSerializer().serializeToString(clonedSvg);
@@ -591,7 +613,7 @@ async function downloadSvgAsImage(svgElement, filename) {
   // Create image from SVG data URI
   const img = new Image();
   img.width = width;
-  img.height = height;
+  img.height = totalHeight;
 
   return new Promise((resolve, reject) => {
     img.onload = () => {
@@ -599,7 +621,7 @@ async function downloadSvgAsImage(svgElement, filename) {
         // Create canvas
         const canvas = document.createElement('canvas');
         canvas.width = width * 2; // 2x for better quality
-        canvas.height = height * 2;
+        canvas.height = totalHeight * 2;
         const ctx = canvas.getContext('2d');
 
         // Draw SVG (background already in SVG)
