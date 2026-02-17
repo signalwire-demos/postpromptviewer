@@ -101,35 +101,49 @@ export async function renderStateFlow(container, payload) {
       </div>
 
       <div class="state-flow__timeline">
-        <h3 class="swml-section-title">Transition Timeline</h3>
+        <h3 class="swml-section-title">Complete Execution Timeline</h3>
         <div class="flow-timeline">
-          ${flowData.transitions.map((trans, idx) => `
+          ${flowData.detailedTimeline.map((item, idx) => `
             <div class="flow-timeline-item">
               <div class="flow-timeline-marker">${idx + 1}</div>
               <div class="flow-timeline-content">
-                <div class="flow-timeline-step">${escapeHtml(trans.toState)}</div>
-                <div class="flow-timeline-time">${formatTimestamp(trans.timestamp)}</div>
-                ${trans.triggeredBy ? `
-                  <div class="flow-timeline-trigger">
-                    <strong>Triggered by:</strong> <code>${escapeHtml(trans.triggeredBy)}</code>
-                    ${trans.source === 'ai' ? '<span style="color:#10b981;margin-left:0.5rem;font-size:0.7rem">● AI-initiated</span>' : ''}
-                    ${trans.source === 'tool' ? '<span style="color:#f59e0b;margin-left:0.5rem;font-size:0.7rem">● Tool-forced</span>' : ''}
+                ${item.type === 'state' ? `
+                  <div class="flow-timeline-step">
+                    <strong>→ ${escapeHtml(item.state)}</strong>
+                    ${item.stepIndex !== null && item.stepIndex !== undefined ? `<span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">(index ${item.stepIndex})</span>` : ''}
                   </div>
-                ` : ''}
-                ${trans.functionsInState && trans.functionsInState.length > 0 ? `
-                  <div class="flow-timeline-functions">
-                    <strong>Functions called (${trans.functionsInState.length}):</strong>
-                    ${trans.functionsInState.map(fn => `<span class="swml-function-tag">${escapeHtml(fn)}</span>`).join('')}
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+                  ${item.triggeredBy ? `
+                    <div class="flow-timeline-trigger">
+                      <strong>Triggered by:</strong> <code>${escapeHtml(item.triggeredBy)}</code>
+                      ${item.source === 'ai' ? '<span style="color:#10b981;margin-left:0.5rem;font-size:0.7rem">● AI-initiated</span>' : ''}
+                      ${item.source === 'tool' ? '<span style="color:#f59e0b;margin-left:0.5rem;font-size:0.7rem">● Tool-forced</span>' : ''}
+                      ${item.source === 'explicit' ? '<span style="color:#3b82f6;margin-left:0.5rem;font-size:0.7rem">● Explicit transition</span>' : ''}
+                      ${item.source === 'implicit' ? '<span style="color:#9ca3af;margin-left:0.5rem;font-size:0.7rem">● Implicit state</span>' : ''}
+                    </div>
+                  ` : ''}
+                ` : `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <code>${escapeHtml(item.functionName)}</code>
+                    ${(() => {
+                      const argDetails = extractFunctionDetails(item.args);
+                      const resultDetails = extractFunctionDetails(item.result);
+                      let details = '';
+                      if (argDetails) details += ` <span style="color:#3b82f6;font-size:0.8rem">→ ${escapeHtml(argDetails)}</span>`;
+                      if (resultDetails) details += ` <span style="color:#10b981;font-size:0.8rem">✓</span>`;
+                      return details;
+                    })()}
                   </div>
-                ` : ''}
-                ${trans.instructions ? `
-                  <div class="flow-timeline-instructions">
-                    <button class="flow-instructions-toggle" data-idx="${idx}">
-                      <span class="flow-instructions-arrow">▶</span> View Instructions
-                    </button>
-                    <pre class="flow-instructions-content" data-idx="${idx}">${escapeHtml(trans.instructions)}</pre>
-                  </div>
-                ` : ''}
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+                  ${(() => {
+                    const resultDetails = extractFunctionDetails(item.result);
+                    return resultDetails ? `
+                      <div style="padding-left:1.5rem;font-size:0.75rem;color:var(--text-success);margin-top:0.25rem">
+                        ✓ ${escapeHtml(resultDetails)}
+                      </div>
+                    ` : '';
+                  })()}
+                `}
               </div>
             </div>
           `).join('')}
@@ -231,27 +245,39 @@ function extractStateFlow(payload) {
   // Extract ALL step changes from both sources
   const allStepChanges = [];
 
-  // 1. Extract AI-initiated step changes from call_log (next_step, change_context)
+  // 1. Extract step changes from call_log using new structured format
   callLog.forEach(entry => {
-    if (entry.role === 'system-log' && entry.content) {
-      // Match "Calling function: next_step(...)" or "Calling function: change_context(...)"
-      const nextStepMatch = entry.content.match(/Calling function: next_step\(([^)]+)\)/);
-      const changeContextMatch = entry.content.match(/Calling function: change_context\(([^)]+)\)/);
-
-      if (nextStepMatch || changeContextMatch) {
-        const match = nextStepMatch || changeContextMatch;
-        const funcName = nextStepMatch ? 'next_step' : 'change_context';
-
-        // Parse the argument (step name) - handle both quoted and unquoted
-        let stepName = match[1].trim();
-        stepName = stepName.replace(/^["']|["']$/g, ''); // Remove quotes if present
-
+    if (entry.role === 'system-log' && entry.action) {
+      // NEW FORMAT: Explicit change_step action with name field
+      if (entry.action === 'change_step' && entry.name) {
         allStepChanges.push({
           timestamp: entry.timestamp,
-          step: stepName,
-          triggeredBy: `AI: ${funcName}`,
-          source: 'ai',
+          step: entry.name,
+          stepIndex: entry.index || null,
+          triggeredBy: `Step change`,
+          source: 'explicit',
         });
+      }
+      // LEGACY: Parse from content string (next_step, change_context)
+      else if (entry.content) {
+        const nextStepMatch = entry.content.match(/Calling function: next_step\(([^)]+)\)/);
+        const changeContextMatch = entry.content.match(/Calling function: change_context\(([^)]+)\)/);
+
+        if (nextStepMatch || changeContextMatch) {
+          const match = nextStepMatch || changeContextMatch;
+          const funcName = nextStepMatch ? 'next_step' : 'change_context';
+
+          let stepName = match[1].trim();
+          stepName = stepName.replace(/^["']|["']$/g, '');
+
+          allStepChanges.push({
+            timestamp: entry.timestamp,
+            step: stepName,
+            stepIndex: null,
+            triggeredBy: `AI: ${funcName}`,
+            source: 'ai',
+          });
+        }
       }
     }
   });
@@ -299,38 +325,103 @@ function extractStateFlow(payload) {
   });
 
   // Build comprehensive map of ALL function calls from both call_log and swaig_log
+  // MUST be defined BEFORE we check for initial state
   const functionCalls = [];
 
-  // Extract from call_log (AI-initiated tool calls)
+  // Extract from call_log using new structured format (system-log entries only)
   callLog.forEach(entry => {
-    if (entry.role === 'system-log' && entry.content && entry.content.startsWith('Calling function:')) {
-      const funcMatch = entry.content.match(/Calling function: ([^(]+)/);
-      if (funcMatch) {
+    if (entry.role === 'system-log' && entry.action) {
+      // NEW FORMAT: Explicit action fields
+      if (entry.action === 'gather_submit') {
         functionCalls.push({
           timestamp: entry.timestamp,
-          name: funcMatch[1].trim(),
+          name: 'gather_submit',
+          args: entry.args || null,
+          result: entry.result || null,
+          source: 'call_log',
+        });
+      }
+      else if (entry.action === 'call_function' && entry.function) {
+        functionCalls.push({
+          timestamp: entry.timestamp,
+          name: entry.function,
+          args: entry.args || null,
+          result: entry.result || null,
           source: 'call_log',
         });
       }
     }
   });
 
-  // Extract from swaig_log (SWAIG function executions)
-  swaigLog.forEach(entry => {
-    const commandName = entry.commandName || entry.command_name;
-    const timestamp = (entry.epochTime || entry.epoch_time) * 1000000;
+  // Sort all function calls by timestamp
+  functionCalls.sort((a, b) => a.timestamp - b.timestamp);
 
-    if (commandName) {
-      functionCalls.push({
-        timestamp: timestamp,
-        name: commandName,
-        source: 'swaig_log',
-      });
+  // Deduplicate function calls - same function at same timestamp (within 1ms)
+  const deduplicatedFunctionCalls = [];
+  const seen = new Map();
+
+  functionCalls.forEach(fc => {
+    const key = `${fc.name}_${Math.floor(fc.timestamp / 1000)}`; // Group by function name and millisecond
+    if (!seen.has(key)) {
+      seen.set(key, true);
+      deduplicatedFunctionCalls.push(fc);
     }
   });
 
-  // Sort all function calls by timestamp
-  functionCalls.sort((a, b) => a.timestamp - b.timestamp);
+  // Replace with deduplicated array
+  functionCalls.length = 0;
+  functionCalls.push(...deduplicatedFunctionCalls);
+
+  // NOW check for initial state (after functionCalls is populated)
+  // If we have function calls but no step changes, create an initial implicit state
+  if (stepChanges.length === 0 && functionCalls.length > 0) {
+    // Infer initial state name from first system prompt
+    let initialStateName = 'Initial State';
+    const firstSystemPrompt = callLog.find(e => e.role === 'system' && e.content);
+    if (firstSystemPrompt) {
+      // Try to infer from content
+      if (firstSystemPrompt.content.includes('collect') || firstSystemPrompt.content.includes('gather')) {
+        initialStateName = 'Gathering Profile';
+      } else if (firstSystemPrompt.content.includes('greeting') || firstSystemPrompt.content.includes('Welcome')) {
+        initialStateName = 'Greeting';
+      }
+    }
+
+    stepChanges.push({
+      timestamp: callLog[0]?.timestamp || Date.now() * 1000,
+      step: initialStateName,
+      stepIndex: 0,
+      triggeredBy: 'Initial state',
+      source: 'implicit',
+    });
+  }
+  // If we have step changes but functions happened BEFORE the first step change,
+  // add an initial state to capture those functions
+  else if (stepChanges.length > 0 && functionCalls.length > 0) {
+    const firstStepChangeTime = stepChanges[0].timestamp;
+    const functionsBeforeFirstStep = functionCalls.filter(fc => fc.timestamp < firstStepChangeTime);
+
+    if (functionsBeforeFirstStep.length > 0) {
+      // Infer initial state name
+      let initialStateName = 'Initial State';
+      const firstSystemPrompt = callLog.find(e => e.role === 'system' && e.content && e.timestamp < firstStepChangeTime);
+      if (firstSystemPrompt) {
+        if (firstSystemPrompt.content.includes('collect') || firstSystemPrompt.content.includes('gather')) {
+          initialStateName = 'Gathering Profile';
+        } else if (firstSystemPrompt.content.includes('greeting') || firstSystemPrompt.content.includes('Welcome')) {
+          initialStateName = 'Initial Greeting';
+        }
+      }
+
+      stepChanges.unshift({
+        timestamp: callLog[0]?.timestamp || functionCalls[0].timestamp,
+        step: initialStateName,
+        stepIndex: 0,
+        triggeredBy: 'Implicit initial state',
+        source: 'implicit',
+      });
+    }
+  }
 
   // Get instructions from call_log
   const instructionsByTimestamp = new Map();
@@ -342,17 +433,49 @@ function extractStateFlow(payload) {
 
   // Build transitions with functions
   const transitions = [];
+
+  // Track which functions have been assigned to avoid double-counting
+  const assignedFunctionIndices = new Set();
+
   stepChanges.forEach((stepChange, idx) => {
     const nextStepChange = stepChanges[idx + 1];
+
+    // For the initial implicit state, include ALL functions before the first explicit step change
+    // For other states, include functions after this step change but before the next one
+    const stepStartTime = stepChange.timestamp;
     const stepEndTime = nextStepChange ? nextStepChange.timestamp : Infinity;
 
     // Find all functions called during this step
-    const functionsCalledInStep = functionCalls
-      .filter(fc => fc.timestamp >= stepChange.timestamp && fc.timestamp < stepEndTime)
-      .map(fc => fc.name);
+    const functionsCalledInStep = [];
+    functionCalls.forEach((fc, fcIdx) => {
+      if (assignedFunctionIndices.has(fcIdx)) return; // Skip if already assigned
 
-    // Get unique function names while preserving order
-    const uniqueFunctions = [...new Set(functionsCalledInStep)];
+      // For implicit initial state, include everything before first explicit step
+      if (stepChange.source === 'implicit' && idx === 0 && nextStepChange) {
+        if (fc.timestamp < nextStepChange.timestamp) {
+          functionsCalledInStep.push(fc.name);
+          assignedFunctionIndices.add(fcIdx);
+        }
+      }
+      // For other states
+      else if (fc.timestamp >= stepStartTime && fc.timestamp < stepEndTime) {
+        functionsCalledInStep.push(fc.name);
+        assignedFunctionIndices.add(fcIdx);
+      }
+    });
+
+    // Count function occurrences
+    const functionCounts = {};
+    functionsCalledInStep.forEach(name => {
+      functionCounts[name] = (functionCounts[name] || 0) + 1;
+    });
+
+    // Create array of functions with counts for display
+    const functionsWithCounts = Object.entries(functionCounts).map(([name, count]) => ({
+      name,
+      count,
+      display: count > 1 ? `${name} (${count}x)` : name
+    }));
 
     // Find instructions near this timestamp
     let instructions = null;
@@ -367,17 +490,38 @@ function extractStateFlow(payload) {
     transitions.push({
       timestamp: stepChange.timestamp,
       toState: stepChange.step,
+      stepIndex: stepChange.stepIndex,
       triggeredBy: stepChange.triggeredBy,
       source: stepChange.source,
-      functionsInState: uniqueFunctions,
+      functionsInState: functionsWithCounts,
+      totalFunctionCalls: functionsCalledInStep.length,
       instructions: instructions,
     });
   });
 
+  // If there are functions called AFTER all step changes (e.g., post_conversation hooks),
+  // add a final pseudo-state to show them
+  if (stepChanges.length > 0 && functionCalls.length > 0) {
+    const lastStepTime = stepChanges[stepChanges.length - 1].timestamp;
+    const functionsAfterLastStep = functionCalls.filter(fc => fc.timestamp > lastStepTime);
+
+    if (functionsAfterLastStep.length > 0) {
+      const uniqueFunctionsAfter = [...new Set(functionsAfterLastStep.map(fc => fc.name))];
+
+      // Add as part of the last state's functions instead of creating a new state
+      if (transitions.length > 0) {
+        const lastTransition = transitions[transitions.length - 1];
+        // Merge unique functions
+        const allFunctions = [...lastTransition.functionsInState, ...uniqueFunctionsAfter];
+        lastTransition.functionsInState = [...new Set(allFunctions)];
+      }
+    }
+  }
+
 
   // Calculate stats
   const uniqueStates = new Set(transitions.map(t => t.toState));
-  const totalFunctions = transitions.reduce((sum, trans) => sum + trans.functionsInState.length, 0);
+  const totalFunctions = transitions.reduce((sum, trans) => sum + (trans.totalFunctionCalls || trans.functionsInState.length), 0);
   const aiInitiated = transitions.filter(t => t.source === 'ai').length;
   const toolForced = transitions.filter(t => t.source === 'tool').length;
 
@@ -389,8 +533,39 @@ function extractStateFlow(payload) {
     duration = `${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`;
   }
 
+  // Create detailed timeline with EVERY event (states and functions) in chronological order
+  const detailedTimeline = [];
+
+  // Add all state changes
+  stepChanges.forEach(sc => {
+    detailedTimeline.push({
+      type: 'state',
+      timestamp: sc.timestamp,
+      state: sc.step,
+      stepIndex: sc.stepIndex,
+      triggeredBy: sc.triggeredBy,
+      source: sc.source,
+    });
+  });
+
+  // Add ALL individual function calls
+  functionCalls.forEach(fc => {
+    detailedTimeline.push({
+      type: 'function',
+      timestamp: fc.timestamp,
+      functionName: fc.name,
+      args: fc.args,
+      result: fc.result,
+      source: fc.source,
+    });
+  });
+
+  // Sort by timestamp to get exact chronological order
+  detailedTimeline.sort((a, b) => a.timestamp - b.timestamp);
+
   return {
     transitions,
+    detailedTimeline,
     uniqueStates,
     totalFunctions,
     aiInitiated,
@@ -400,56 +575,182 @@ function extractStateFlow(payload) {
 }
 
 function generateFlowDiagram(flowData) {
-  const { transitions } = flowData;
+  const { transitions, detailedTimeline } = flowData;
 
-  let diagram = 'stateDiagram-v2\n';
-  diagram += '    direction TB\n\n';
-  diagram += '    [*] --> s0\n\n';
+  if (!transitions || transitions.length === 0) {
+    return 'graph LR\n    START([Start]) --> END([End])\n';
+  }
 
-  // Add all states
-  const stateMap = new Map();
+  let lines = ['graph LR'];
+  lines.push('    classDef stepNode fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff');
+  lines.push('    classDef funcNode fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000');
+  lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
+  lines.push('');
+
+  let nodeId = 0;
+  const stepNodes = {};
+  const lastFuncPerStep = {};
+
+  // Build flow structure with from/to for each transition
+  const flow = [];
+  let previousState = null;
+
   transitions.forEach((trans, idx) => {
-    const stateId = `s${idx}`;
-    stateMap.set(trans.toState, stateId);
-    const stateName = trans.toState.replace(/"/g, '\\"');
-    diagram += `    ${stateId}: ${stateName}\n`;
+    const currentState = trans.toState;
+
+    // Add step_change
+    if (previousState || idx === 0) {
+      flow.push({
+        type: 'step_change',
+        from: previousState || 'START',
+        to: currentState,
+        timestamp: trans.timestamp
+      });
+    }
+
+    // Add functions for this state
+    const nextTrans = transitions[idx + 1];
+    const funcs = detailedTimeline.filter(item => {
+      if (item.type !== 'function') return false;
+      const start = trans.timestamp;
+      const end = nextTrans ? nextTrans.timestamp : Infinity;
+      return item.timestamp >= start && item.timestamp < end;
+    });
+
+    funcs.forEach(f => {
+      flow.push({
+        type: 'function_call',
+        step: currentState,
+        functionName: f.functionName,
+        args: f.args
+      });
+    });
+
+    previousState = currentState;
   });
 
-  diagram += '\n';
+  // First pass: Create all step nodes
+  const allSteps = new Set();
+  flow.forEach(item => {
+    if (item.type === 'step_change') {
+      allSteps.add(item.from);
+      allSteps.add(item.to);
+    }
+  });
 
-  // Add transitions
-  transitions.forEach((trans, idx) => {
-    const currentId = `s${idx}`;
-    const nextId = `s${idx + 1}`;
+  allSteps.forEach(step => {
+    const stepNodeId = `S${nodeId++}`;
+    stepNodes[step] = stepNodeId;
+    const safeLabel = sanitizeLabel(step);
+    lines.push(`    ${stepNodeId}["${safeLabel}"]:::stepNode`);
+  });
 
-    if (idx < transitions.length - 1) {
-      let edgeLabel = trans.triggeredBy ? trans.triggeredBy : '';
-      if (edgeLabel) {
-        // Sanitize edge label - remove colons and special chars that break Mermaid
-        edgeLabel = edgeLabel.replace(/:/g, ' -').replace(/"/g, '');
-        diagram += `    ${currentId} --> ${nextId}: ${edgeLabel}\n`;
-      } else {
-        diagram += `    ${currentId} --> ${nextId}\n`;
+  lines.push('');
+
+  // Second pass: Process flow items
+  flow.forEach(item => {
+    if (item.type === 'step_change') {
+      // Draw step transition
+      lines.push(`    ${stepNodes[item.from]} --> ${stepNodes[item.to]}`);
+      lastFuncPerStep[item.to] = null;
+
+    } else if (item.type === 'function_call') {
+      const funcNodeId = `F${nodeId++}`;
+      const funcName = item.functionName;
+      const args = item.args;
+
+      // Build label
+      let label = funcName;
+      let styleClass = 'funcNode';
+
+      try {
+        const argsObj = args ? JSON.parse(args) : null;
+
+        if (funcName === 'gather_submit' && argsObj) {
+          const answer = sanitizeLabel(argsObj.answer || '');
+          label = answer ? `gather_submit<br/>${answer}` : 'gather_submit';
+          styleClass = 'gatherNode';
+        } else if (funcName === 'resolve_location' && argsObj) {
+          const location = sanitizeLabel(argsObj.location_text || '');
+          const locType = argsObj.location_type || '';
+          label = location ? `resolve_location<br/>${location} (${locType})` : 'resolve_location';
+        } else if (funcName === 'select_trip_type' && argsObj) {
+          const trip = (argsObj.trip_type || '').replace(/_/g, ' ');
+          label = trip ? `select_trip_type<br/>${trip}` : 'select_trip_type';
+        } else if (funcName === 'select_flight' && argsObj) {
+          const option = argsObj.option_number || '';
+          label = option ? `select_flight<br/>Option ${option}` : 'select_flight';
+        } else if (['save_profile', 'search_flights', 'book_flight', 'get_flight_price', 'confirm_booking', 'summarize_conversation'].includes(funcName)) {
+          label = funcName.replace(/_/g, ' ');
+        }
+      } catch (e) {
+        // Keep default
       }
-    } else {
-      diagram += `    ${currentId} --> [*]\n`;
+
+      lines.push(`    ${funcNodeId}["${sanitizeLabel(label)}"]:::${styleClass}`);
+
+      const step = item.step;
+      if (lastFuncPerStep[step]) {
+        lines.push(`    ${lastFuncPerStep[step]} --> ${funcNodeId}`);
+      } else if (stepNodes[step]) {
+        lines.push(`    ${stepNodes[step]} -.-> ${funcNodeId}`);
+      }
+
+      lastFuncPerStep[step] = funcNodeId;
     }
   });
 
-  // Add function notes
-  diagram += '\n';
-  transitions.forEach((trans, idx) => {
-    const stateId = `s${idx}`;
-    if (trans.functionsInState && trans.functionsInState.length > 0) {
-      const funcList = trans.functionsInState.join(', ');
-      const cleanFuncs = funcList.replace(/"/g, '\\"');
-      diagram += `    note right of ${stateId}\n`;
-      diagram += `      Functions: ${cleanFuncs}\n`;
-      diagram += `    end note\n`;
-    }
-  });
+  return lines.join('\n');
+}
 
-  return diagram;
+function sanitizeLabel(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/"/g, '#quot;')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, '')
+    .trim();
+}
+
+function extractFunctionDetails(data) {
+  if (!data) return null;
+
+  let parsed = data;
+
+  // If it's a string, try to parse as JSON
+  if (typeof data === 'string') {
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      // If not JSON, truncate the string
+      return data.length > 30 ? data.substring(0, 30) + '...' : data;
+    }
+  }
+
+  // If it's an object, extract the most relevant field
+  if (typeof parsed === 'object' && parsed !== null) {
+    // For gather_submit args, look for "answer" field
+    if (parsed.answer !== undefined) {
+      const answer = String(parsed.answer);
+      return answer.length > 30 ? answer.substring(0, 30) + '...' : answer;
+    }
+
+    // For other objects, try to find a meaningful value
+    const keys = Object.keys(parsed);
+    if (keys.length > 0) {
+      const firstValue = parsed[keys[0]];
+      if (typeof firstValue === 'string' || typeof firstValue === 'number') {
+        const val = String(firstValue);
+        return val.length > 30 ? val.substring(0, 30) + '...' : val;
+      }
+    }
+
+    // If object is complex, show truncated JSON
+    const jsonStr = JSON.stringify(parsed);
+    return jsonStr.length > 30 ? jsonStr.substring(0, 30) + '...' : jsonStr;
+  }
+
+  return null;
 }
 
 function formatTimestamp(timestamp) {
