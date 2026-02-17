@@ -787,6 +787,16 @@
   line-height: 1.5;
 }
 
+.swaig-entry__url {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
 /* ===== Post-Prompt ===== */
 .post-prompt {
   padding: 1.5rem;

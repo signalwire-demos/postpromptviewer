@@ -19,11 +19,16 @@ export function renderSwaigInspector(container, payload) {
         return true;
       }
 
-      // Search in native command arg
-      if (entry.native && entry.command_arg) {
+      // Search in command arg (native and non-native)
+      if (entry.command_arg) {
         if (matchesSearch(entry.command_arg, search.query, search.caseSensitive)) {
           return true;
         }
+      }
+
+      // Search in url
+      if (entry.url && matchesSearch(entry.url, search.query, search.caseSensitive)) {
+        return true;
       }
 
       // Search in post_data (deep search)
@@ -121,6 +126,12 @@ export function renderSwaigInspector(container, payload) {
           </div>
         `;
       } else {
+        // Parse command_arg JSON string into object for tree display
+        let commandArgObj = null;
+        if (entry.command_arg) {
+          try { commandArgObj = JSON.parse(entry.command_arg); } catch { commandArgObj = entry.command_arg; }
+        }
+
         // Filter data when searching to show only matching fields
         const filteredPostData = isSearching && entry.post_data
           ? filterDataBySearch(entry.post_data, search.query, search.caseSensitive)
@@ -129,6 +140,36 @@ export function renderSwaigInspector(container, payload) {
         const filteredPostResponse = isSearching && entry.post_response
           ? filterDataBySearch(entry.post_response, search.query, search.caseSensitive)
           : entry.post_response;
+
+        // Arguments (command_arg) section
+        const argsHtml = commandArgObj !== null
+          ? `<div class="swaig-entry__section">
+              <div class="swaig-entry__section-header">
+                <span class="swaig-entry__section-title">Arguments (command_arg)</span>
+                <button class="swaig-entry__copy-btn" data-copy="${escapeHtml(entry.command_arg)}" title="Copy JSON">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+              ${renderDataItems(commandArgObj, `swaig-${idx}-args`, search.query, search.caseSensitive, isSearching)}
+            </div>` : '';
+
+        // URL section
+        const urlHtml = entry.url
+          ? `<div class="swaig-entry__section">
+              <div class="swaig-entry__section-header">
+                <span class="swaig-entry__section-title">Endpoint URL</span>
+                <button class="swaig-entry__copy-btn" data-copy="${escapeHtml(entry.url)}" title="Copy URL">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+              <div class="swaig-entry__url">${escapeHtml(entry.url)}</div>
+            </div>` : '';
 
         const postDataHtml = filteredPostData
           ? `<div class="swaig-entry__section">
@@ -156,7 +197,7 @@ export function renderSwaigInspector(container, payload) {
               </div>
               ${renderDataItems(filteredPostResponse, `swaig-${idx}-resp`, search.query, search.caseSensitive, isSearching)}
             </div>` : '';
-        bodyHtml = postDataHtml + postResponseHtml;
+        bodyHtml = argsHtml + urlHtml + postDataHtml + postResponseHtml;
       }
 
       // Full entry JSON for copy all button
@@ -172,6 +213,7 @@ export function renderSwaigInspector(container, payload) {
               <span class="swaig-entry__arrow">&#x25B6;</span>
               <span class="swaig-entry__name">${displayName}</span>
               ${isNative ? '<span style="font-size:0.7rem;color:var(--text-muted)">(native)</span>' : ''}
+              ${entry.active_count !== undefined ? `<span style="font-size:0.7rem;color:var(--text-muted)">active:${escapeHtml(String(entry.active_count))}</span>` : ''}
               <span class="swaig-entry__time">${time}</span>
             </div>
             <button class="swaig-entry__copy-all" data-copy="${escapeHtml(fullEntryJson)}" title="Copy entire entry">
