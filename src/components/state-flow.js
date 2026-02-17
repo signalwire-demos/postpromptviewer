@@ -329,15 +329,32 @@ function extractStateFlow(payload) {
   const functionCalls = [];
 
   // Extract from call_log using new structured format (system-log entries only)
-  callLog.forEach(entry => {
+  callLog.forEach((entry, idx) => {
     if (entry.role === 'system-log' && entry.action) {
       // NEW FORMAT: Explicit action fields
       if (entry.action === 'gather_submit') {
+        // Look backward to find the question in the preceding system message
+        let question = null;
+        for (let i = idx - 1; i >= 0; i--) {
+          const prevEntry = callLog[i];
+          if (prevEntry.role === 'system' && prevEntry.content) {
+            // Extract question from "Ask the user: \"...\""
+            const questionMatch = prevEntry.content.match(/Ask the user:\s*["']([^"']+)["']/);
+            if (questionMatch) {
+              question = questionMatch[1];
+              break;
+            }
+          }
+          // Stop looking after a few entries
+          if (idx - i > 5) break;
+        }
+
         functionCalls.push({
           timestamp: entry.timestamp,
           name: 'gather_submit',
           args: entry.args || null,
           result: entry.result || null,
+          question: question,
           source: 'call_log',
         });
       }
@@ -555,6 +572,7 @@ function extractStateFlow(payload) {
       timestamp: fc.timestamp,
       functionName: fc.name,
       args: fc.args,
+      question: fc.question || null,
       result: fc.result,
       source: fc.source,
     });
@@ -622,7 +640,8 @@ function generateFlowDiagram(flowData) {
         type: 'function_call',
         step: currentState,
         functionName: f.functionName,
-        args: f.args
+        args: f.args,
+        question: f.question || null
       });
     });
 
@@ -647,12 +666,11 @@ function generateFlowDiagram(flowData) {
 
   lines.push('');
 
-  // Second pass: Process flow items
+  // Second pass: Create step chain and attach functions
   flow.forEach(item => {
     if (item.type === 'step_change') {
-      // Draw step transition
+      // Create step transition
       lines.push(`    ${stepNodes[item.from]} --> ${stepNodes[item.to]}`);
-      lastFuncPerStep[item.to] = null;
 
     } else if (item.type === 'function_call') {
       const funcNodeId = `F${nodeId++}`;
@@ -668,7 +686,15 @@ function generateFlowDiagram(flowData) {
 
         if (funcName === 'gather_submit' && argsObj) {
           const answer = sanitizeLabel(argsObj.answer || '');
-          label = answer ? `gather_submit<br/>${answer}` : 'gather_submit';
+          const question = item.question ? sanitizeLabel(item.question) : null;
+
+          if (question && answer) {
+            label = `Q: ${question}<br/>A: ${answer}`;
+          } else if (answer) {
+            label = `gather_submit<br/>${answer}`;
+          } else {
+            label = 'gather_submit';
+          }
           styleClass = 'gatherNode';
         } else if (funcName === 'resolve_location' && argsObj) {
           const location = sanitizeLabel(argsObj.location_text || '');
@@ -689,14 +715,11 @@ function generateFlowDiagram(flowData) {
 
       lines.push(`    ${funcNodeId}["${sanitizeLabel(label)}"]:::${styleClass}`);
 
+      // Attach function to its step (no chaining)
       const step = item.step;
-      if (lastFuncPerStep[step]) {
-        lines.push(`    ${lastFuncPerStep[step]} --> ${funcNodeId}`);
-      } else if (stepNodes[step]) {
+      if (stepNodes[step]) {
         lines.push(`    ${stepNodes[step]} -.-> ${funcNodeId}`);
       }
-
-      lastFuncPerStep[step] = funcNodeId;
     }
   });
 
