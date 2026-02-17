@@ -4,6 +4,65 @@ import { getState, update, subscribe } from '../state.js';
 
 const LONG_CONTENT_THRESHOLD = 200;
 
+// Labels for non-standard/non-printable whitespace characters
+const GARBAGE_CHAR_LABELS = {
+  '\u00a0': 'NBSP',
+  '\u200b': 'ZWS',
+  '\u200c': 'ZWNJ',
+  '\u200d': 'ZWJ',
+  '\u2000': 'NQSP',
+  '\u2001': 'MQSP',
+  '\u2002': 'ENSP',
+  '\u2003': 'EMSP',
+  '\u2004': '3MSP',
+  '\u2005': '4MSP',
+  '\u2006': '6MSP',
+  '\u2007': 'FSP',
+  '\u2008': 'PSP',
+  '\u2009': 'THSP',
+  '\u200a': 'HSP',
+  '\u202f': 'NNBSP',
+  '\u205f': 'MMSP',
+  '\u3000': 'IDSP',
+  '\ufeff': 'BOM',
+};
+
+const GARBAGE_CHAR_PATTERN = /[\u00a0\u200b-\u200d\u2000-\u200a\u202f\u205f\u3000\ufeff]/g;
+
+/**
+ * Detect garbage model output — content containing non-standard Unicode whitespace
+ * characters that indicate the TTS/model produced malformed output.
+ */
+function isGarbageContent(content) {
+  if (typeof content !== 'string') return false;
+  GARBAGE_CHAR_PATTERN.lastIndex = 0;
+  return GARBAGE_CHAR_PATTERN.test(content);
+}
+
+/**
+ * Replace non-standard whitespace characters with visible inline badges
+ * so garbage model output is clearly visible on screen.
+ */
+function renderVisibleWhitespace(content, escapeHtmlFn) {
+  const pattern = /[\u00a0\u200b-\u200d\u2000-\u200a\u202f\u205f\u3000\ufeff]/g;
+  let result = '';
+  let lastIdx = 0;
+  let match;
+
+  while ((match = pattern.exec(content)) !== null) {
+    result += escapeHtmlFn(content.slice(lastIdx, match.index));
+    const char = match[0];
+    const label = GARBAGE_CHAR_LABELS[char] ||
+      `U+${char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`;
+    const title = `U+${char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`;
+    result += `<span class="ws-char" title="${title}">${label}</span>`;
+    lastIdx = match.index + 1;
+  }
+
+  result += escapeHtmlFn(content.slice(lastIdx));
+  return result;
+}
+
 /**
  * Calculate response time rating based on latency
  * @param {number} latency - Latency in milliseconds
@@ -65,6 +124,9 @@ export function renderTranscript(container, payload) {
       // Tool calls filter
       if (activeFilters.hasToolCalls && (!msg.tool_calls || msg.tool_calls.length === 0)) return false;
 
+      // Garbage response filter
+      if (activeFilters.hasGarbage && !isGarbageContent(msg.content)) return false;
+
       // Response time rating filter
       if (activeFilters.responseTimeRating) {
         let latency;
@@ -110,14 +172,17 @@ export function renderTranscript(container, payload) {
     return messages.map((msg, idx) => {
       const role = msg.role || 'unknown';
       const roleClass = role.replace(/[^a-z-]/g, '');
+      const isGarbage = isGarbageContent(msg.content);
       const isLong = msg.content && msg.content.length > LONG_CONTENT_THRESHOLD;
       const time = msg.timestamp ? formatTimestamp(epochToDate(msg.timestamp)) : '';
       const contentDisplay = msg.content || '';
 
-      // Apply highlighting if searching
-      const displayContent = isSearching
-        ? highlightMatches(contentDisplay, search.query, search.caseSensitive)
-        : escapeHtml(contentDisplay);
+      // Apply highlighting if searching; show visible badges for garbage chars
+      const displayContent = isGarbage
+        ? renderVisibleWhitespace(contentDisplay, escapeHtml)
+        : (isSearching
+          ? highlightMatches(contentDisplay, search.query, search.caseSensitive)
+          : escapeHtml(contentDisplay));
 
       // Metadata tags
       const metaTags = [];
@@ -156,6 +221,7 @@ export function renderTranscript(container, payload) {
       if (msg.execution_latency != null) metaTags.push(`exec: ${msg.execution_latency}ms`);
       if (msg.function_latency != null) metaTags.push(`func: ${msg.function_latency}ms`);
       if (msg.speaking_to_final_event != null) metaTags.push(`speak-to-final: ${msg.speaking_to_final_event}ms`);
+      if (isGarbage) metaTags.push({ text: '⚠️ Garbage Response', class: 'garbage' });
 
       // Tool calls
       let toolCallsHtml = '';
@@ -176,13 +242,14 @@ export function renderTranscript(container, payload) {
         data-has-barge="${!!msg.barge_count}"
         data-has-merge="${!!(msg.merge_count || msg.merged)}"
         data-has-tools="${!!(msg.tool_calls && msg.tool_calls.length > 0)}"
+        data-is-garbage="${isGarbage}"
       `.trim();
 
       return `
         <div class="transcript__msg transcript__msg--${roleClass}" ${dataAttrs}>
           <div class="transcript__role">${role}</div>
           <div class="transcript__body">
-            <div class="transcript__content${isLong ? ' transcript__content--truncated' : ''}" id="msg-content-${idx}">
+            <div class="transcript__content${isLong ? ' transcript__content--truncated' : ''}${isGarbage ? ' transcript__content--garbage' : ''}" id="msg-content-${idx}">
               ${displayContent}
             </div>
             ${isLong ? `<button class="transcript__toggle" data-idx="${idx}">Show more</button>` : ''}
@@ -235,6 +302,7 @@ export function renderTranscript(container, payload) {
                            activeFilters.hasBarge ||
                            activeFilters.hasMerge ||
                            activeFilters.hasToolCalls ||
+                           activeFilters.hasGarbage ||
                            activeFilters.responseTimeRating;
 
     return `
@@ -267,6 +335,10 @@ export function renderTranscript(container, payload) {
           <button class="filter-chip filter-chip--tools ${activeFilters.hasToolCalls ? 'filter-chip--active' : ''}"
                   data-filter="tools">
             🔧 Tool Calls
+          </button>
+          <button class="filter-chip filter-chip--garbage ${activeFilters.hasGarbage ? 'filter-chip--active' : ''}"
+                  data-filter="garbage">
+            ⚠️ Garbage
           </button>
           <select class="filter-dropdown" id="response-time-filter" aria-label="Filter by response time">
             <option value="">⏱️ Response Time</option>
@@ -402,11 +474,14 @@ export function renderTranscript(container, payload) {
           transcriptFilters.hasMerge = !transcriptFilters.hasMerge;
         } else if (filterType === 'tools') {
           transcriptFilters.hasToolCalls = !transcriptFilters.hasToolCalls;
+        } else if (filterType === 'garbage') {
+          transcriptFilters.hasGarbage = !transcriptFilters.hasGarbage;
         } else if (filterType === 'clear') {
           transcriptFilters.roles = [];
           transcriptFilters.hasBarge = false;
           transcriptFilters.hasMerge = false;
           transcriptFilters.hasToolCalls = false;
+          transcriptFilters.hasGarbage = false;
           transcriptFilters.responseTimeRating = '';
 
           // Also clear search

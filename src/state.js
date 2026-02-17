@@ -17,6 +17,7 @@ const state = {
       hasBarge: false,
       hasMerge: false,
       hasToolCalls: false,
+      hasGarbage: false,
       responseTimeRating: '' // '', 'excellent', 'good', 'fair', 'needs-improvement'
     }
   }
