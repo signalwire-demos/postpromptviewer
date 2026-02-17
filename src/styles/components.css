@@ -1429,6 +1429,9 @@
   overflow-y: auto;
   font-family: var(--font-mono, monospace);
 }
+.flow-timeline-action-block {
+  margin-top: 0.35rem;
+}
 .flow-timeline-action-tag {
   display: inline-block;
   padding: 0.15rem 0.45rem;
@@ -1438,6 +1441,10 @@
   font-size: 0.7rem;
   color: #a78bfa;
   font-family: var(--font-mono, monospace);
+}
+.flow-timeline-json--action {
+  margin-top: 0.25rem;
+  border-color: rgba(124, 58, 237, 0.25);
 }
 .flow-timeline-instructions {
   margin-top: 0.75rem;

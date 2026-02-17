@@ -155,9 +155,12 @@ export async function renderStateFlow(container, payload) {
                   ${item.swaigActions && item.swaigActions.length > 0 ? `
                     <div class="flow-timeline-detail">
                       <span class="flow-timeline-detail-label" style="color:#7c3aed">Actions</span>
-                      <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem">
-                        ${item.swaigActions.map(a => `<span class="flow-timeline-action-tag">${escapeHtml(a.verb)}</span>`).join('')}
-                      </div>
+                      ${item.swaigActions.map(a => `
+                        <div class="flow-timeline-action-block">
+                          <span class="flow-timeline-action-tag">${escapeHtml(a.verb)}</span>
+                          ${a.data ? `<pre class="flow-timeline-json flow-timeline-json--action">${escapeHtml(formatJson(a.data))}</pre>` : ''}
+                        </div>
+                      `).join('')}
                     </div>
                   ` : ''}
                 `}
@@ -804,7 +807,7 @@ function extractInterestingActions(actions) {
           steps.forEach(step => {
             if (!step || typeof step !== 'object') return;
             Object.entries(step).forEach(([swmlVerb, swmlArgs]) => {
-              // Build a concise label showing verb and key args
+              // Build a concise label showing verb and key args (for Mermaid nodes)
               let label = swmlVerb;
               if (swmlArgs && typeof swmlArgs === 'object') {
                 const interesting = ['to_number', 'from_number', 'url', 'body', 'name', 'method'];
@@ -816,7 +819,7 @@ function extractInterestingActions(actions) {
                   });
                 if (parts.length > 0) label += `<br/>${parts.join('<br/>')}`;
               }
-              result.push({ verb: swmlVerb, label });
+              result.push({ verb: swmlVerb, label, data: swmlArgs ?? null });
             });
           });
         });
@@ -833,7 +836,7 @@ function extractInterestingActions(actions) {
             });
           if (parts.length > 0) label += `<br/>${parts.join('<br/>')}`;
         }
-        result.push({ verb, label });
+        result.push({ verb, label, data: value ?? null });
       }
     });
   });
