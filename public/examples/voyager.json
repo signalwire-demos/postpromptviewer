@@ -96,12 +96,6 @@
                     ]
                   },
                   {
-                    "name": "greeting",
-                    "text": "## Task\nWelcome the caller",
-                    "functions": "none",
-                    "valid_steps": []
-                  },
-                  {
                     "name": "get_origin",
                     "text": "## Task\nCollect the departure city or airport\n\n## Process\n- Check if ${origin.name} is already set from their home airport\n- If set, ask: 'Would you like to fly from ${origin.name} or somewhere else?'\n- If they confirm, proceed to next step\n- If they want a different airport or origin is not set, ask where they're flying from\n- Call resolve_location with their answer and location_type='origin'\n- Once the airport is confirmed, proceed to next step",
                     "step_criteria": "Origin airport confirmed and saved",
@@ -290,7 +284,7 @@
           "post_prompt": {
             "text": "Summarize the conversation."
           },
-          "post_prompt_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/post_prompt/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnBvc3RfcHJvbXB0LjE3NzEzMzM4MzAuY2IzNjM3ODkuMWRlZWFiNzYwN2ExMTcyYQ%3D%3D",
+          "post_prompt_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/post_prompt/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnBvc3RfcHJvbXB0LjE3NzEzMzU0NjIuZDRjYTI4OWUuNDI5OGVjMTlmOGViMjZmNw%3D%3D",
           "SWAIG": {
             "functions": [
               {
@@ -325,7 +319,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnJlc29sdmVfbG9jYXRpb24uMTc3MTMzMzgzMC5hNWU2ZGU1Ny5mN2VlMDlhNGNmYjJjMWQ4"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnJlc29sdmVfbG9jYXRpb24uMTc3MTMzNTQ2Mi45Y2EwYzJlZi4wYzU2MzljOTM5MTc3YTIw"
               },
               {
                 "function": "select_airport",
@@ -352,7 +346,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlbGVjdF9haXJwb3J0LjE3NzEzMzM4MzAuY2ZlYTQyNzguZWZjOWI1NzMxNjRkZTJiZA%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnNlbGVjdF9haXJwb3J0LjE3NzEzMzU0NjIuOWM0MmMwM2MuZGI2ZjgwNmZmNzZlODI2OA%3D%3D"
               },
               {
                 "function": "select_trip_type",
@@ -378,7 +372,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlbGVjdF90cmlwX3R5cGUuMTc3MTMzMzgzMC5hYzYwY2UyNC5iMDQ3ZmZmNjQwOGIzZDkz"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnNlbGVjdF90cmlwX3R5cGUuMTc3MTMzNTQ2Mi4xZTU1NTJjNC5lNjAzMzIzMzZiZDMxZDRm"
               },
               {
                 "function": "finalize_profile",
@@ -389,7 +383,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmZpbmFsaXplX3Byb2ZpbGUuMTc3MTMzMzgzMC5jZjdlMzIxNy4wNDJhMmI0YzMwZDQ0NDY5"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLmZpbmFsaXplX3Byb2ZpbGUuMTc3MTMzNTQ2Mi5iZDM1OTI1NS5hYTM3ZTVjNTRmNzI1Yjhh"
               },
               {
                 "function": "finalize_booking",
@@ -400,7 +394,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmZpbmFsaXplX2Jvb2tpbmcuMTc3MTMzMzgzMC5lMzA5MGMyMS4wMWJhZGEyZmNiOTU5MTVj"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLmZpbmFsaXplX2Jvb2tpbmcuMTc3MTMzNTQ2Mi5iYTY4ODBiYi42OGZlYTFmNTkwMWNmNmI2"
               },
               {
                 "function": "search_flights",
@@ -411,7 +405,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlYXJjaF9mbGlnaHRzLjE3NzEzMzM4MzAuMjM3YWFlMzEuM2U4ZjUwMTAxOTA2ZDhmYg%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnNlYXJjaF9mbGlnaHRzLjE3NzEzMzU0NjIuMWM5NGMxNTEuOTZkYzk1MTY1NDkxMGIzMQ%3D%3D"
               },
               {
                 "function": "select_flight",
@@ -434,7 +428,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlbGVjdF9mbGlnaHQuMTc3MTMzMzgzMC42MGZmODMwZi40NTcxMDZlZmZiZjg1MjQy"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnNlbGVjdF9mbGlnaHQuMTc3MTMzNTQ2Mi5iYTFjZDRjOS4xOTRjZTBiNmYyMDgyY2U1"
               },
               {
                 "function": "restart_search",
@@ -456,7 +450,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnJlc3RhcnRfc2VhcmNoLjE3NzEzMzM4MzAuODU1MzcxNzEuMDc5MTI3NDkyZTVlNzQwMg%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnJlc3RhcnRfc2VhcmNoLjE3NzEzMzU0NjIuNmFjOGIwMjMuOWIyYzhmMzQ1MTU1YmE5Mg%3D%3D"
               },
               {
                 "function": "restart_booking",
@@ -467,7 +461,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnJlc3RhcnRfYm9va2luZy4xNzcxMzMzODMwLjgwMzcxYTY4LjI3ZDcwN2Q4MjI5Y2IwNTg%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnJlc3RhcnRfYm9va2luZy4xNzcxMzM1NDYyLjAwNWY5YTUzLjBiNzdlZjVhY2NkMWM1MWU%3D"
               },
               {
                 "function": "get_flight_price",
@@ -478,7 +472,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmdldF9mbGlnaHRfcHJpY2UuMTc3MTMzMzgzMC5mOTI4ZjA0MC5hZmMwOGY5MzA2OTdlMGVl"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLmdldF9mbGlnaHRfcHJpY2UuMTc3MTMzNTQ2Mi45ZmE0ZmRiZC4zNWVlOTNmMTNlMTJmYTJk"
               },
               {
                 "function": "confirm_booking",
@@ -489,7 +483,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmNvbmZpcm1fYm9va2luZy4xNzcxMzMzODMwLjQ0OTJiMmY1LmY1MmNkMjhiMjkzMDU2YTY%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLmNvbmZpcm1fYm9va2luZy4xNzcxMzM1NDYyLjNlYjg2NDAxLmU0MjNjOWM2ZjM4OTFlMWQ%3D"
               },
               {
                 "function": "decline_booking",
@@ -500,7 +494,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmRlY2xpbmVfYm9va2luZy4xNzcxMzMzODMwLjUwNTU3NmY1LjZhYmJkZWUxMzkxYmE4M2U%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLmRlY2xpbmVfYm9va2luZy4xNzcxMzM1NDYyLmUzYTYwMDJkLmE4NDZmNDg1MGYyZjgwODY%3D"
               },
               {
                 "function": "book_flight",
@@ -516,7 +510,7 @@
                     "Booking that for you now"
                   ]
                 },
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmJvb2tfZmxpZ2h0LjE3NzEzMzM4MzAuMWRkYThkZmEuODhlMGUxOTA4MzRmOWQ1Ng%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLmJvb2tfZmxpZ2h0LjE3NzEzMzU0NjIuMGQ5Zjg2NjUuOTk1NjQ4YjRmMWZmMWI1MA%3D%3D"
               },
               {
                 "function": "summarize_conversation",
@@ -534,7 +528,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnN1bW1hcml6ZV9jb252ZXJzYXRpb24uMTc3MTMzMzgzMC44OWQ0YWY3YS4xYjVlOWM5YjBlY2ViZWQz"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnN1bW1hcml6ZV9jb252ZXJzYXRpb24uMTc3MTMzNTQ2Mi42ZTRkYWIzZC4yNGM3ODQwZDg0ZjAyZDVi"
               },
               {
                 "function": "save_profile",
@@ -544,7 +538,7 @@
                   "properties": {}
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNhdmVfcHJvZmlsZS4xNzcxMzMzODMwLmNhZTdiZjcwLmU4MDRmYzlmYTRlYmQ2M2Q%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=NzhjZjMzMTgtNDNlZC00Y2FjLWFhMzgtOTZlMzNhNDk1ZmVhLnNhdmVfcHJvZmlsZS4xNzcxMzM1NDYyLmVlZDA0YTllLmIyOGZmOTRiN2QxMDJlNTU%3D"
               }
             ],
             "defaults": {
@@ -573,7 +567,7 @@
           "global_data": {
             "passenger_profile": null,
             "is_new_caller": true,
-            "caller_phone": "+15399959452"
+            "caller_phone": "+19184249378"
           }
         }
       }

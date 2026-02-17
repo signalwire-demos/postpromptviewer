@@ -49,7 +49,7 @@ export async function renderSwmlPrompts(container, swml) {
 
   container.innerHTML = `
     <div class="swml-prompts">
-      ${steps.length > 0 && !hasEmptyValidSteps(steps) ? `
+      ${steps.length > 0 ? `
         <div class="swml-prompts__section">
           <div class="swml-step-flow-header">
             <div>
@@ -70,18 +70,6 @@ export async function renderSwmlPrompts(container, swml) {
             </div>
             <div class="swml-step-flow-diagram" id="step-mermaid-container">
               <div class="mermaid">${mermaidDef}</div>
-            </div>
-          </div>
-        </div>
-      ` : ''}
-      ${steps.length > 0 && hasEmptyValidSteps(steps) ? `
-        <div class="swml-prompts__section">
-          <div class="swml-flow-notice swml-flow-notice--large">
-            <div class="swml-flow-notice-icon">🔄</div>
-            <div>
-              <strong>Server-Side State Transitions</strong>
-              <p>This SWML configuration uses dynamic transitions controlled by your backend handlers. Step changes are triggered via <code>_change_step</code> in tool function responses rather than being declared in <code>valid_steps</code> arrays.</p>
-              <p style="margin-top:0.5rem;font-size:0.85rem;opacity:0.8;">Since the actual flow logic lives in your server code (not in the SWML JSON), no state diagram is shown here. Refer to your backend implementation to see the complete state machine flow.</p>
             </div>
           </div>
         </div>
@@ -185,8 +173,8 @@ export async function renderSwmlPrompts(container, swml) {
     </div>
   `;
 
-  // Render mermaid diagram (only if transitions exist)
-  if (steps.length > 0 && !hasEmptyValidSteps(steps)) {
+  // Render mermaid diagram
+  if (steps.length > 0) {
     try {
       const mermaidElement = container.querySelector('.mermaid');
       await mermaid.run({ nodes: [mermaidElement] });
@@ -287,124 +275,61 @@ export async function renderSwmlPrompts(container, swml) {
 function generateStepFlowDiagram(steps) {
   if (!steps || steps.length === 0) return '';
 
-  const hasTransitions = steps.some(step => {
-    const validSteps = step.valid_steps || [];
-    return validSteps.length > 0;
+  let lines = ['graph LR'];
+  lines.push('    classDef stepNode fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff');
+  lines.push('    classDef funcNode fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000');
+  lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
+  lines.push('');
+
+  let nodeId = 0;
+  const stepNodes = {};
+
+  // Create all step nodes
+  steps.forEach(step => {
+    const stepNodeId = `S${nodeId++}`;
+    stepNodes[step.name] = stepNodeId;
+    const safeLabel = sanitizeSwmlLabel(step.name);
+    lines.push(`    ${stepNodeId}["${safeLabel}"]:::stepNode`);
   });
 
-  // If no transitions, use a cleaner flowchart layout
-  if (!hasTransitions) {
-    return generateStepGridDiagram(steps);
-  }
+  lines.push('');
 
-  // Original diagram for when there are actual transitions
-  let diagram = 'stateDiagram-v2\n';
-  diagram += '    direction TB\n\n';
-
-  if (steps.length > 0) {
-    diagram += `    [*] --> ${sanitizeId(steps[0].name)}\n`;
-  }
-
+  // Draw step→step transitions via valid_steps
   steps.forEach(step => {
-    const stepId = sanitizeId(step.name);
-    const stepLabel = step.name.replace(/"/g, '\\"');
-    diagram += `    ${stepId}: ${stepLabel}\n`;
-  });
-
-  diagram += '\n';
-
-  steps.forEach(step => {
-    const stepId = sanitizeId(step.name);
+    const fromNodeId = stepNodes[step.name];
     const validSteps = step.valid_steps || [];
-
-    validSteps.forEach(nextStep => {
-      const nextStepId = sanitizeId(nextStep);
-      diagram += `    ${stepId} --> ${nextStepId}\n`;
+    validSteps.forEach(nextStepName => {
+      const toNodeId = stepNodes[nextStepName];
+      if (fromNodeId && toNodeId) {
+        lines.push(`    ${fromNodeId} --> ${toNodeId}`);
+      }
     });
-
-    if (validSteps.length === 0 && steps.indexOf(step) === steps.length - 1) {
-      diagram += `    ${stepId} --> [*]\n`;
-    }
   });
 
-  diagram += '\n';
+  lines.push('');
+
+  // Add function nodes attached to each step via dotted arrows
   steps.forEach(step => {
-    const stepId = sanitizeId(step.name);
-    let functions = normalizeFunctions(step.functions);
-
-    if (functions.length > 0) {
-      const funcList = functions.join(', ');
-      const cleanFuncs = funcList.replace(/"/g, '\\"');
-      diagram += `    note right of ${stepId}\n`;
-      diagram += `      Functions: ${cleanFuncs}\n`;
-      diagram += `    end note\n`;
-    }
-  });
-
-  return diagram;
-}
-
-function generateStepGridDiagram(steps) {
-  // Create a cleaner flowchart layout when there are no transitions
-  let diagram = 'flowchart TB\n';
-
-  // Group steps into rows of 4
-  const stepsPerRow = 4;
-  const rows = [];
-
-  for (let i = 0; i < steps.length; i += stepsPerRow) {
-    rows.push(steps.slice(i, i + stepsPerRow));
-  }
-
-  // Add all nodes with labels
-  steps.forEach((step, idx) => {
-    const stepId = `step${idx}`;
-    const stepLabel = step.name.replace(/"/g, '\\"');
+    const stepNodeId = stepNodes[step.name];
     const functions = normalizeFunctions(step.functions);
-    const funcCount = functions.length;
-    const funcText = funcCount > 0 ? `<br/><small>${funcCount} functions</small>` : '';
 
-    diagram += `    ${stepId}["<b>${stepLabel}</b>${funcText}"]\n`;
-  });
-
-  diagram += '\n';
-
-  // Add invisible connections to arrange in rows
-  rows.forEach((row, rowIdx) => {
-    row.forEach((step, colIdx) => {
-      const currentIdx = rowIdx * stepsPerRow + colIdx;
-      const stepId = `step${currentIdx}`;
-
-      // Connect to next in row
-      if (colIdx < row.length - 1) {
-        const nextId = `step${currentIdx + 1}`;
-        diagram += `    ${stepId} ~~~ ${nextId}\n`;
-      }
+    functions.forEach(funcName => {
+      const funcNodeId = `F${nodeId++}`;
+      const safeLabel = sanitizeSwmlLabel(funcName);
+      lines.push(`    ${funcNodeId}["${safeLabel}"]:::funcNode`);
+      lines.push(`    ${stepNodeId} -.-> ${funcNodeId}`);
     });
 
-    // Connect rows vertically
-    if (rowIdx < rows.length - 1) {
-      const lastInRow = `step${(rowIdx + 1) * stepsPerRow - 1}`;
-      const firstInNextRow = `step${(rowIdx + 1) * stepsPerRow}`;
-      if ((rowIdx + 1) * stepsPerRow < steps.length) {
-        diagram += `    ${lastInRow} ~~~ ${firstInNextRow}\n`;
-      }
+    // If gather_info, show a gather_submit node indicating Q&A collection
+    if (step.gather_info) {
+      const numQuestions = (step.gather_info.questions || []).length;
+      const gatherNodeId = `G${nodeId++}`;
+      lines.push(`    ${gatherNodeId}["gather_submit<br/>(${numQuestions} questions)"]:::gatherNode`);
+      lines.push(`    ${stepNodeId} -.-> ${gatherNodeId}`);
     }
   });
 
-  // Style
-  diagram += '\n    classDef stepBox fill:#1f2937,stroke:#60a5fa,stroke-width:2px,color:#e5e7eb\n';
-  diagram += `    class ${steps.map((_, i) => `step${i}`).join(',')} stepBox\n`;
-
-  return diagram;
-}
-
-function hasEmptyValidSteps(steps) {
-  // Check if all steps have empty valid_steps arrays
-  return steps.every(step => {
-    const validSteps = step.valid_steps || [];
-    return validSteps.length === 0;
-  });
+  return lines.join('\n');
 }
 
 function normalizeFunctions(functions) {
@@ -421,6 +346,15 @@ function getFunctionCount(functions) {
 function sanitizeId(name) {
   // Convert step name to valid mermaid ID
   return name.replace(/[^a-zA-Z0-9_]/g, '_');
+}
+
+function sanitizeSwmlLabel(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/"/g, '#quot;')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, '')
+    .trim();
 }
 
 function findAiConfig(swml) {
@@ -589,86 +523,37 @@ async function downloadSvgAsImage(svgElement, filename) {
   // Clone SVG to avoid modifying the original
   const clonedSvg = svgElement.cloneNode(true);
 
-  // Remove any transforms from the main group to get true dimensions
+  // Remove any pan/zoom transforms from the main group to get true dimensions
   const g = clonedSvg.querySelector('g');
   if (g) {
     g.removeAttribute('transform');
   }
 
-  // Make ALL paths/lines highly visible with dark color
+  // Make edge paths visible with dark color on white background
   const allPaths = clonedSvg.querySelectorAll('path');
   allPaths.forEach(path => {
     const currentStroke = path.getAttribute('stroke');
-    // Only modify paths that are lines (not fills)
     if (currentStroke && currentStroke !== 'none') {
-      path.setAttribute('stroke', '#1e293b'); // Very dark, highly visible
-      path.setAttribute('stroke-width', '3');
-      path.removeAttribute('stroke-dasharray'); // Remove all dashing
+      path.setAttribute('stroke', '#374151');
+      path.setAttribute('stroke-width', '2');
     }
   });
 
-  // Make start node green and prominent
-  const startNodes = clonedSvg.querySelectorAll('.start-state circle, [id*="start"] circle, .node circle');
-  startNodes.forEach((circle, idx) => {
-    if (idx === 0) {
-      circle.setAttribute('fill', '#10b981');
-      circle.setAttribute('stroke', '#059669');
-      circle.setAttribute('stroke-width', '3');
-    }
-  });
-
-  // Style state boxes with rounded corners
-  const stateRects = clonedSvg.querySelectorAll('.node rect, rect.state');
-  stateRects.forEach(rect => {
-    rect.setAttribute('fill', '#1e293b');
-    rect.setAttribute('stroke', '#3b82f6');
-    rect.setAttribute('stroke-width', '2');
-    rect.setAttribute('rx', '8'); // More rounded
-  });
-
-  // HIDE all function note boxes completely - show only text
-  const noteRects = clonedSvg.querySelectorAll('.note rect, [class*="note"] rect, [class*="Note"] rect');
-  noteRects.forEach(rect => {
-    rect.setAttribute('fill', 'none'); // Completely transparent
-    rect.setAttribute('stroke', 'none'); // No border
-    rect.setAttribute('opacity', '0'); // Invisible
-  });
-
-  // Make note text stand out since there's no box
-  const noteTexts = clonedSvg.querySelectorAll('.note text, [class*="note"] text, [class*="Note"] text');
-  noteTexts.forEach(text => {
-    text.setAttribute('fill', '#64748b'); // Medium gray, subtle
-    text.setAttribute('font-size', '13');
-    text.setAttribute('font-weight', '400');
-    text.setAttribute('font-style', 'italic'); // Italicize to distinguish
-  });
-
-  // Make all other text larger and bolder
+  // Make all text larger and bolder
   const texts = clonedSvg.querySelectorAll('text');
   texts.forEach(text => {
     const currentSize = parseFloat(text.getAttribute('font-size') || '14');
-    text.setAttribute('font-size', Math.max(currentSize * 1.3, 16));
+    text.setAttribute('font-size', Math.max(currentSize * 1.2, 14));
     text.setAttribute('font-weight', '600');
-    // Only change to light if not already set by note styling
-    if (!text.closest('.note') && !text.closest('[class*="note"]')) {
-      text.setAttribute('fill', '#f1f5f9');
-    }
+    text.setAttribute('fill', '#f1f5f9');
   });
 
-  // Clean edge labels - simple white background, no border
+  // Clean edge label backgrounds
   const edgeLabelRects = clonedSvg.querySelectorAll('.edgeLabel rect, .edge-label rect');
   edgeLabelRects.forEach(rect => {
-    rect.setAttribute('fill', '#ffffff');
-    rect.setAttribute('fill-opacity', '0.95');
-    rect.setAttribute('stroke', 'none'); // Remove border
-    rect.setAttribute('rx', '4');
-  });
-
-  const edgeLabels = clonedSvg.querySelectorAll('.edgeLabel text, .edge-label text');
-  edgeLabels.forEach(label => {
-    label.setAttribute('font-size', '14');
-    label.setAttribute('font-weight', '600');
-    label.setAttribute('fill', '#1e293b');
+    rect.setAttribute('fill', '#1f2937');
+    rect.setAttribute('stroke', 'none');
+    rect.setAttribute('rx', '3');
   });
 
   // Get true bounding box of all content
@@ -690,13 +575,13 @@ async function downloadSvgAsImage(svgElement, filename) {
   clonedSvg.setAttribute('height', height);
   clonedSvg.setAttribute('viewBox', `${bbox.x - padding/2} ${bbox.y - padding/2} ${width} ${height}`);
 
-  // Add white background to SVG
+  // Add dark background to SVG (matching app theme)
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   rect.setAttribute('x', bbox.x - padding/2);
   rect.setAttribute('y', bbox.y - padding/2);
   rect.setAttribute('width', width);
   rect.setAttribute('height', height);
-  rect.setAttribute('fill', '#ffffff');
+  rect.setAttribute('fill', '#0f172a');
   clonedSvg.insertBefore(rect, clonedSvg.firstChild);
 
   // Serialize SVG to string and encode as data URI
