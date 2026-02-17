@@ -282,33 +282,8 @@ function extractStateFlow(payload) {
     }
   });
 
-  // 2. Extract tool-forced step changes from swaig_log (change_step actions)
-  swaigLog.forEach(entry => {
-    const postResponse = entry.postResponse || entry.post_response;
-    if (!postResponse || !postResponse.action || !Array.isArray(postResponse.action)) {
-      return;
-    }
-
-    const commandName = entry.commandName || entry.command_name;
-    const timestamp = (entry.epochTime || entry.epoch_time) * 1000000;
-
-    // Find change_step directive
-    let newStep = null;
-    postResponse.action.forEach(action => {
-      if (action && action.change_step) {
-        newStep = action.change_step;
-      }
-    });
-
-    if (newStep) {
-      allStepChanges.push({
-        timestamp: timestamp,
-        step: newStep,
-        triggeredBy: `Tool: ${commandName}`,
-        source: 'tool',
-      });
-    }
-  });
+  // call_log is the authoritative source for step changes (new format)
+  // swaig_log change_step actions are the same transitions already captured above
 
   // Sort all step changes by timestamp
   allStepChanges.sort((a, b) => a.timestamp - b.timestamp);
@@ -328,25 +303,28 @@ function extractStateFlow(payload) {
   // MUST be defined BEFORE we check for initial state
   const functionCalls = [];
 
+  // Pre-build an ordered queue of questions from system messages
+  // Each "Ask the user: ..." system message maps to the next gather_submit in sequence
+  const questionQueue = [];
+  callLog.forEach(entry => {
+    if (entry.role === 'system' && entry.content) {
+      const match = entry.content.match(/Ask the user:\s*["']([^"']+)["']/i);
+      if (match) {
+        questionQueue.push({ timestamp: entry.timestamp, question: match[1] });
+      }
+    }
+  });
+  let questionIdx = 0;
+
   // Extract from call_log using new structured format (system-log entries only)
   callLog.forEach((entry, idx) => {
     if (entry.role === 'system-log' && entry.action) {
       // NEW FORMAT: Explicit action fields
       if (entry.action === 'gather_submit') {
-        // Look backward to find the question in the preceding system message
+        // Assign next question from the pre-built queue in order
         let question = null;
-        for (let i = idx - 1; i >= 0; i--) {
-          const prevEntry = callLog[i];
-          if (prevEntry.role === 'system' && prevEntry.content) {
-            // Extract question from "Ask the user: \"...\""
-            const questionMatch = prevEntry.content.match(/Ask the user:\s*["']([^"']+)["']/);
-            if (questionMatch) {
-              question = questionMatch[1];
-              break;
-            }
-          }
-          // Stop looking after a few entries
-          if (idx - i > 5) break;
+        if (questionIdx < questionQueue.length) {
+          question = questionQueue[questionIdx++].question;
         }
 
         functionCalls.push({
@@ -370,6 +348,40 @@ function extractStateFlow(payload) {
     }
   });
 
+  // Collect call_log function names for gap-filling
+  const callLogFuncNames = new Set(functionCalls.map(fc => fc.name));
+
+  // Add swaig-only functions that never appear in call_log (e.g. hangup)
+  swaigLog.forEach(entry => {
+    const name = entry.commandName || entry.command_name;
+    const epochUs = (entry.epochTime || entry.epoch_time) * 1000000;
+    if (name && !callLogFuncNames.has(name)) {
+      const args = (entry.commandArg || entry.command_arg) || null;
+      functionCalls.push({
+        timestamp: epochUs,
+        name,
+        args: typeof args === 'string' ? args : JSON.stringify(args),
+        result: null,
+        source: 'swaig_log',
+      });
+    }
+  });
+
+  // Build swaig action map: keyed by command_name, ordered by epoch_time
+  // so we can match each function call to its swaig response
+  const swaigActionsByFunc = {};
+  swaigLog.forEach(entry => {
+    const name = entry.commandName || entry.command_name;
+    const epochUs = (entry.epochTime || entry.epoch_time) * 1000000;
+    const actions = (entry.postResponse || entry.post_response)?.action || [];
+
+    if (!swaigActionsByFunc[name]) swaigActionsByFunc[name] = [];
+    swaigActionsByFunc[name].push({ epochUs, actions });
+  });
+  // Sort each by time so we can match in order
+  Object.values(swaigActionsByFunc).forEach(arr => arr.sort((a, b) => a.epochUs - b.epochUs));
+  const swaigMatchIndex = {}; // tracks how many times we've matched each func name
+
   // Sort all function calls by timestamp
   functionCalls.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -382,6 +394,18 @@ function extractStateFlow(payload) {
     if (!seen.has(key)) {
       seen.set(key, true);
       deduplicatedFunctionCalls.push(fc);
+    }
+  });
+
+  // Enrich each function call with its swaig actions (match in order by func name)
+  deduplicatedFunctionCalls.forEach(fc => {
+    const candidates = swaigActionsByFunc[fc.name];
+    if (!candidates || candidates.length === 0) return;
+
+    const matchIdx = swaigMatchIndex[fc.name] || 0;
+    if (matchIdx < candidates.length) {
+      fc.swaigActions = extractInterestingActions(candidates[matchIdx].actions);
+      swaigMatchIndex[fc.name] = matchIdx + 1;
     }
   });
 
@@ -575,6 +599,7 @@ function extractStateFlow(payload) {
       question: fc.question || null,
       result: fc.result,
       source: fc.source,
+      swaigActions: fc.swaigActions || [],
     });
   });
 
@@ -603,6 +628,7 @@ function generateFlowDiagram(flowData) {
   lines.push('    classDef stepNode fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff');
   lines.push('    classDef funcNode fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000');
   lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
+  lines.push('    classDef actionNode fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff');
   lines.push('');
 
   let nodeId = 0;
@@ -641,7 +667,8 @@ function generateFlowDiagram(flowData) {
         step: currentState,
         functionName: f.functionName,
         args: f.args,
-        question: f.question || null
+        question: f.question || null,
+        swaigActions: f.swaigActions || []
       });
     });
 
@@ -720,10 +747,76 @@ function generateFlowDiagram(flowData) {
       if (stepNodes[step]) {
         lines.push(`    ${stepNodes[step]} -.-> ${funcNodeId}`);
       }
+
+      // Add SWML action child nodes tied to this function
+      if (item.swaigActions && item.swaigActions.length > 0) {
+        item.swaigActions.forEach(action => {
+          const actionNodeId = `A${nodeId++}`;
+          const actionLabel = sanitizeLabel(action.label);
+          lines.push(`    ${actionNodeId}["${actionLabel}"]:::actionNode`);
+          lines.push(`    ${funcNodeId} -.-> ${actionNodeId}`);
+        });
+      }
     }
   });
 
   return lines.join('\n');
+}
+
+function extractInterestingActions(actions) {
+  if (!Array.isArray(actions)) return [];
+
+  const result = [];
+
+  actions.forEach(action => {
+    if (!action || typeof action !== 'object') return;
+
+    Object.entries(action).forEach(([verb, value]) => {
+      // Skip internal/boring actions
+      if (['set_global_data', 'add_dynamic_hints', 'change_step'].includes(verb)) return;
+
+      if (verb === 'SWML' && value?.sections) {
+        // Extract SWML verbs from sections
+        Object.entries(value.sections).forEach(([section, steps]) => {
+          if (!Array.isArray(steps)) return;
+          steps.forEach(step => {
+            if (!step || typeof step !== 'object') return;
+            Object.entries(step).forEach(([swmlVerb, swmlArgs]) => {
+              // Build a concise label showing verb and key args
+              let label = swmlVerb;
+              if (swmlArgs && typeof swmlArgs === 'object') {
+                const interesting = ['to_number', 'from_number', 'url', 'body', 'name', 'method'];
+                const parts = interesting
+                  .filter(k => swmlArgs[k])
+                  .map(k => {
+                    const v = String(swmlArgs[k]);
+                    return `${k}: ${v.length > 20 ? v.substring(0, 20) + '...' : v}`;
+                  });
+                if (parts.length > 0) label += `<br/>${parts.join('<br/>')}`;
+              }
+              result.push({ verb: swmlVerb, label });
+            });
+          });
+        });
+      } else {
+        // Other top-level action verbs (send_sms, play, etc.)
+        let label = verb;
+        if (value && typeof value === 'object') {
+          const interesting = ['to_number', 'url', 'body', 'name'];
+          const parts = interesting
+            .filter(k => value[k])
+            .map(k => {
+              const v = String(value[k]);
+              return v.length > 25 ? v.substring(0, 25) + '...' : v;
+            });
+          if (parts.length > 0) label += `<br/>${parts.join('<br/>')}`;
+        }
+        result.push({ verb, label });
+      }
+    });
+  });
+
+  return result;
 }
 
 function sanitizeLabel(text) {
