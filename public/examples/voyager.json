@@ -24,166 +24,19 @@
                 "bullets": [
                   "This is a PHONE CALL. Keep every response to 1-2 short sentences.",
                   "Use airline names not codes ('Delta' not 'DL'). Say times naturally ('seven thirty PM' not '19:30').",
-                  "Spell confirmation codes using the NATO phonetic alphabet.",
                   "Avoid commas in speech \u2014 use 'and' or 'or' instead. Keep sentences short and direct."
                 ]
-              },
-              {
-                "title": "Passenger Profile",
-                "body": "${global_data.passenger_profile}"
               }
             ],
             "contexts": {
               "default": {
                 "steps": [
                   {
-                    "name": "greeting",
-                    "text": "## Task\nWelcome returning caller and confirm origin\n\n## Process\n- Say: 'Welcome back Brian!'\n- Ask: 'Are you flying from Tulsa International (TUL) or somewhere else?'\n- If Tulsa International (TUL), call resolve_location with 'Tulsa International (TUL)' and location_type='origin'\n- If different, ask where and call resolve_location\n- After resolve_location, confirm with caller and proceed to get_destination",
-                    "step_criteria": "Origin resolved",
-                    "functions": [
-                      "resolve_location"
-                    ],
-                    "valid_steps": [
-                      "get_destination",
-                      "disambiguate_origin"
-                    ]
-                  },
-                  {
-                    "name": "get_origin",
-                    "text": "## Task\nCollect the departure city or airport\n\n## Process\n- Ask where they're flying from, then call resolve_location with location_text and location_type='origin'\n- If caller says an IATA code directly ('I'm flying from LAX'), still call resolve_location to validate it\n- After resolve_location returns, tell the caller which airport was found and ask if that's correct\n- If they confirm, move to get_destination\n- If multiple airports are returned, move to disambiguate_origin\n- If no match, ask the caller to try a different city name",
-                    "step_criteria": "Origin airport resolved and confirmed",
-                    "functions": [
-                      "resolve_location"
-                    ],
-                    "valid_steps": [
-                      "get_destination",
-                      "disambiguate_origin"
-                    ]
-                  },
-                  {
-                    "name": "disambiguate_origin",
-                    "text": "## Task\nAsk the caller to choose between multiple origin airports\n\n## Process\n- Present the airports by name and city and ask which they prefer\n- Call select_airport with location_type='origin' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate",
-                    "step_criteria": "Origin airport stored via select_airport",
-                    "functions": [
-                      "select_airport"
-                    ],
-                    "valid_steps": [
-                      "get_destination"
-                    ]
-                  },
-                  {
-                    "name": "get_destination",
-                    "text": "## Task\nCollect the arrival city or airport\n\n## Process\n- Ask where they're flying to \u2014 or if they already said a destination, call resolve_location right away with location_type='destination'\n- After resolve_location returns, tell the caller which airport was found and ask if that's correct\n- If they confirm, move to collect_trip_type\n- If multiple airports are returned, move to disambiguate_destination\n- If no match, ask the caller for clarification",
-                    "step_criteria": "Destination airport resolved and confirmed",
-                    "functions": [
-                      "resolve_location"
-                    ],
-                    "valid_steps": [
-                      "collect_trip_type",
-                      "disambiguate_destination"
-                    ]
-                  },
-                  {
-                    "name": "disambiguate_destination",
-                    "text": "## Task\nAsk the caller to choose between multiple destination airports\n\n## Process\n- Present the airports by name and ask which they prefer\n- Call select_airport with location_type='destination' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate",
-                    "step_criteria": "Destination airport stored via select_airport",
-                    "functions": [
-                      "select_airport"
-                    ],
-                    "valid_steps": [
-                      "collect_trip_type"
-                    ]
-                  },
-                  {
-                    "name": "collect_trip_type",
-                    "text": "## Task\nAsk whether this is a round-trip or one-way flight\n\n## Process\n- Ask the caller: 'Is this a round-trip or one-way?'\n- Read back their answer and ask them to confirm it is correct\n- Call select_trip_type with trip_type 'round_trip' or 'one_way' and their confirmation",
-                    "step_criteria": "Trip type confirmed and submitted via select_trip_type",
-                    "functions": [
-                      "select_trip_type"
-                    ],
-                    "valid_steps": [
-                      "collect_booking"
-                    ]
-                  },
-                  {
-                    "name": "search_flights",
-                    "text": "## Task\nRe-search flights (used only for error recovery \u2014 happy path searches inline via submit_cabin)\n\n## Process\n- Call search_flights to find available flights\n- The function returns up to 3 options pre-summarized for voice\n- Move to present_options to read them to the caller\n- If no results: move to error_recovery",
-                    "step_criteria": "Flight search completed",
-                    "functions": [
-                      "search_flights"
-                    ],
-                    "valid_steps": [
-                      "present_options",
-                      "error_recovery"
-                    ]
-                  },
-                  {
-                    "name": "present_options",
-                    "text": "## Task\nPresent up to 3 flight options and let the caller pick one\n\n## Process\n- Read each flight option from booking_state.flight_summaries \u2014 include airline, stops, times, duration, and price\n- Label them 'Option 1' then 'Option 2' then 'Option 3'\n- Ask which option they'd like or if they want to try different dates or a different route\n- When the caller picks one, call select_flight with that option_number\n- If caller wants different dates or a different route, call restart_search",
-                    "step_criteria": "Caller selects an option via select_flight or requests new search via restart_search",
-                    "functions": [
-                      "select_flight",
-                      "restart_search"
-                    ],
-                    "valid_steps": [
-                      "confirm_price",
-                      "collect_booking",
-                      "get_origin"
-                    ]
-                  },
-                  {
-                    "name": "confirm_price",
-                    "text": "## Task\nConfirm the live price on the selected flight\n\n## Process\n- Call get_flight_price to confirm the live fare\n- Read back the confirmed price and baggage allowance to the caller\n- Ask: 'Shall I go ahead and book this?'\n- If they say yes, call confirm_booking\n- If they say no, call decline_booking",
-                    "step_criteria": "Caller confirms or declines via confirm_booking or decline_booking",
-                    "functions": [
-                      "get_flight_price",
-                      "confirm_booking",
-                      "decline_booking"
-                    ],
-                    "valid_steps": [
-                      "create_booking",
-                      "present_options",
-                      "error_recovery"
-                    ]
-                  },
-                  {
-                    "name": "create_booking",
-                    "text": "## Task\nBook the flight and wrap up\n\n## Process\n- Call book_flight to create the reservation\n- Read the PNR back to the caller using the NATO phonetic spelling provided\n- Let them know the confirmation has been texted to their phone\n- Thank them and say goodbye",
-                    "step_criteria": "Booking created, PNR read back, call ending",
-                    "functions": [
-                      "book_flight"
-                    ],
-                    "valid_steps": [
-                      "wrap_up",
-                      "error_recovery"
-                    ]
-                  },
-                  {
-                    "name": "error_recovery",
-                    "text": "## Task\nHandle booking failures, no results, and mid-flow changes\n\n## Process\n- Offer options: try different dates, a different route, or re-search the same route\n- If different dates: call restart_booking to go back to date collection\n- If different route: call restart_search with reason='different_route' to start over from origin\n- If same route: call search_flights to re-search with current settings",
-                    "step_criteria": "Recovery action taken",
-                    "functions": [
-                      "search_flights",
-                      "restart_booking",
-                      "restart_search"
-                    ],
-                    "valid_steps": [
-                      "present_options",
-                      "collect_booking",
-                      "get_origin"
-                    ]
-                  },
-                  {
-                    "name": "wrap_up",
-                    "text": "## Task\nEnd the call\n\n## Process\n- Say a brief, warm goodbye: 'Thanks for flying with Voyager \u2014 have an amazing trip!'\n- End the call",
-                    "functions": "none",
-                    "valid_steps": []
-                  },
-                  {
                     "name": "collect_profile",
-                    "text": "Now let's start booking your flight.",
-                    "functions": "none",
-                    "valid_steps": [],
+                    "text": "Welcome the caller, then collect their profile.",
+                    "valid_steps": [
+                      "save_profile_step"
+                    ],
                     "gather_info": {
                       "questions": [
                         {
@@ -224,10 +77,10 @@
                           "key": "home_airport",
                           "question": "What airport do you usually fly from?",
                           "confirm": true,
-                          "prompt": "Accept city or airport name. Format answer as 'Airport Name (CODE)'"
+                          "prompt": "Accept city or airport name. Submit exactly what the caller says."
                         }
                       ],
-                      "prompt": "Welcome to Voyager! I'd love to help you book a flight. Let me get your profile set up first.",
+                      "prompt": "First say: 'Welcome to Voyager! I'd love to help you book a flight.' Then collect the passenger's profile by asking each question. IMPORTANT: Only call gather_submit after the user has explicitly confirmed their answer with 'yes' or equivalent. Never call gather_submit speculatively or with confirmed_by_user set to false.",
                       "output_key": "profile_answers",
                       "completion_action": "next_step"
                     }
@@ -235,6 +88,147 @@
                   {
                     "name": "save_profile_step",
                     "text": "## Task\nSave the completed profile\n\n## Process\n- Call save_profile to create the passenger record\n- Profile data is in ${profile_answers}",
+                    "functions": [
+                      "save_profile"
+                    ],
+                    "valid_steps": [
+                      "get_origin"
+                    ]
+                  },
+                  {
+                    "name": "greeting",
+                    "text": "## Task\nWelcome the caller",
+                    "functions": "none",
+                    "valid_steps": []
+                  },
+                  {
+                    "name": "get_origin",
+                    "text": "## Task\nCollect the departure city or airport\n\n## Process\n- Check if ${origin.name} is already set from their home airport\n- If set, ask: 'Would you like to fly from ${origin.name} or somewhere else?'\n- If they confirm, proceed to next step\n- If they want a different airport or origin is not set, ask where they're flying from\n- Call resolve_location with their answer and location_type='origin'\n- Once the airport is confirmed, proceed to next step",
+                    "step_criteria": "Origin airport confirmed and saved",
+                    "functions": [
+                      "resolve_location"
+                    ],
+                    "valid_steps": [
+                      "get_destination",
+                      "disambiguate_origin"
+                    ]
+                  },
+                  {
+                    "name": "disambiguate_origin",
+                    "text": "## Task\nAsk the caller to choose between multiple origin airports\n\n## Process\n- Present the airports by name and city and ask which they prefer\n- Call select_airport with location_type='origin' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate",
+                    "step_criteria": "Origin airport stored via select_airport",
+                    "functions": [
+                      "select_airport"
+                    ],
+                    "valid_steps": [
+                      "get_destination"
+                    ]
+                  },
+                  {
+                    "name": "get_destination",
+                    "text": "## Task\nCollect the arrival city or airport\n\n## Process\n- Ask where they're flying to \u2014 or if they already said a destination, call resolve_location right away with location_type='destination'\n- Once the airport is confirmed, proceed to next step",
+                    "step_criteria": "Destination airport confirmed and saved",
+                    "functions": [
+                      "resolve_location"
+                    ],
+                    "valid_steps": [
+                      "collect_trip_type",
+                      "disambiguate_destination"
+                    ]
+                  },
+                  {
+                    "name": "disambiguate_destination",
+                    "text": "## Task\nAsk the caller to choose between multiple destination airports\n\n## Process\n- Present the airports by name and ask which they prefer\n- Call select_airport with location_type='destination' and the chosen IATA code\n- If the caller says 'any', call select_airport with the first candidate",
+                    "step_criteria": "Destination airport stored via select_airport",
+                    "functions": [
+                      "select_airport"
+                    ],
+                    "valid_steps": [
+                      "collect_trip_type"
+                    ]
+                  },
+                  {
+                    "name": "collect_trip_type",
+                    "text": "## Task\nAsk whether this is a round-trip or one-way flight\n\n## Process\n- Ask the caller: 'Is this a round-trip or one-way?'\n- Read back their answer and ask them to confirm it is correct\n- Call select_trip_type with trip_type 'round_trip' or 'one_way' and their confirmation",
+                    "step_criteria": "Trip type confirmed and submitted via select_trip_type",
+                    "functions": [
+                      "select_trip_type"
+                    ],
+                    "valid_steps": [
+                      "collect_booking"
+                    ]
+                  },
+                  {
+                    "name": "search_flights",
+                    "text": "## Task\nRe-search flights (used only for error recovery \u2014 happy path searches inline via submit_cabin)\n\n## Process\n- Call search_flights to find available flights",
+                    "step_criteria": "Flight search completed",
+                    "functions": [
+                      "search_flights"
+                    ],
+                    "valid_steps": [
+                      "present_options",
+                      "error_recovery"
+                    ]
+                  },
+                  {
+                    "name": "present_options",
+                    "text": "## Task\nPresent up to 3 flight options and let the caller pick one\n\n## Process\n- Read each flight option from booking_state.flight_summaries \u2014 include airline, stops, times, duration, and price\n- Label them 'Option 1' then 'Option 2' then 'Option 3'\n- The caller prefers a ${global_data.passenger_profile.seat_preference} seat \u2014 mention it naturally when relevant\n- Ask which option they'd like or if they want to try different dates or a different route\n- When the caller picks one, call select_flight with that option_number\n- If caller wants different dates or a different route, call restart_search",
+                    "step_criteria": "Caller selects an option via select_flight or requests new search via restart_search",
+                    "functions": [
+                      "select_flight",
+                      "restart_search"
+                    ],
+                    "valid_steps": [
+                      "confirm_price",
+                      "collect_booking",
+                      "get_origin"
+                    ]
+                  },
+                  {
+                    "name": "confirm_price",
+                    "text": "## Task\nConfirm the live price on the selected flight\n\n## Process\n- Call get_flight_price to confirm the live fare",
+                    "step_criteria": "Caller confirms or declines via confirm_booking or decline_booking",
+                    "functions": [
+                      "get_flight_price",
+                      "confirm_booking",
+                      "decline_booking"
+                    ],
+                    "valid_steps": [
+                      "create_booking",
+                      "present_options",
+                      "error_recovery"
+                    ]
+                  },
+                  {
+                    "name": "create_booking",
+                    "text": "## Task\nBook the flight and wrap up\n\n## Process\n- Call book_flight to create the reservation\n- Read the PNR back to the caller using the phonetic spelling provided\n- Thank them and say goodbye",
+                    "step_criteria": "Booking created, PNR read back, call ending",
+                    "functions": [
+                      "book_flight"
+                    ],
+                    "valid_steps": [
+                      "wrap_up",
+                      "error_recovery"
+                    ]
+                  },
+                  {
+                    "name": "error_recovery",
+                    "text": "## Task\nHandle booking failures, no results, and mid-flow changes\n\n## Process\n- Offer options: try different dates, a different route, or re-search the same route\n- If different dates: call restart_booking to go back to date collection\n- If different route: call restart_search with reason='different_route' to start over from origin\n- If same route: call search_flights to re-search with current settings",
+                    "step_criteria": "Recovery action taken",
+                    "functions": [
+                      "search_flights",
+                      "restart_booking",
+                      "restart_search"
+                    ],
+                    "valid_steps": [
+                      "present_options",
+                      "collect_booking",
+                      "get_origin"
+                    ]
+                  },
+                  {
+                    "name": "wrap_up",
+                    "text": "## Task\nEnd the call\n\n## Process\n- Say a brief, warm goodbye: 'Thanks for flying with Voyager \u2014 have an amazing trip!'\n- End the call",
                     "functions": "none",
                     "valid_steps": []
                   },
@@ -256,7 +250,7 @@
                           "key": "return_date",
                           "question": "When would you like to return?",
                           "confirm": true,
-                          "prompt": "Accept natural language but submit in YYYY-MM-DD format. Must be after departure date. For one-way trips, submit the word ONEWAY instead of a date."
+                          "prompt": "Check ${booking_state.trip_type}. If it is 'one_way', submit 'ONEWAY' immediately without asking the caller. Only ask 'When would you like to return?' if the trip type is 'round_trip'. Accept natural language but submit in YYYY-MM-DD format. Must be after departure date."
                         },
                         {
                           "key": "adults",
@@ -266,18 +260,18 @@
                         },
                         {
                           "key": "cabin_class",
-                          "question": "What cabin class?",
-                          "prompt": "Options: ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST. Suggest the passenger's stored preference if available in ${passenger_profile}"
+                          "question": "What cabin class would you like \u2014 you usually fly ${global_data.passenger_profile.cabin_preference}?",
+                          "prompt": "Options: ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST."
                         }
                       ],
-                      "prompt": "Now let's plan your trip.",
+                      "prompt": "Now let's plan your trip, ${global_data.passenger_profile.first_name}.",
                       "output_key": "booking_answers",
                       "completion_action": "next_step"
                     }
                   },
                   {
                     "name": "search_and_present",
-                    "text": "## Task\nSearch for available flights\n\n## Process\n- Booking details are in ${booking_answers}\n- Call search_flights to find available flights\n- The search will return up to 3 options and transition to present_options",
+                    "text": "## Task\nSearch for available flights\n\n## Process\n- Booking details are in ${booking_answers}\n- Call search_flights to find available flights",
                     "step_criteria": "Search completed",
                     "functions": [
                       "search_flights"
@@ -296,7 +290,7 @@
           "post_prompt": {
             "text": "Summarize the conversation."
           },
-          "post_prompt_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/post_prompt/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnBvc3RfcHJvbXB0LjE3NzEyNzI3NjguODgxMjU5M2IuNzBmMjk1MThiYTdjOWU4OQ%3D%3D",
+          "post_prompt_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/post_prompt/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnBvc3RfcHJvbXB0LjE3NzEzMzM4MzAuY2IzNjM3ODkuMWRlZWFiNzYwN2ExMTcyYQ%3D%3D",
           "SWAIG": {
             "functions": [
               {
@@ -331,7 +325,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnJlc29sdmVfbG9jYXRpb24uMTc3MTI3Mjc2Ny42YmRiZTk4OC42NDRmMzMwYjkyMjU1MDEx"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnJlc29sdmVfbG9jYXRpb24uMTc3MTMzMzgzMC5hNWU2ZGU1Ny5mN2VlMDlhNGNmYjJjMWQ4"
               },
               {
                 "function": "select_airport",
@@ -358,7 +352,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlbGVjdF9haXJwb3J0LjE3NzEyNzI3NjguYjZhNjljZmMuMTY4MjlkMTRmZmJhNGI4Ng%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlbGVjdF9haXJwb3J0LjE3NzEzMzM4MzAuY2ZlYTQyNzguZWZjOWI1NzMxNjRkZTJiZA%3D%3D"
               },
               {
                 "function": "select_trip_type",
@@ -384,7 +378,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlbGVjdF90cmlwX3R5cGUuMTc3MTI3Mjc2OC41ZDExYjcyOS5iMTNhZTRhNTMwNzJmYjhi"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlbGVjdF90cmlwX3R5cGUuMTc3MTMzMzgzMC5hYzYwY2UyNC5iMDQ3ZmZmNjQwOGIzZDkz"
               },
               {
                 "function": "finalize_profile",
@@ -395,7 +389,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmZpbmFsaXplX3Byb2ZpbGUuMTc3MTI3Mjc2OC40ZjIzNjkzNS42YTYxZTE5YzU5YmQ0MGZm"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmZpbmFsaXplX3Byb2ZpbGUuMTc3MTMzMzgzMC5jZjdlMzIxNy4wNDJhMmI0YzMwZDQ0NDY5"
               },
               {
                 "function": "finalize_booking",
@@ -406,7 +400,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmZpbmFsaXplX2Jvb2tpbmcuMTc3MTI3Mjc2OC4wMWQ4YWRkZi4zZTY5MjE2Nzc0NmQ0OTM1"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmZpbmFsaXplX2Jvb2tpbmcuMTc3MTMzMzgzMC5lMzA5MGMyMS4wMWJhZGEyZmNiOTU5MTVj"
               },
               {
                 "function": "search_flights",
@@ -417,7 +411,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlYXJjaF9mbGlnaHRzLjE3NzEyNzI3NjguNTczMzYxYWIuMzNlOWU0OTg3ZjNjNTFjYw%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlYXJjaF9mbGlnaHRzLjE3NzEzMzM4MzAuMjM3YWFlMzEuM2U4ZjUwMTAxOTA2ZDhmYg%3D%3D"
               },
               {
                 "function": "select_flight",
@@ -440,7 +434,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNlbGVjdF9mbGlnaHQuMTc3MTI3Mjc2OC5hNTZjYTczNi4wM2E1YWVhN2EyMDY0MmRl"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNlbGVjdF9mbGlnaHQuMTc3MTMzMzgzMC42MGZmODMwZi40NTcxMDZlZmZiZjg1MjQy"
               },
               {
                 "function": "restart_search",
@@ -462,7 +456,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnJlc3RhcnRfc2VhcmNoLjE3NzEyNzI3NjguZWNjZjI3ZDcuZjVjMjUxMTg0MWM5NWQyMw%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnJlc3RhcnRfc2VhcmNoLjE3NzEzMzM4MzAuODU1MzcxNzEuMDc5MTI3NDkyZTVlNzQwMg%3D%3D"
               },
               {
                 "function": "restart_booking",
@@ -473,7 +467,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnJlc3RhcnRfYm9va2luZy4xNzcxMjcyNzY4LjczMmI2YjRhLmY5ODNkZTVkNzg5OGJhOTc%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnJlc3RhcnRfYm9va2luZy4xNzcxMzMzODMwLjgwMzcxYTY4LjI3ZDcwN2Q4MjI5Y2IwNTg%3D"
               },
               {
                 "function": "get_flight_price",
@@ -484,7 +478,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmdldF9mbGlnaHRfcHJpY2UuMTc3MTI3Mjc2OC40OTE0YzczZi4wMjcyMDJmMDM0NjE4ZjRl"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmdldF9mbGlnaHRfcHJpY2UuMTc3MTMzMzgzMC5mOTI4ZjA0MC5hZmMwOGY5MzA2OTdlMGVl"
               },
               {
                 "function": "confirm_booking",
@@ -495,7 +489,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmNvbmZpcm1fYm9va2luZy4xNzcxMjcyNzY4LmExMzlmZGQwLjkzMDA5YTQ1NDFiNjljNjU%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmNvbmZpcm1fYm9va2luZy4xNzcxMzMzODMwLjQ0OTJiMmY1LmY1MmNkMjhiMjkzMDU2YTY%3D"
               },
               {
                 "function": "decline_booking",
@@ -506,7 +500,7 @@
                   "required": []
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmRlY2xpbmVfYm9va2luZy4xNzcxMjcyNzY4LjQ2MjFlODIyLjE3OGQxNjA1ZmYxMTEyODM%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmRlY2xpbmVfYm9va2luZy4xNzcxMzMzODMwLjUwNTU3NmY1LjZhYmJkZWUxMzkxYmE4M2U%3D"
               },
               {
                 "function": "book_flight",
@@ -522,7 +516,7 @@
                     "Booking that for you now"
                   ]
                 },
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLmJvb2tfZmxpZ2h0LjE3NzEyNzI3NjguYzA4MmU4YmQuMzgxZjZiOGEzNDdjMDY4Yg%3D%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLmJvb2tfZmxpZ2h0LjE3NzEzMzM4MzAuMWRkYThkZmEuODhlMGUxOTA4MzRmOWQ1Ng%3D%3D"
               },
               {
                 "function": "summarize_conversation",
@@ -540,7 +534,7 @@
                   ]
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnN1bW1hcml6ZV9jb252ZXJzYXRpb24uMTc3MTI3Mjc2OC5mZTUwNTBjMi4zZTYyNDIxNmVjYzcyZjg4"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnN1bW1hcml6ZV9jb252ZXJzYXRpb24uMTc3MTMzMzgzMC44OWQ0YWY3YS4xYjVlOWM5YjBlY2ViZWQz"
               },
               {
                 "function": "save_profile",
@@ -550,7 +544,7 @@
                   "properties": {}
                 },
                 "wait_file": "https://briankwest.ngrok.io/sounds/typing.mp3",
-                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=MjAxZTZkYjMtYzk1Zi00YmZhLTk2NjAtM2RhMmFhMTYwMzdkLnNhdmVfcHJvZmlsZS4xNzcxMjcyNzY4LmIwZDViZjIzLmQwZmNhNjE4YzgxODBhNjU%3D"
+                "web_hook_url": "https://voyager:bee1pohfeiKahZiT@briankwest.ngrok.io/swml/swaig/?__token=ODE2ZWU4OGUtMjVhZC00YTUzLWE0OWYtNTk5NmYwY2ZmMGYwLnNhdmVfcHJvZmlsZS4xNzcxMzMzODMwLmNhZTdiZjcwLmU4MDRmYzlmYTRlYmQ2M2Q%3D"
               }
             ],
             "defaults": {
@@ -558,8 +552,9 @@
             }
           },
           "params": {
-            "ai_model": "4o-mini",
-            "end_of_speech_timeout": 500
+            "ai_model": "gpt-oss-120b@groq.ai",
+            "thinking_model": "gpt-oss-120b@groq.ai",
+            "enable_thinking": true
           },
           "hints": [
             "Voyager",
@@ -576,20 +571,9 @@
             }
           ],
           "global_data": {
-            "passenger_profile": {
-              "phone": "+19184249378",
-              "first_name": "Brian",
-              "last_name": "West",
-              "date_of_birth": "1977-02-18",
-              "gender": "MALE",
-              "email": "brian.west@gmail.com",
-              "seat_preference": "AISLE",
-              "cabin_preference": "ECONOMY",
-              "home_airport_iata": "TUL",
-              "home_airport_name": "Tulsa International (TUL)"
-            },
-            "is_new_caller": false,
-            "caller_phone": "+19184249378"
+            "passenger_profile": null,
+            "is_new_caller": true,
+            "caller_phone": "+15399959452"
           }
         }
       }
