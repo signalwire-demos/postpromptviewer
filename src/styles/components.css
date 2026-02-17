@@ -1401,6 +1401,44 @@
   font-family: var(--font-mono);
   color: var(--role-tool);
 }
+.flow-timeline-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.4rem;
+  padding-left: 1.5rem;
+}
+.flow-timeline-detail-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.flow-timeline-json {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: var(--font-mono, monospace);
+}
+.flow-timeline-action-tag {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  border-radius: 3px;
+  font-size: 0.7rem;
+  color: #a78bfa;
+  font-family: var(--font-mono, monospace);
+}
 .flow-timeline-instructions {
   margin-top: 0.75rem;
 }

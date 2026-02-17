@@ -130,25 +130,36 @@ export async function renderStateFlow(container, payload) {
                   ` : ''}
                 ` : `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
-                    <code>${escapeHtml(item.functionName)}</code>
-                    ${(() => {
-                      const argDetails = extractFunctionDetails(item.args);
-                      const resultDetails = extractFunctionDetails(item.result);
-                      let details = '';
-                      if (argDetails) details += ` <span style="color:#3b82f6;font-size:0.8rem">→ ${escapeHtml(argDetails)}</span>`;
-                      if (resultDetails) details += ` <span style="color:#10b981;font-size:0.8rem">✓</span>`;
-                      return details;
-                    })()}
+                    <code style="color:#f59e0b;font-size:0.9rem">${escapeHtml(item.functionName)}</code>
+                    <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.source === 'swaig_log' ? '(swaig)' : ''}</span>
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
-                  ${(() => {
-                    const resultDetails = extractFunctionDetails(item.result);
-                    return resultDetails ? `
-                      <div style="padding-left:1.5rem;font-size:0.75rem;color:var(--text-success);margin-top:0.25rem">
-                        ✓ ${escapeHtml(resultDetails)}
+                  ${item.question ? `
+                    <div class="flow-timeline-detail">
+                      <span class="flow-timeline-detail-label">Question</span>
+                      <span style="color:#e5e7eb">${escapeHtml(item.question)}</span>
+                    </div>
+                  ` : ''}
+                  ${item.args ? `
+                    <div class="flow-timeline-detail">
+                      <span class="flow-timeline-detail-label">Args</span>
+                      <pre class="flow-timeline-json">${escapeHtml(formatJson(item.args))}</pre>
+                    </div>
+                  ` : ''}
+                  ${item.result ? `
+                    <div class="flow-timeline-detail">
+                      <span class="flow-timeline-detail-label" style="color:#10b981">Result</span>
+                      <pre class="flow-timeline-json">${escapeHtml(formatJson(item.result))}</pre>
+                    </div>
+                  ` : ''}
+                  ${item.swaigActions && item.swaigActions.length > 0 ? `
+                    <div class="flow-timeline-detail">
+                      <span class="flow-timeline-detail-label" style="color:#7c3aed">Actions</span>
+                      <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem">
+                        ${item.swaigActions.map(a => `<span class="flow-timeline-action-tag">${escapeHtml(a.verb)}</span>`).join('')}
                       </div>
-                    ` : '';
-                  })()}
+                    </div>
+                  ` : ''}
                 `}
               </div>
             </div>
@@ -878,6 +889,22 @@ function extractFunctionDetails(data) {
   }
 
   return null;
+}
+
+function formatJson(data) {
+  if (!data) return '';
+  if (typeof data === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(data), null, 2);
+    } catch {
+      return data;
+    }
+  }
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return String(data);
+  }
 }
 
 function formatTimestamp(timestamp) {
