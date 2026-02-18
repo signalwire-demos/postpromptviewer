@@ -81,6 +81,79 @@ export function renderTimeline(container, payload, metrics) {
   }
   let toolCallIdx = 0;
 
+  // ─── Collect enriched events for new swimlane rows ───
+  // Use call_timeline as primary source when available, fall back to call_log
+  const enrichedSource = payload.callTimeline
+    ? payload.callTimeline.map(e => ({ role: 'system-log', action: e.type, timestamp: e.ts, metadata: e }))
+    : payload.callLog;
+  const enrichedRows = [];
+  for (const msg of enrichedSource) {
+    if (msg.role !== 'system-log' || !msg.action || !msg.timestamp) continue;
+    const m = msg.metadata || {};
+
+    if (msg.action === 'filler') {
+      enrichedRows.push({
+        role: 'enriched',
+        category: 'filler',
+        timestamp: msg.timestamp,
+        endTimestamp: msg.timestamp + 1_500_000, // ~1.5s
+        durationMs: 1500,
+        label: truncate(m.text || 'thinking...', 20),
+        content: m.text || 'Thinking filler',
+      });
+    } else if (msg.action === 'attention_timeout') {
+      enrichedRows.push({
+        role: 'enriched',
+        category: 'attention-timeout',
+        timestamp: msg.timestamp,
+        endTimestamp: msg.timestamp + 500_000, // ~0.5s marker
+        durationMs: Math.round((m.timeout_ms || m.timeout || 500)),
+        label: 'Timeout',
+        content: `Inactivity timeout (${m.timeout_ms || m.timeout || '?'}ms)`,
+      });
+    } else if (msg.action === 'manual_say') {
+      enrichedRows.push({
+        role: 'enriched',
+        category: 'manual-say',
+        timestamp: msg.timestamp,
+        endTimestamp: msg.timestamp + 3_000_000, // ~3s estimate
+        durationMs: 3000,
+        label: truncate(m.text || 'say', 20),
+        content: (m.text || 'System say') + (m.is_error ? ' [ERROR]' : ''),
+      });
+    } else if (msg.action === 'hearing_hint' || msg.action === 'pronounce_rule') {
+      enrichedRows.push({
+        role: 'enriched',
+        category: 'rewrite',
+        timestamp: msg.timestamp,
+        endTimestamp: msg.timestamp + 200_000, // thin marker
+        durationMs: 200,
+        label: msg.action === 'hearing_hint' ? 'ASR hint' : 'TTS rule',
+        content: `${m.original || ''} → ${m.result || ''}`,
+      });
+    } else if (msg.action === 'context_enter') {
+      enrichedRows.push({
+        role: 'enriched',
+        category: 'context-switch',
+        timestamp: msg.timestamp,
+        endTimestamp: msg.timestamp + 300_000,
+        durationMs: 300,
+        label: truncate(m.to_context || m.context || 'context', 20),
+        content: `Context: ${m.from_context || '?'} → ${m.to_context || m.context || '?'}`,
+      });
+    } else if (msg.action === 'reset') {
+      enrichedRows.push({
+        role: 'enriched',
+        category: 'reset',
+        timestamp: msg.timestamp,
+        endTimestamp: msg.timestamp + 300_000,
+        durationMs: 300,
+        label: m.reset_type || m.type || 'reset',
+        content: `Reset: ${m.reset_type || m.type || 'full'}`,
+      });
+    }
+  }
+
   // ─── Collect ALL events including system-log ───
   const allMessages = [];
   for (const msg of payload.callLog) {
@@ -242,6 +315,22 @@ export function renderTimeline(container, payload, metrics) {
     segments.push(seg);
   }
 
+  // Enriched event segments
+  for (const ev of enrichedRows) {
+    const startUs = Math.max(ev.timestamp, swimStart);
+    const endUs = Math.min(ev.endTimestamp, swimEnd);
+    if (startUs >= endUs) continue;
+    segments.push({
+      role: 'enriched',
+      category: ev.category,
+      startUs,
+      endUs,
+      durationMs: ev.durationMs,
+      label: ev.label,
+      content: ev.content,
+    });
+  }
+
   // Compute gaps (sorted by start across all segments)
   const sorted = [...segments].sort((a, b) => a.startUs - b.startUs);
   const gapMap = new Map();
@@ -263,8 +352,17 @@ export function renderTimeline(container, payload, metrics) {
     step: 'rgba(148, 163, 184, 0.5)',
   };
 
+  const ENRICHED_COLORS = {
+    filler: 'rgba(253, 230, 138, 0.6)',
+    'attention-timeout': 'rgba(239, 68, 68, 0.7)',
+    'manual-say': 'rgba(251, 146, 60, 0.6)',
+    rewrite: 'rgba(168, 85, 247, 0.4)',
+    'context-switch': 'rgba(2, 132, 199, 0.6)',
+    reset: 'rgba(220, 38, 38, 0.6)',
+  };
+
   function renderSegments(role) {
-    return segments.filter(s => s.role === role || (role === 'say' && s.role === 'assistant-manual')).map(seg => {
+    return segments.filter(s => s.role === role || (role === 'say' && s.role === 'assistant-manual') || (role === 'enriched' && s.role === 'enriched')).map(seg => {
       const left = swimPct(seg.startUs);
       const width = Math.max(swimPct(seg.endUs) - left, 0.3);
       const gap = gapMap.get(seg) || 0;
@@ -272,9 +370,11 @@ export function renderTimeline(container, payload, metrics) {
 
       const bg = seg.role === 'assistant-manual'
         ? ROLE_BG['assistant-manual']
-        : role === 'system'
-          ? (SYSTEM_COLORS[seg.category] || ROLE_BG.system)
-          : ROLE_BG[seg.role];
+        : seg.role === 'enriched'
+          ? (ENRICHED_COLORS[seg.category] || 'rgba(148, 163, 184, 0.5)')
+          : role === 'system'
+            ? (SYSTEM_COLORS[seg.category] || ROLE_BG.system)
+            : ROLE_BG[seg.role];
 
       let attrs = `data-role="${seg.role}" data-duration="${seg.durationMs}" data-gap="${gap}" data-content="${(seg.content || seg.label).replace(/"/g, '&quot;')}" data-start="${Math.round((seg.startUs - swimStart) / 1000)}"`;
 
@@ -313,9 +413,10 @@ export function renderTimeline(container, payload, metrics) {
   const hasTools = segments.some(s => s.role === 'tool');
   const hasSystem = segments.some(s => s.role === 'system');
   const hasSay = segments.some(s => s.role === 'assistant-manual');
+  const hasEnriched = segments.some(s => s.role === 'enriched');
 
-  const roles = ['user', 'assistant', ...(hasTools ? ['tool'] : []), ...(hasSay ? ['say'] : []), ...(hasSystem ? ['system'] : [])];
-  const roleLabels = { user: 'User', assistant: 'Assistant', tool: 'Tool', say: 'Say', system: 'System' };
+  const roles = ['user', 'assistant', ...(hasTools ? ['tool'] : []), ...(hasSay ? ['say'] : []), ...(hasSystem ? ['system'] : []), ...(hasEnriched ? ['enriched'] : [])];
+  const roleLabels = { user: 'User', assistant: 'Assistant', tool: 'Tool', say: 'Say', system: 'System', enriched: 'Events' };
 
   const roleLegendItems = [];
   for (const role of roles) {
@@ -332,6 +433,13 @@ export function renderTimeline(container, payload, metrics) {
     }
     if (hasStep) {
       roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.step}"></span>Step</div>`);
+    }
+  }
+  if (hasEnriched) {
+    const enrichedCategories = new Set(segments.filter(s => s.role === 'enriched').map(s => s.category));
+    const categoryLabels = { filler: 'Filler', 'attention-timeout': 'Timeout', 'manual-say': 'System Say', rewrite: 'Rewrite', 'context-switch': 'Context', reset: 'Reset' };
+    for (const cat of enrichedCategories) {
+      roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${ENRICHED_COLORS[cat] || 'rgba(148,163,184,0.5)'}"></span>${categoryLabels[cat] || cat}</div>`);
     }
   }
   const roleLegend = roleLegendItems.join('');
@@ -430,6 +538,13 @@ export function renderTimeline(container, payload, metrics) {
       if (gap > 0) {
         html += `<div class="swimlane__tooltip-row swimlane__tooltip-row--gap"><span>Gap from prev</span><strong>${formatMs(gap)}</strong></div>`;
       }
+
+    } else if (role === 'enriched') {
+      const catLabel = { filler: 'Filler', 'attention-timeout': 'Attention Timeout', 'manual-say': 'System Say', rewrite: 'Text Rewrite', 'context-switch': 'Context Switch', reset: 'Reset' }[category] || 'Event';
+      html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--system">${catLabel}</div>`;
+      if (content) html += `<div class="swimlane__tooltip-text">${content}</div>`;
+      html += `<div class="swimlane__tooltip-row"><span>Duration</span><strong>${formatMs(duration)}</strong></div>`;
+      html += `<div class="swimlane__tooltip-row"><span>Offset</span><span>${formatMs(startMs)}</span></div>`;
 
     } else if (role === 'system') {
       const catLabel = category === 'assistant-thinking' ? 'Thinking'

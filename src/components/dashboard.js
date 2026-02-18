@@ -8,6 +8,7 @@ export function renderDashboard(container, metrics) {
   const t = metrics.tools;
   const tk = metrics.tokens;
 
+  const e = metrics.enriched || {};
   const sections = [];
 
   // Duration
@@ -148,6 +149,75 @@ export function renderDashboard(container, metrics) {
         { label: 'Wire Input', value: tk.totalWireInputTokens != null ? tk.totalWireInputTokens.toLocaleString() : 'N/A', unit: 'tokens' },
         { label: 'Wire Output', value: tk.totalWireOutputTokens != null ? tk.totalWireOutputTokens.toLocaleString() : 'N/A', unit: 'tokens' },
       ],
+    });
+  }
+
+  // Enriched Event Metrics (only show if any enriched data is present)
+  const hasEnrichedData = e.functionErrorCount > 0 || e.gatherRejectCount > 0 ||
+    e.textRewriteCount > 0 || e.fillerCount > 0 || e.attentionTimeoutCount > 0 ||
+    e.startupHookDuration != null;
+
+  if (hasEnrichedData) {
+    const enrichedCards = [];
+
+    if (e.functionErrorCount > 0) {
+      enrichedCards.push({
+        label: 'Function Error Rate',
+        value: `${(e.functionErrorRate * 100).toFixed(1)}`,
+        unit: `% (${e.functionErrorCount}/${e.functionCallCount})`,
+      });
+    }
+
+    if (e.gatherRejectCount > 0) {
+      enrichedCards.push({
+        label: 'Gather Rejection Rate',
+        value: `${(e.gatherRejectionRate * 100).toFixed(1)}`,
+        unit: `% (${e.gatherRejectCount} rejected)`,
+      });
+    }
+
+    if (e.avgGatherAttempts > 0) {
+      enrichedCards.push({
+        label: 'Avg Gather Attempts',
+        value: e.avgGatherAttempts.toFixed(1),
+      });
+    }
+
+    if (e.textRewriteCount > 0) {
+      enrichedCards.push({
+        label: 'Text Rewrites',
+        value: e.textRewriteCount,
+        unit: `${e.hearingHintCount} ASR + ${e.pronounceRuleCount} TTS`,
+      });
+    }
+
+    if (e.fillerCount > 0) {
+      enrichedCards.push({
+        label: 'Filler Count',
+        value: e.fillerCount,
+        unit: 'thinking fillers',
+      });
+    }
+
+    if (e.attentionTimeoutCount > 0) {
+      enrichedCards.push({
+        label: 'Attention Timeouts',
+        value: e.attentionTimeoutCount,
+      });
+    }
+
+    if (e.startupHookDuration != null) {
+      enrichedCards.push({
+        label: 'Startup Hook',
+        value: e.startupHookDuration,
+        unit: 'ms',
+      });
+    }
+
+    sections.push({
+      title: 'Enriched Events',
+      subtitle: 'Errors, rewrites, fillers, and lifecycle events',
+      cards: enrichedCards,
     });
   }
 

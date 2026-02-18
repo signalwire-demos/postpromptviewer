@@ -3236,3 +3236,152 @@
     max-width: none;
   }
 }
+
+/* ===== Enriched Event Styles ===== */
+
+/* State Flow: Error timeline items */
+.flow-timeline-item--error {
+  border-left: 2px solid #dc2626;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+}
+.flow-timeline-item--muted {
+  opacity: 0.6;
+}
+.flow-timeline-marker--error {
+  background: #dc2626;
+}
+.flow-timeline-marker--nav {
+  background: #0284c7;
+}
+.flow-timeline-marker--terminal {
+  background: #dc2626;
+}
+.flow-timeline-marker--filler {
+  background: #fbbf24;
+  color: #000;
+}
+.flow-timeline-marker--warning {
+  background: #ef4444;
+}
+
+/* State Flow: Badges */
+.flow-timeline-badge--error {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fca5a5;
+}
+.flow-timeline-badge--success {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6ee7b7;
+}
+
+/* State Flow: Gather lifecycle */
+.flow-timeline-gather-question {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.flow-timeline-gather-key {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+.flow-timeline-gather-reject {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+}
+
+/* Transcript: Inline events */
+.transcript__inline {
+  margin-bottom: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+.transcript__inline--filler {
+  background: rgba(253, 230, 138, 0.08);
+  border-left: 2px solid rgba(253, 230, 138, 0.4);
+  color: var(--text-muted);
+  font-style: italic;
+}
+.transcript__inline-text::before {
+  content: '\1F914 ';
+}
+.transcript__inline--error {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-left: 3px solid #dc2626;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.transcript__inline-error-label {
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fca5a5;
+}
+.transcript__inline-error-detail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.transcript__inline-error-msg {
+  width: 100%;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+/* Transcript: Manual say messages */
+.transcript__msg--manual-say {
+  border-left-color: #fb923c;
+}
+.transcript__msg--manual-say-error {
+  border-left-color: #dc2626;
+  background: rgba(220, 38, 38, 0.04);
+}
+
+/* Transcript: Rewrite badges */
+.transcript__meta-tag--rewrite {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a78bfa;
+  font-weight: 500;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+/* Transcript: Error badge */
+.transcript__meta-tag--error {
+  background: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
+  font-weight: 600;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+/* Recording: Transcript role colors for new types */
+.recording__transcript-role--filler { color: rgba(253, 230, 138, 0.9); }
+.recording__transcript-role--manual-say { color: rgba(251, 146, 60, 0.9); }
+.recording__transcript-role--attention-timeout { color: rgba(239, 68, 68, 0.9); }
+.recording__transcript-role--function-error { color: rgba(220, 38, 38, 0.9); }

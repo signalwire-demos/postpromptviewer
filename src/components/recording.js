@@ -14,6 +14,10 @@ const REGION_COLORS = {
   'assistant-thinking': 'rgba(168, 85, 247, 0.12)',
   calling: 'rgba(251, 146, 60, 0.12)',
   step: 'rgba(148, 163, 184, 0.12)',
+  filler: 'rgba(253, 230, 138, 0.15)',
+  'manual-say': 'rgba(251, 146, 60, 0.15)',
+  'attention-timeout': 'rgba(239, 68, 68, 0.15)',
+  'function-error': 'rgba(220, 38, 38, 0.15)',
 };
 
 function classifySystemLog(entry) {
@@ -257,6 +261,62 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
     }
   }
 
+  // Add regions for enriched event types from call_log
+  for (const msg of payload.callLog) {
+    if (msg.role !== 'system-log' || !msg.action || !msg.timestamp) continue;
+    const m = msg.metadata || {};
+
+    if (msg.action === 'filler') {
+      const startSec = toSec(msg.timestamp);
+      if (startSec < 0 || startSec >= recordingDuration) continue;
+      const endSec = Math.min(startSec + 1.5, recordingDuration); // ~1.5s filler duration
+      regions.push({
+        start: Math.max(0, startSec),
+        end: endSec,
+        color: REGION_COLORS.filler,
+        role: 'filler',
+        content: truncate(m.text || 'thinking...', 30),
+        fullContent: m.text || 'Thinking filler',
+      });
+    } else if (msg.action === 'manual_say') {
+      const startSec = toSec(msg.timestamp);
+      if (startSec < 0 || startSec >= recordingDuration) continue;
+      const endSec = Math.min(startSec + 3, recordingDuration); // estimate ~3s for say
+      regions.push({
+        start: Math.max(0, startSec),
+        end: endSec,
+        color: m.is_error ? REGION_COLORS['function-error'] : REGION_COLORS['manual-say'],
+        role: 'manual-say',
+        content: truncate(m.text || 'System say', 30),
+        fullContent: (m.text || 'System say') + (m.is_error ? ` [ERROR: ${m.error_reason || 'unknown'}]` : ''),
+      });
+    } else if (msg.action === 'attention_timeout') {
+      const startSec = toSec(msg.timestamp);
+      if (startSec < 0 || startSec >= recordingDuration) continue;
+      const endSec = Math.min(startSec + 0.5, recordingDuration);
+      regions.push({
+        start: Math.max(0, startSec),
+        end: endSec,
+        color: REGION_COLORS['attention-timeout'],
+        role: 'attention-timeout',
+        content: 'Timeout',
+        fullContent: `Inactivity timeout (${m.timeout_ms || m.timeout || '?'}ms)`,
+      });
+    } else if (msg.action === 'function_error') {
+      const startSec = toSec(msg.timestamp);
+      if (startSec < 0 || startSec >= recordingDuration) continue;
+      const endSec = Math.min(startSec + 0.3, recordingDuration);
+      regions.push({
+        start: Math.max(0, startSec),
+        end: endSec,
+        color: REGION_COLORS['function-error'],
+        role: 'function-error',
+        content: 'Error',
+        fullContent: `Function error: ${m.function || m.name || 'unknown'} (${m.error_type || m.type || 'error'})`,
+      });
+    }
+  }
+
   // Detect overlaps and create red overlay regions instead of clipping
   regions.sort((a, b) => a.start - b.start);
   const overlaps = [];
@@ -270,6 +330,10 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
       if (a.role === 'assistant-thinking' || b.role === 'assistant-thinking') continue;
       if (a.role === 'step' || b.role === 'step') continue;
       if (a.role === 'endpointing' || b.role === 'endpointing') continue;
+      if (a.role === 'filler' || b.role === 'filler') continue;
+      if (a.role === 'attention-timeout' || b.role === 'attention-timeout') continue;
+      if (a.role === 'function-error' || b.role === 'function-error') continue;
+      if (a.role === 'manual-say' || b.role === 'manual-say') continue;
       if ((a.role === 'assistant-manual' && b.role === 'tool') || (a.role === 'tool' && b.role === 'assistant-manual')) continue;
       overlaps.push({
         start: b.start,
@@ -363,6 +427,10 @@ export function renderRecording(container, payload) {
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['assistant-thinking']}; border:1px solid rgba(168,85,247,0.6)"></span> Thinking</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['assistant-manual']}; border:1px solid rgba(236,72,153,0.6)"></span> Manual Say</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.step}; border:1px solid rgba(148,163,184,0.6)"></span> Step</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS.filler}; border:1px solid rgba(253,230,138,0.6)"></span> Filler</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['manual-say']}; border:1px solid rgba(251,146,60,0.6)"></span> System Say</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['attention-timeout']}; border:1px solid rgba(239,68,68,0.6)"></span> Timeout</span>
+        <span class="recording__legend-item"><span class="recording__swatch" style="background:${REGION_COLORS['function-error']}; border:1px solid rgba(220,38,38,0.6)"></span> Error</span>
         <span class="recording__legend-item"><span class="recording__swatch" style="background:rgba(239, 68, 68, 0.25); border:1px solid rgba(239,68,68,0.6)"></span> Barge-in</span>
       </div>
 
@@ -499,9 +567,9 @@ export function renderRecording(container, payload) {
   const transcriptText = transcriptEl.querySelector('.recording__transcript-text');
   let lastTranscriptId = null;
 
-  const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', 'assistant-thinking': 'Thinking', step: 'Step', overlap: 'Barge-in' };
+  const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', 'assistant-thinking': 'Thinking', step: 'Step', overlap: 'Barge-in', filler: 'Filler', 'manual-say': 'System Say', 'attention-timeout': 'Timeout', 'function-error': 'Error' };
 
-  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, endpointing: 1, tool: 1, 'assistant-thinking': 1, assistant: 0, step: -1 };
+  const ROLE_PRIORITY = { user: 3, 'function-error': 3, 'attention-timeout': 3, 'assistant-manual': 2, 'manual-say': 2, endpointing: 1, tool: 1, 'assistant-thinking': 1, filler: 0, assistant: 0, step: -1 };
 
   wavesurfer.on('timeupdate', (time) => {
     currentEl.textContent = formatTime(time);

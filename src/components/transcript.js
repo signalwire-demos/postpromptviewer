@@ -164,9 +164,47 @@ export function renderTranscript(container, payload) {
     });
   }
 
+  // Build lookup maps for enriched events that annotate messages
+  const enrichedEvents = { hearingHints: [], pronounceRules: [], fillers: [], manualSays: [], functionErrors: [] };
+  (payload.callLog || []).forEach(entry => {
+    if (entry.role !== 'system-log' || !entry.action) return;
+    const m = entry.metadata || {};
+    switch (entry.action) {
+      case 'hearing_hint':
+        enrichedEvents.hearingHints.push({ timestamp: entry.timestamp, original: m.original || '', result: m.result || '' });
+        break;
+      case 'pronounce_rule':
+        enrichedEvents.pronounceRules.push({ timestamp: entry.timestamp, original: m.original || '', result: m.result || '' });
+        break;
+      case 'filler':
+        enrichedEvents.fillers.push({ timestamp: entry.timestamp, text: m.text || 'thinking...' });
+        break;
+      case 'manual_say':
+        enrichedEvents.manualSays.push({ timestamp: entry.timestamp, text: m.text || entry.content || '', isError: m.is_error || false, errorReason: m.error_reason || null });
+        break;
+      case 'function_error':
+        enrichedEvents.functionErrors.push({ timestamp: entry.timestamp, functionName: m.function || m.name || 'unknown', errorType: m.error_type || m.type || 'unknown', httpCode: m.http_code || m.status_code || null, errorMessage: m.message || m.error || null });
+        break;
+    }
+  });
+
   function buildMessagesHtml(messages) {
     const { search } = getState();
     const isSearching = search.query && search.activeTab === 'transcript';
+
+    // Sort enriched inline events to interleave with messages
+    const inlineEvents = [];
+    enrichedEvents.fillers.forEach(f => inlineEvents.push({ ...f, _type: 'filler' }));
+    enrichedEvents.manualSays.forEach(s => inlineEvents.push({ ...s, _type: 'manual_say' }));
+    enrichedEvents.functionErrors.forEach(e => inlineEvents.push({ ...e, _type: 'function_error' }));
+    inlineEvents.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Track which hearing hints have been consumed
+    let hintIdx = 0;
+    // Track which pronounce rules have been consumed
+    let pronounceIdx = 0;
+    // Track inline event cursor
+    let inlineIdx = 0;
 
     return messages.map((msg, idx) => {
       const role = msg.role || 'unknown';
@@ -221,6 +259,24 @@ export function renderTranscript(container, payload) {
       if (msg.speaking_to_final_event != null) metaTags.push(`speak-to-final: ${msg.speaking_to_final_event}ms`);
       if (isGarbage) metaTags.push({ text: '⚠️ Garbage Response', class: 'garbage' });
 
+      // hearing_hint badge: show on user messages when a hint was applied just before
+      if (role === 'user' && msg.timestamp && hintIdx < enrichedEvents.hearingHints.length) {
+        const hint = enrichedEvents.hearingHints[hintIdx];
+        if (hint.timestamp <= msg.timestamp) {
+          metaTags.push({ text: `heard: ${hint.original} → ${hint.result}`, class: 'rewrite' });
+          hintIdx++;
+        }
+      }
+
+      // pronounce_rule badge: show on assistant messages when a pronunciation rule was applied
+      if (role === 'assistant' && msg.timestamp && pronounceIdx < enrichedEvents.pronounceRules.length) {
+        const rule = enrichedEvents.pronounceRules[pronounceIdx];
+        if (rule.timestamp <= msg.timestamp) {
+          metaTags.push({ text: `TTS: ${rule.original} → ${rule.result}`, class: 'rewrite' });
+          pronounceIdx++;
+        }
+      }
+
       // Tool calls
       let toolCallsHtml = '';
       if (msg.tool_calls && msg.tool_calls.length > 0) {
@@ -243,7 +299,35 @@ export function renderTranscript(container, payload) {
         data-is-garbage="${isGarbage}"
       `.trim();
 
-      return `
+      // Collect inline events that should appear before this message
+      let inlineHtml = '';
+      const msgTs = msg.timestamp || msg.start_timestamp || 0;
+      while (inlineIdx < inlineEvents.length && inlineEvents[inlineIdx].timestamp <= msgTs) {
+        const ev = inlineEvents[inlineIdx];
+        if (ev._type === 'filler') {
+          inlineHtml += `<div class="transcript__inline transcript__inline--filler"><span class="transcript__inline-text">${escapeHtml(ev.text)}</span></div>`;
+        } else if (ev._type === 'manual_say') {
+          inlineHtml += `
+            <div class="transcript__msg transcript__msg--manual-say${ev.isError ? ' transcript__msg--manual-say-error' : ''}">
+              <div class="transcript__role" style="color:#fb923c">say</div>
+              <div class="transcript__body">
+                <div class="transcript__content">${escapeHtml(ev.text)}</div>
+                ${ev.isError ? `<div class="transcript__meta"><span class="transcript__meta-tag transcript__meta-tag--error">${escapeHtml(ev.errorReason || 'error')}</span></div>` : ''}
+              </div>
+            </div>`;
+        } else if (ev._type === 'function_error') {
+          inlineHtml += `
+            <div class="transcript__inline transcript__inline--error">
+              <span class="transcript__inline-error-label">Function Error</span>
+              <code>${escapeHtml(ev.functionName)}</code>
+              <span class="transcript__inline-error-detail">${escapeHtml(ev.errorType)}${ev.httpCode ? ` (HTTP ${ev.httpCode})` : ''}</span>
+              ${ev.errorMessage ? `<span class="transcript__inline-error-msg">${escapeHtml(ev.errorMessage)}</span>` : ''}
+            </div>`;
+        }
+        inlineIdx++;
+      }
+
+      return `${inlineHtml}
         <div class="transcript__msg transcript__msg--${roleClass}" ${dataAttrs}>
           <div class="transcript__role">${role}</div>
           <div class="transcript__body">

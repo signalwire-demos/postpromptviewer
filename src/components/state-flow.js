@@ -29,6 +29,24 @@ mermaid.initialize({
   },
 });
 
+/**
+ * Normalize call_timeline entries into the same shape as callLog entries.
+ * call_timeline is a pre-flattened array with { ts, type, ...metadata } at top level.
+ */
+function normalizeTimeline(timeline) {
+  if (!Array.isArray(timeline)) return [];
+  return timeline.map(entry => {
+    const { ts, type, ...rest } = entry;
+    return {
+      role: 'system-log',
+      action: type,
+      timestamp: ts,
+      metadata: rest,
+      content: rest.text || rest.content || '',
+    };
+  });
+}
+
 export async function renderStateFlow(container, payload) {
   const flowData = extractStateFlow(payload);
 
@@ -83,6 +101,12 @@ export async function renderStateFlow(container, payload) {
           <div class="swml-stat-card__label">Duration</div>
           <div class="swml-stat-card__value">${flowData.duration}</div>
         </div>
+        ${flowData.functionErrors > 0 ? `
+        <div class="swml-stat-card">
+          <div class="swml-stat-card__label">Errors</div>
+          <div class="swml-stat-card__value" style="color:#ef4444">${flowData.functionErrors}</div>
+        </div>
+        ` : ''}
       </div>
 
       <div class="state-flow__diagram-wrapper">
@@ -93,6 +117,7 @@ export async function renderStateFlow(container, payload) {
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>Action</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#0284c7;border-color:#0369a1"></span>Navigation</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#dc2626;border-color:#b91c1c"></span>Terminal</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#450a0a;border-color:#dc2626"></span>Error</span>
         </div>
         <div class="state-flow__zoom-controls">
           <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
@@ -108,8 +133,8 @@ export async function renderStateFlow(container, payload) {
         <h3 class="swml-section-title">Complete Execution Timeline</h3>
         <div class="flow-timeline">
           ${flowData.detailedTimeline.map((item, idx) => `
-            <div class="flow-timeline-item">
-              <div class="flow-timeline-marker">${idx + 1}</div>
+            <div class="flow-timeline-item${item.type === 'function_error' || item.type === 'gather_reject' ? ' flow-timeline-item--error' : ''}${item.type === 'filler' || item.type === 'summarize_start' ? ' flow-timeline-item--muted' : ''}">
+              <div class="flow-timeline-marker${item.type === 'function_error' ? ' flow-timeline-marker--error' : ''}${item.type === 'context_enter' ? ' flow-timeline-marker--nav' : ''}${item.type === 'reset' ? ' flow-timeline-marker--terminal' : ''}${item.type === 'filler' ? ' flow-timeline-marker--filler' : ''}${item.type === 'attention_timeout' ? ' flow-timeline-marker--warning' : ''}">${idx + 1}</div>
               <div class="flow-timeline-content">
                 ${item.type === 'state' ? `
                   <div class="flow-timeline-step">
@@ -126,7 +151,8 @@ export async function renderStateFlow(container, payload) {
                       ${item.source === 'implicit' ? '<span style="color:#9ca3af;margin-left:0.5rem;font-size:0.7rem">● Implicit state</span>' : ''}
                     </div>
                   ` : ''}
-                ` : `
+
+                ` : item.type === 'function' ? `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
                     <code style="color:#f59e0b;font-size:0.9rem">${escapeHtml(item.functionName)}</code>
                     <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.source === 'swaig_log' ? '(swaig)' : ''}</span>
@@ -161,7 +187,112 @@ export async function renderStateFlow(container, payload) {
                       `).join('')}
                     </div>
                   ` : ''}
-                `}
+
+                ` : item.type === 'context_enter' ? `
+                  <div class="flow-timeline-step">
+                    <strong style="color:#0284c7">⤷ Context: ${escapeHtml(item.toContext || 'unknown')}</strong>
+                    ${item.fromContext ? `<span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">from ${escapeHtml(item.fromContext)}</span>` : ''}
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'reset' ? `
+                  <div class="flow-timeline-step">
+                    <strong style="color:#dc2626">⟲ Reset: ${escapeHtml(item.resetType)}</strong>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'gather_group' ? `
+                  <div class="flow-timeline-step">
+                    <strong style="color:#6b7280">Gather</strong>
+                    <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.totalQuestions} question${item.totalQuestions !== 1 ? 's' : ''}${item.outputKey ? `, key: ${escapeHtml(item.outputKey)}` : ''}</span>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+                  ${item.questions.length > 0 ? `
+                    <div class="flow-timeline-detail" style="padding-left:0">
+                      ${item.questions.map(q => `
+                        <div class="flow-timeline-gather-question">
+                          <span class="flow-timeline-gather-key">${escapeHtml(q.key || '?')}</span>
+                          <span style="color:var(--text-muted);font-size:0.7rem">${q.questionType || ''}${q.requiresConfirm ? ' (confirm)' : ''}</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+                  ${item.rejects.length > 0 ? `
+                    <div class="flow-timeline-detail" style="padding-left:0">
+                      ${item.rejects.map(r => `
+                        <div class="flow-timeline-gather-reject">
+                          <span class="flow-timeline-badge--error">rejected</span>
+                          <span style="color:var(--text-muted);font-size:0.7rem">${escapeHtml(r.reason)} (attempt ${r.attempt})</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+                  ${item.complete ? `
+                    <div class="flow-timeline-detail" style="padding-left:0">
+                      <div style="margin-top:0.25rem">
+                        <span class="flow-timeline-badge--success">complete</span>
+                        <span style="color:var(--text-muted);font-size:0.7rem">${item.complete.answeredCount} answered${item.complete.completionAction ? ` → ${escapeHtml(item.complete.completionAction)}` : ''}</span>
+                      </div>
+                    </div>
+                  ` : ''}
+
+                ` : item.type === 'gather_reject' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <span class="flow-timeline-badge--error">Gather Rejected</span>
+                    <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${escapeHtml(item.reason)} (attempt ${item.attempt})</span>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'function_error' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <span class="flow-timeline-badge--error">ERROR</span>
+                    <code style="color:#fca5a5;font-size:0.9rem;margin-left:0.5rem">${escapeHtml(item.functionName)}</code>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+                  <div class="flow-timeline-detail">
+                    <span class="flow-timeline-detail-label" style="color:#dc2626">Error</span>
+                    <span style="color:#fca5a5">${escapeHtml(item.errorType)}${item.httpCode ? ` (HTTP ${item.httpCode})` : ''}</span>
+                    ${item.errorMessage ? `<span style="color:var(--text-muted);font-size:0.75rem">${escapeHtml(item.errorMessage)}</span>` : ''}
+                  </div>
+
+                ` : item.type === 'startup_hook' || item.type === 'hangup_hook' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <code style="color:#f59e0b;font-size:0.9rem">${item.type === 'startup_hook' ? 'startup_hook' : 'hangup_hook'}</code>
+                    ${item.durationMs ? `<span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.durationMs}ms</span>` : ''}
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'manual_say' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <strong style="color:#fb923c">Say</strong>
+                    ${item.isError ? '<span class="flow-timeline-badge--error" style="margin-left:0.5rem">error</span>' : ''}
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+                  <div class="flow-timeline-detail">
+                    <span style="color:var(--text-primary);font-size:0.8rem">${escapeHtml(item.text)}</span>
+                    ${item.isError && item.errorReason ? `<span style="color:#fca5a5;font-size:0.75rem">${escapeHtml(item.errorReason)}</span>` : ''}
+                  </div>
+
+                ` : item.type === 'filler' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem;opacity:0.6">
+                    <span style="color:var(--text-muted);font-size:0.85rem">Filler: "${escapeHtml(item.text)}"</span>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'attention_timeout' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <strong style="color:#ef4444">Attention Timeout</strong>
+                    ${item.timeoutMs ? `<span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.timeoutMs}ms</span>` : ''}
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'summarize_start' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem;opacity:0.6">
+                    <span style="color:var(--text-secondary);font-size:0.85rem">Summarization started</span>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : ''}
               </div>
             </div>
           `).join('')}
@@ -230,6 +361,7 @@ export async function renderStateFlow(container, payload) {
           { color: '#7c3aed', stroke: '#6d28d9', label: 'Action' },
           { color: '#0284c7', stroke: '#0369a1', label: 'Navigation' },
           { color: '#dc2626', stroke: '#b91c1c', label: 'Terminal' },
+          { color: '#450a0a', stroke: '#dc2626', label: 'Error' },
         ]);
         downloadImageBtn.textContent = 'Downloaded!';
         setTimeout(() => {
@@ -266,6 +398,8 @@ export async function renderStateFlow(container, payload) {
 function extractStateFlow(payload) {
   const swaigLog = payload.swaigLog || [];
   const callLog = payload.callLog || [];
+  // Merge call_timeline events into callLog processing when available
+  const timelineEvents = payload.callTimeline ? normalizeTimeline(payload.callTimeline) : [];
 
   // Extract ALL step changes from call_log structured metadata
   const allStepChanges = [];
@@ -629,8 +763,163 @@ function extractStateFlow(payload) {
     });
   });
 
+  // Extract enriched events from call_log (+ call_timeline if available) for the detailed timeline
+  const gatherGroups = []; // Track gather lifecycle groups
+  let currentGatherGroup = null;
+
+  // Merge callLog and timelineEvents, deduplicating by timestamp+action
+  const seen_events = new Set();
+  const enrichedSource = [...callLog, ...timelineEvents].filter(entry => {
+    if (entry.role !== 'system-log' || !entry.action) return false;
+    const key = `${entry.timestamp}_${entry.action}`;
+    if (seen_events.has(key)) return false;
+    seen_events.add(key);
+    return true;
+  });
+  enrichedSource.sort((a, b) => a.timestamp - b.timestamp);
+
+  enrichedSource.forEach(entry => {
+    const m = entry.metadata || {};
+
+    switch (entry.action) {
+      case 'context_enter':
+        detailedTimeline.push({
+          type: 'context_enter',
+          timestamp: entry.timestamp,
+          fromContext: m.from_context || null,
+          toContext: m.to_context || m.context || null,
+        });
+        break;
+
+      case 'reset':
+        detailedTimeline.push({
+          type: 'reset',
+          timestamp: entry.timestamp,
+          resetType: m.reset_type || m.type || 'full_reset',
+        });
+        break;
+
+      case 'gather_start':
+        currentGatherGroup = {
+          type: 'gather_group',
+          timestamp: entry.timestamp,
+          totalQuestions: m.total_questions || 0,
+          outputKey: m.output_key || null,
+          questions: [],
+          rejects: [],
+          complete: null,
+        };
+        gatherGroups.push(currentGatherGroup);
+        break;
+
+      case 'gather_question':
+        if (currentGatherGroup) {
+          currentGatherGroup.questions.push({
+            timestamp: entry.timestamp,
+            key: m.key || m.name || null,
+            questionType: m.type || null,
+            requiresConfirm: m.requires_confirm || false,
+          });
+        }
+        break;
+
+      case 'gather_reject':
+        if (currentGatherGroup) {
+          currentGatherGroup.rejects.push({
+            timestamp: entry.timestamp,
+            reason: m.reason || 'unknown',
+            attempt: m.attempt || 0,
+          });
+        }
+        detailedTimeline.push({
+          type: 'gather_reject',
+          timestamp: entry.timestamp,
+          reason: m.reason || 'unknown',
+          attempt: m.attempt || 0,
+        });
+        break;
+
+      case 'gather_complete':
+        if (currentGatherGroup) {
+          currentGatherGroup.complete = {
+            timestamp: entry.timestamp,
+            answeredCount: m.answered_count || m.answered || 0,
+            completionAction: m.completion_action || m.action || null,
+          };
+        }
+        break;
+
+      case 'function_error':
+        detailedTimeline.push({
+          type: 'function_error',
+          timestamp: entry.timestamp,
+          functionName: m.function || m.name || 'unknown',
+          errorType: m.error_type || m.type || 'unknown',
+          httpCode: m.http_code || m.status_code || null,
+          errorMessage: m.message || m.error || null,
+        });
+        break;
+
+      case 'startup_hook':
+        detailedTimeline.push({
+          type: 'startup_hook',
+          timestamp: entry.timestamp,
+          durationMs: m.duration_ms || 0,
+        });
+        break;
+
+      case 'hangup_hook':
+        detailedTimeline.push({
+          type: 'hangup_hook',
+          timestamp: entry.timestamp,
+          durationMs: m.duration_ms || 0,
+        });
+        break;
+
+      case 'manual_say':
+        detailedTimeline.push({
+          type: 'manual_say',
+          timestamp: entry.timestamp,
+          text: m.text || entry.content || '',
+          isError: m.is_error || false,
+          errorReason: m.error_reason || null,
+        });
+        break;
+
+      case 'filler':
+        detailedTimeline.push({
+          type: 'filler',
+          timestamp: entry.timestamp,
+          text: m.text || 'thinking...',
+        });
+        break;
+
+      case 'attention_timeout':
+        detailedTimeline.push({
+          type: 'attention_timeout',
+          timestamp: entry.timestamp,
+          timeoutMs: m.timeout_ms || m.timeout || 0,
+        });
+        break;
+
+      case 'summarize_start':
+        detailedTimeline.push({
+          type: 'summarize_start',
+          timestamp: entry.timestamp,
+        });
+        break;
+    }
+  });
+
+  // Add completed gather groups to timeline
+  gatherGroups.forEach(gg => {
+    detailedTimeline.push(gg);
+  });
+
   // Sort by timestamp to get exact chronological order
   detailedTimeline.sort((a, b) => a.timestamp - b.timestamp);
+
+  const functionErrors = detailedTimeline.filter(e => e.type === 'function_error').length;
 
   return {
     transitions,
@@ -641,6 +930,7 @@ function extractStateFlow(payload) {
     aiInitiated,
     toolForced,
     duration,
+    functionErrors,
   };
 }
 
@@ -660,6 +950,7 @@ function generateFlowDiagram(flowData) {
   lines.push('    classDef dataNode fill:#0d9488,stroke:#0f766e,stroke-width:2px,color:#fff');
   lines.push('    classDef navNode fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff');
   lines.push('    classDef terminalNode fill:#dc2626,stroke:#b91c1c,stroke-width:2px,color:#fff');
+  lines.push('    classDef errorNode fill:#450a0a,stroke:#dc2626,stroke-width:3px,color:#fca5a5');
   lines.push('');
 
   let nodeId = 0;
@@ -686,16 +977,13 @@ function generateFlowDiagram(flowData) {
 
     // Add functions for this state
     const nextTrans = transitions[idx + 1];
+    const timeStart = trans.timestamp;
+    const timeEnd = nextTrans ? nextTrans.timestamp : Infinity;
+
     const funcs = detailedTimeline.filter(item => {
       if (item.type !== 'function') return false;
-      // Prefer metaStep assignment (authoritative from enriched format)
-      if (item.metaStep) {
-        return item.metaStep === currentState;
-      }
-      // Fall back to timestamp window for gap-fill entries from swaig_log
-      const start = trans.timestamp;
-      const end = nextTrans ? nextTrans.timestamp : Infinity;
-      return item.timestamp >= start && item.timestamp < end;
+      if (item.metaStep) return item.metaStep === currentState;
+      return item.timestamp >= timeStart && item.timestamp < timeEnd;
     });
 
     funcs.forEach(f => {
@@ -708,6 +996,30 @@ function generateFlowDiagram(flowData) {
         swaigActions: f.swaigActions || [],
         webhookForced: f.webhookForced || false,
       });
+    });
+
+    // Add function_error nodes for this state
+    const errors = detailedTimeline.filter(item =>
+      item.type === 'function_error' && item.timestamp >= timeStart && item.timestamp < timeEnd
+    );
+    errors.forEach(e => {
+      flow.push({ type: 'function_error', step: currentState, functionName: e.functionName, errorType: e.errorType, httpCode: e.httpCode });
+    });
+
+    // Add context_enter transitions for this state
+    const ctxEnters = detailedTimeline.filter(item =>
+      item.type === 'context_enter' && item.timestamp >= timeStart && item.timestamp < timeEnd
+    );
+    ctxEnters.forEach(c => {
+      flow.push({ type: 'context_enter', step: currentState, fromContext: c.fromContext, toContext: c.toContext });
+    });
+
+    // Add reset markers for this state
+    const resets = detailedTimeline.filter(item =>
+      item.type === 'reset' && item.timestamp >= timeStart && item.timestamp < timeEnd
+    );
+    resets.forEach(r => {
+      flow.push({ type: 'reset', step: currentState, resetType: r.resetType });
     });
 
     previousState = currentState;
@@ -809,6 +1121,32 @@ function generateFlowDiagram(flowData) {
             }
           }
         });
+      }
+
+    } else if (item.type === 'function_error') {
+      const errNodeId = `E${nodeId++}`;
+      const errLabel = sanitizeLabel(`${item.functionName} ERROR${item.httpCode ? ` (${item.httpCode})` : ''}`);
+      lines.push(`    ${errNodeId}["${errLabel}"]:::errorNode`);
+      if (stepNodes[item.step]) {
+        lines.push(`    ${stepNodes[item.step]} -.-> ${errNodeId}`);
+      }
+
+    } else if (item.type === 'context_enter') {
+      const ctxNodeId = `CTX${nodeId++}`;
+      const ctxLabel = item.toContext
+        ? sanitizeLabel(`context → ${item.toContext}`)
+        : 'context switch';
+      lines.push(`    ${ctxNodeId}["${ctxLabel}"]:::navNode`);
+      if (stepNodes[item.step]) {
+        lines.push(`    ${stepNodes[item.step]} -.-> ${ctxNodeId}`);
+      }
+
+    } else if (item.type === 'reset') {
+      const resetNodeId = `RST${nodeId++}`;
+      const resetLabel = sanitizeLabel(item.resetType || 'reset');
+      lines.push(`    ${resetNodeId}["${resetLabel}"]:::terminalNode`);
+      if (stepNodes[item.step]) {
+        lines.push(`    ${stepNodes[item.step]} -.-> ${resetNodeId}`);
       }
     }
   });
