@@ -1,149 +1,176 @@
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { mkdirSync } from 'fs';
+import { mkdirSync, copyFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const CALL_FILE = '/Users/brian/Desktop/ClueCon2026/demos/goair/calls/c62f681d-161a-47ac-9b12-31932d89367a.json';
+const SWML_FILE = join(__dirname, 'voyager.json');
+const BASE_URL = 'http://localhost:5173';
+
 async function captureScreenshots() {
+  const imagesDir = join(__dirname, 'images');
+  const videoDir = join(__dirname, 'videos');
+  mkdirSync(imagesDir, { recursive: true });
+  mkdirSync(videoDir, { recursive: true });
+
   const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+
+  // Context with video recording enabled
+  const context = await browser.newContext({
+    viewport: { width: 1400, height: 900 },
+    recordVideo: { dir: videoDir, size: { width: 1400, height: 900 } },
+  });
   const page = await context.newPage();
 
-  // Create images directory if it doesn't exist
-  const imagesDir = join(__dirname, 'images');
-  try {
-    mkdirSync(imagesDir, { recursive: true });
-  } catch (e) {
-    // Directory already exists
-  }
+  console.log('📸 Starting screenshot & video capture...\n');
 
-  console.log('📸 Starting screenshot capture...');
-
-  // Navigate to the app
-  await page.goto('http://localhost:5176');
+  // ─── Drop zone ──────────────────────────────────────────────────────
+  await page.goto(BASE_URL);
   await page.waitForLoadState('networkidle');
+  console.log('📷 01 Drop zone');
+  await page.screenshot({ path: join(imagesDir, '01-drop-zone.png') });
 
-  // 1. Capture drop zone (start screen)
-  console.log('📷 Capturing drop zone...');
-  await page.screenshot({ path: join(imagesDir, '01-drop-zone.png'), fullPage: false });
-
-  // 2. Load conversation JSON
-  console.log('📂 Loading call.json...');
-  const conversationFile = join(__dirname, 'call.json');
-
+  // ─── Load GoAir call JSON ───────────────────────────────────────────
+  console.log('📂 Loading GoAir demo call...');
   const fileInput = await page.locator('#postprompt-input');
-  await fileInput.setInputFiles(conversationFile);
-
-  // Wait for tabs to appear after file processing
-  await page.waitForSelector('.tabs', { timeout: 5000 });
+  await fileInput.setInputFiles(CALL_FILE);
+  await page.waitForSelector('.tabs', { timeout: 10000 });
   await page.waitForTimeout(1000);
 
-  // 3. Dashboard tab
-  console.log('📷 Capturing Dashboard...');
+  // ─── Dashboard ──────────────────────────────────────────────────────
+  console.log('📷 02 Dashboard');
   await page.click('.tab[data-tab="dashboard"]');
-  await page.waitForTimeout(500);
-  await page.screenshot({ path: join(imagesDir, '02-dashboard.png'), fullPage: false });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: join(imagesDir, '02-dashboard.png') });
 
-  // 4. Charts tab
-  console.log('📷 Capturing Charts...');
+  // ─── Charts ─────────────────────────────────────────────────────────
+  console.log('📷 03 Charts');
   await page.click('.tab[data-tab="charts"]');
-  await page.waitForTimeout(1000); // Wait for charts to render
-  await page.screenshot({ path: join(imagesDir, '03-charts.png'), fullPage: false });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: join(imagesDir, '03-charts.png') });
 
-  // 5. Timeline tab
-  console.log('📷 Capturing Timeline...');
+  // ─── Timeline ───────────────────────────────────────────────────────
+  console.log('📷 04 Timeline');
   await page.click('.tab[data-tab="timeline"]');
-  await page.waitForTimeout(500);
-  await page.screenshot({ path: join(imagesDir, '04-timeline.png'), fullPage: false });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: join(imagesDir, '04-timeline.png') });
 
-  // 6. Transcript tab
-  console.log('📷 Capturing Transcript...');
+  // ─── Transcript (Processed) ─────────────────────────────────────────
+  console.log('📷 05 Transcript (Processed Log)');
   await page.click('.tab[data-tab="transcript"]');
-  await page.waitForTimeout(500);
-  await page.screenshot({ path: join(imagesDir, '05-transcript.png'), fullPage: false });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: join(imagesDir, '05-transcript.png') });
 
-  // 7. SWAIG Inspector tab
-  console.log('📷 Capturing SWAIG Inspector...');
+  // ─── Transcript (Raw Call Log) ──────────────────────────────────────
+  console.log('📷 06 Transcript (Raw Call Log)');
+  const rawToggle = page.locator('.transcript__log-toggle[data-log="raw"]');
+  if (await rawToggle.isVisible()) {
+    await rawToggle.click();
+    await page.waitForTimeout(800);
+  }
+  await page.screenshot({ path: join(imagesDir, '06-raw-call-log.png') });
+
+  // ─── SWAIG Inspector ───────────────────────────────────────────────
+  console.log('📷 07 SWAIG Inspector');
   await page.click('.tab[data-tab="swaig"]');
-  await page.waitForTimeout(500);
-  // Expand first entry
-  const firstEntry = await page.locator('.swaig-entry__header').first();
+  await page.waitForTimeout(800);
+  const firstEntry = page.locator('.swaig-entry__header').first();
   if (await firstEntry.isVisible()) {
     await firstEntry.click();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
   }
-  await page.screenshot({ path: join(imagesDir, '06-swaig-inspector.png'), fullPage: false });
+  await page.screenshot({ path: join(imagesDir, '07-swaig-inspector.png') });
 
-  // 8. Post-Prompt tab
-  console.log('📷 Capturing Post-Prompt...');
+  // ─── Post-Prompt ────────────────────────────────────────────────────
+  console.log('📷 08 Post-Prompt');
   await page.click('.tab[data-tab="post-prompt"]');
   await page.waitForTimeout(500);
-  await page.screenshot({ path: join(imagesDir, '07-post-prompt.png'), fullPage: false });
+  await page.screenshot({ path: join(imagesDir, '08-post-prompt.png') });
 
-  // 9. State Flow tab
-  console.log('📷 Capturing State Flow...');
+  // ─── State Flow ─────────────────────────────────────────────────────
+  console.log('📷 09 State Flow');
   await page.click('.tab[data-tab="state-flow"]');
-  await page.waitForTimeout(1000); // Wait for mermaid to render
-  await page.screenshot({ path: join(imagesDir, '08-state-flow.png'), fullPage: false });
+  await page.waitForTimeout(2000); // mermaid render time
+  await page.screenshot({ path: join(imagesDir, '09-state-flow.png') });
 
-  // 10. Recording tab
-  console.log('📷 Capturing Recording...');
+  // ─── Recording ──────────────────────────────────────────────────────
+  console.log('📷 10 Recording');
   await page.click('.tab[data-tab="recording"]');
-  await page.waitForTimeout(3000); // Wait longer for waveform to render
-  await page.screenshot({ path: join(imagesDir, '09-recording.png'), fullPage: false });
+  await page.waitForTimeout(4000); // waveform load
+  await page.screenshot({ path: join(imagesDir, '10-recording.png') });
 
-  // 11. Global Data tab
-  console.log('📷 Capturing Global Data...');
+  // ─── Global Data (Snapshot) ─────────────────────────────────────────
+  console.log('📷 11 Global Data (Snapshot)');
   await page.click('.tab[data-tab="global-data"]');
-  await page.waitForTimeout(500);
-  // Expand first section
-  const firstSection = await page.locator('.global-data-header').first();
-  if (await firstSection.isVisible()) {
-    await firstSection.click();
-    await page.waitForTimeout(300);
+  await page.waitForTimeout(800);
+  const gdSection = page.locator('.global-data-header').first();
+  if (await gdSection.isVisible()) {
+    await gdSection.click();
+    await page.waitForTimeout(500);
   }
-  await page.screenshot({ path: join(imagesDir, '10-global-data.png'), fullPage: false });
+  await page.screenshot({ path: join(imagesDir, '11-global-data-snapshot.png') });
 
-  // 12. Load SWML file
+  // ─── Global Data (Timeline) ─────────────────────────────────────────
+  console.log('📷 12 Global Data (Timeline)');
+  const timelineBtn = page.locator('.gd-subview-btn[data-view="timeline"]');
+  if (await timelineBtn.isVisible()) {
+    await timelineBtn.click();
+    await page.waitForTimeout(1000);
+    // Hit play briefly to show the player in action
+    const playBtn = page.locator('.gd-btn').first();
+    if (await playBtn.isVisible()) {
+      await playBtn.click();
+      await page.waitForTimeout(2000);
+      await playBtn.click(); // pause
+      await page.waitForTimeout(300);
+    }
+  }
+  await page.screenshot({ path: join(imagesDir, '12-global-data-timeline.png') });
+
+  // ─── Load SWML file ─────────────────────────────────────────────────
   console.log('📂 Loading SWML JSON (voyager.json)...');
-  await page.goto('http://localhost:5176');
+  await page.goto(BASE_URL);
   await page.waitForLoadState('networkidle');
-
-  const swmlFile = join(__dirname, 'voyager.json');
-  const swmlFileInput = await page.locator('#swml-input');
-  await swmlFileInput.setInputFiles(swmlFile);
-
-  // Wait for tabs to appear after SWML file processing
-  await page.waitForSelector('.tabs', { timeout: 5000 });
+  const swmlFileInput = page.locator('#swml-input');
+  await swmlFileInput.setInputFiles(SWML_FILE);
+  await page.waitForSelector('.tabs', { timeout: 10000 });
   await page.waitForTimeout(1000);
 
-  // 13. SWML Overview tab (automatically selected)
-  console.log('📷 Capturing SWML Overview...');
-  await page.screenshot({ path: join(imagesDir, '11-swml-overview.png'), fullPage: false });
+  // ─── SWML Overview ──────────────────────────────────────────────────
+  console.log('📷 13 SWML Overview');
+  await page.screenshot({ path: join(imagesDir, '13-swml-overview.png') });
 
-  // 14. SWML Prompts tab
-  console.log('📷 Capturing SWML Prompts...');
+  // ─── SWML Prompts ───────────────────────────────────────────────────
+  console.log('📷 14 SWML Prompts');
   await page.click('.tab[data-tab="swml-prompts"]');
-  await page.waitForTimeout(1500); // Wait for mermaid diagrams to render
-  await page.screenshot({ path: join(imagesDir, '12-swml-prompts.png'), fullPage: false });
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: join(imagesDir, '14-swml-prompts.png') });
 
-  // 15. SWML Functions tab
-  console.log('📷 Capturing SWML Functions...');
+  // ─── SWML Functions ─────────────────────────────────────────────────
+  console.log('📷 15 SWML Functions');
   await page.click('.tab[data-tab="swml-functions"]');
-  await page.waitForTimeout(500);
-  await page.screenshot({ path: join(imagesDir, '13-swml-functions.png'), fullPage: false });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: join(imagesDir, '15-swml-functions.png') });
 
-  // 16. SWML Config tab
-  console.log('📷 Capturing SWML Config...');
+  // ─── SWML Config ────────────────────────────────────────────────────
+  console.log('📷 16 SWML Config');
   await page.click('.tab[data-tab="swml-config"]');
-  await page.waitForTimeout(500);
-  await page.screenshot({ path: join(imagesDir, '14-swml-config.png'), fullPage: false });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: join(imagesDir, '16-swml-config.png') });
 
-  console.log('✅ Screenshot capture complete!');
-  console.log(`📁 Images saved to: ${imagesDir}`);
+  // ─── Finish ─────────────────────────────────────────────────────────
+  console.log('\n✅ Screenshots saved to:', imagesDir);
 
+  await page.close();
+  const videoPath = await page.video().path();
+  const finalVideo = join(videoDir, 'ui-walkthrough.webm');
+  copyFileSync(videoPath, finalVideo);
+  console.log('🎬 Video saved to:', finalVideo);
+
+  await context.close();
   await browser.close();
 }
 
