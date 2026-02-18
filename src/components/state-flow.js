@@ -94,6 +94,10 @@ export async function renderStateFlow(container, payload) {
           <div class="swml-stat-card__value" style="color:#10b981">${flowData.aiInitiated}</div>
         </div>
         <div class="swml-stat-card">
+          <div class="swml-stat-card__label">Forced (Tool)</div>
+          <div class="swml-stat-card__value" style="color:#f97316">${flowData.toolForced}</div>
+        </div>
+        <div class="swml-stat-card">
           <div class="swml-stat-card__label">Tool Calls</div>
           <div class="swml-stat-card__value">${flowData.totalFunctions}</div>
         </div>
