@@ -431,6 +431,27 @@ function extractStateFlow(payload) {
     }
   });
 
+  // Fix metaStep for webhook-forced functions.
+  // When a function returns change_step:X, the module transitions to X first, THEN logs
+  // the function_call event with step=X as the metadata. But the function actually ran
+  // in the previous step. Detect this: webhookForced + metaStep matches a webhook step_change
+  // that fired within 100ms before the function was logged → reassign to the from_step.
+  deduplicatedFunctionCalls.forEach(fc => {
+    if (!fc.metaStep || !fc.webhookForced) return;
+
+    const priorTransition = allStepChanges.find(sc =>
+      sc.step === fc.metaStep &&
+      sc.source === 'tool' &&               // webhook_action trigger
+      sc.timestamp <= fc.timestamp &&
+      (fc.timestamp - sc.timestamp) < 100000 && // within 100ms
+      sc.fromStep !== null
+    );
+
+    if (priorTransition) {
+      fc.metaStep = priorTransition.fromStep;
+    }
+  });
+
   // Replace with deduplicated array
   functionCalls.length = 0;
   functionCalls.push(...deduplicatedFunctionCalls);
