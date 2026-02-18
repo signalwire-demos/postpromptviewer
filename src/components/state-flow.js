@@ -807,6 +807,14 @@ function generateFlowDiagram(flowData) {
           const actionClass = action.nodeClass || 'actionNode';
           lines.push(`    ${actionNodeId}["${actionLabel}"]:::${actionClass}`);
           lines.push(`    ${funcNodeId} -.-> ${actionNodeId}`);
+
+          // For navigation actions, draw a dashed edge to the target step node for clarity
+          if ((action.verb === 'change_step' || action.verb === 'change_context') && action.data) {
+            const targetStepId = stepNodes[String(action.data)];
+            if (targetStepId) {
+              lines.push(`    ${actionNodeId} -.-> ${targetStepId}`);
+            }
+          }
         });
       }
     }
