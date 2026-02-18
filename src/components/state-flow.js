@@ -94,7 +94,7 @@ export async function renderStateFlow(container, payload) {
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function Call</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f97316;border-color:#ea580c"></span>Webhook-Forced</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>🎤 Gather / Q&A</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>Action</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#0284c7;border-color:#0369a1"></span>Navigation</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#dc2626;border-color:#b91c1c"></span>Terminal</span>
