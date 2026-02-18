@@ -4,14 +4,13 @@ A single-page application for visualizing SignalWire AI Agent post-conversation 
 
 Built with **Vanilla JS**, **Vite**, **Chart.js**, **Mermaid**, and **wavesurfer.js** — no framework dependencies.
 
-<!-- To add the video walkthrough: drag videos/ui-walkthrough.mp4 into a GitHub
-     issue or PR comment, copy the generated URL, and uncomment the line below.
+<div align="center">
 
-https://github.com/user-attachments/assets/REPLACE_WITH_REAL_ASSET_URL
+<img src="images/ui-walkthrough.gif" alt="UI Walkthrough — every tab from a live GoAir demo call" width="800" />
 
--->
+*Full UI walkthrough — every tab from a live GoAir demo call ([MP4](videos/ui-walkthrough.mp4))*
 
-> **Video walkthrough** available in [`videos/ui-walkthrough.mp4`](videos/ui-walkthrough.mp4) — covers every tab from a live GoAir demo call.
+</div>
 
 ## Agent Builder
 
