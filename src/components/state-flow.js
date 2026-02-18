@@ -94,9 +94,10 @@ export async function renderStateFlow(container, payload) {
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function Call</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f97316;border-color:#ea580c"></span>Webhook-Forced</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>SWML Action</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#0d9488;border-color:#0f766e"></span>Data Mutation</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>🎤 Gather / Q&A</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>Action</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#0284c7;border-color:#0369a1"></span>Navigation</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#dc2626;border-color:#b91c1c"></span>Terminal</span>
         </div>
         <div class="state-flow__zoom-controls">
           <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
@@ -233,8 +234,9 @@ export async function renderStateFlow(container, payload) {
           { color: '#f59e0b', stroke: '#d97706', label: 'Function Call' },
           { color: '#f97316', stroke: '#ea580c', label: 'Webhook-Forced' },
           { color: '#6b7280', stroke: '#4b5563', label: 'Gather / Q&A' },
-          { color: '#7c3aed', stroke: '#6d28d9', label: 'SWML Action' },
-          { color: '#0d9488', stroke: '#0f766e', label: 'Data Mutation' },
+          { color: '#7c3aed', stroke: '#6d28d9', label: 'Action' },
+          { color: '#0284c7', stroke: '#0369a1', label: 'Navigation' },
+          { color: '#dc2626', stroke: '#b91c1c', label: 'Terminal' },
         ]);
         downloadImageBtn.textContent = 'Downloaded!';
         setTimeout(() => {
@@ -642,6 +644,8 @@ function generateFlowDiagram(flowData) {
   lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
   lines.push('    classDef actionNode fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff');
   lines.push('    classDef dataNode fill:#0d9488,stroke:#0f766e,stroke-width:2px,color:#fff');
+  lines.push('    classDef navNode fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff');
+  lines.push('    classDef terminalNode fill:#dc2626,stroke:#b91c1c,stroke-width:2px,color:#fff');
   lines.push('');
 
   let nodeId = 0;
@@ -719,7 +723,7 @@ function generateFlowDiagram(flowData) {
       // Create step transition with source label
       const edgeLabel = item.source === 'ai' ? 'AI'
         : item.source === 'tool' ? '⚡ forced'
-        : item.source === 'gather' ? 'gather'
+        : item.source === 'gather' ? '🎤 gather'
         : item.source === 'auto' ? 'auto'
         : '';
       const edge = edgeLabel ? `-->|"${sanitizeLabel(edgeLabel)}"|` : '-->';
@@ -779,8 +783,7 @@ function generateFlowDiagram(flowData) {
         item.swaigActions.forEach(action => {
           const actionNodeId = `A${nodeId++}`;
           const actionLabel = sanitizeLabel(action.label);
-          const actionClass = (action.verb === 'set_global_data' || action.verb === 'add_dynamic_hints')
-            ? 'dataNode' : 'actionNode';
+          const actionClass = action.nodeClass || 'actionNode';
           lines.push(`    ${actionNodeId}["${actionLabel}"]:::${actionClass}`);
           lines.push(`    ${funcNodeId} -.-> ${actionNodeId}`);
         });
@@ -800,32 +803,114 @@ function extractInterestingActions(actions) {
     if (!action || typeof action !== 'object') return;
 
     Object.entries(action).forEach(([verb, value]) => {
-      // change_step is already shown as a transition arrow — skip to avoid duplication
-      if (verb === 'change_step') return;
 
+      // ── Navigation actions ─────────────────────────────────────────────
+      if (verb === 'change_step') {
+        const dest = value ? sanitizeLabel(String(value).substring(0, 30)) : '';
+        result.push({ verb, label: dest ? `change_step → ${dest}` : 'change_step', data: value ?? null, nodeClass: 'navNode' });
+        return;
+      }
+
+      if (verb === 'change_context') {
+        const dest = value ? sanitizeLabel(String(value).substring(0, 30)) : '';
+        result.push({ verb, label: dest ? `change_context → ${dest}` : 'change_context', data: value ?? null, nodeClass: 'navNode' });
+        return;
+      }
+
+      if (verb === 'context_switch') {
+        let label = 'context_switch';
+        if (value && typeof value === 'object') {
+          const prompt = value.system_prompt || value.system_pom || '';
+          if (prompt) label += `<br/>${sanitizeLabel(String(prompt).substring(0, 30))}`;
+        }
+        result.push({ verb, label, data: value ?? null, nodeClass: 'navNode' });
+        return;
+      }
+
+      // ── Terminal actions ───────────────────────────────────────────────
+      if (verb === 'hangup' || verb === 'stop') {
+        result.push({ verb, label: verb, data: value ?? null, nodeClass: 'terminalNode' });
+        return;
+      }
+
+      if (verb === 'transfer') {
+        let label = 'transfer';
+        const dest = typeof value === 'string' ? value : (value?.dest || value?.to || null);
+        if (dest) label += `<br/>${sanitizeLabel(String(dest).substring(0, 30))}`;
+        result.push({ verb, label, data: value ?? null, nodeClass: 'terminalNode' });
+        return;
+      }
+
+      // ── Data / state actions ───────────────────────────────────────────
       if (verb === 'set_global_data' && value && typeof value === 'object') {
-        // Show which keys were written
         const keys = Object.keys(value);
         const keyList = keys.slice(0, 4).join(', ') + (keys.length > 4 ? ` +${keys.length - 4}` : '');
-        result.push({ verb, label: `set_global_data<br/>${keyList}`, data: value });
+        result.push({ verb, label: `set_global_data<br/>${keyList}`, data: value, nodeClass: 'actionNode' });
+        return;
+      }
+
+      if (verb === 'unset_global_data') {
+        const keys = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+        result.push({ verb, label: `unset_global_data<br/>${sanitizeLabel(keys.substring(0, 40))}`, data: value ?? null, nodeClass: 'actionNode' });
+        return;
+      }
+
+      if (verb === 'set_meta_data' && value && typeof value === 'object') {
+        const keys = Object.keys(value).slice(0, 3).join(', ');
+        result.push({ verb, label: `set_meta_data<br/>${keys}`, data: value, nodeClass: 'actionNode' });
+        return;
+      }
+
+      if (verb === 'unset_meta_data') {
+        const keys = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+        result.push({ verb, label: `unset_meta_data<br/>${sanitizeLabel(keys.substring(0, 40))}`, data: value ?? null, nodeClass: 'actionNode' });
         return;
       }
 
       if (verb === 'add_dynamic_hints' && Array.isArray(value)) {
         const preview = value.slice(0, 3).map(h => String(h).substring(0, 18)).join(', ')
           + (value.length > 3 ? ` +${value.length - 3}` : '');
-        result.push({ verb, label: `add_hints<br/>${preview}`, data: value });
+        result.push({ verb, label: `add_hints<br/>${preview}`, data: value, nodeClass: 'actionNode' });
         return;
       }
 
+      if (verb === 'clear_dynamic_hints') {
+        result.push({ verb, label: 'clear_hints', data: value ?? null, nodeClass: 'actionNode' });
+        return;
+      }
+
+      // ── Speech / media ─────────────────────────────────────────────────
+      if (verb === 'say') {
+        const text = typeof value === 'string' ? value : (value?.text || '');
+        const preview = sanitizeLabel(String(text).substring(0, 35));
+        result.push({ verb, label: preview ? `say<br/>${preview}` : 'say', data: value ?? null, nodeClass: 'actionNode' });
+        return;
+      }
+
+      if (verb === 'playback_bg') {
+        const file = typeof value === 'string' ? value : (value?.file || '');
+        const preview = sanitizeLabel(String(file).substring(0, 30));
+        result.push({ verb, label: preview ? `playback_bg<br/>${preview}` : 'playback_bg', data: value ?? null, nodeClass: 'actionNode' });
+        return;
+      }
+
+      // ── Function control ───────────────────────────────────────────────
+      if (verb === 'toggle_functions' && Array.isArray(value)) {
+        const preview = value.slice(0, 3)
+          .map(f => (f.active === false ? '−' : '+') + (f.function || '?'))
+          .join(', ')
+          + (value.length > 3 ? ` +${value.length - 3}` : '');
+        result.push({ verb, label: `toggle_functions<br/>${sanitizeLabel(preview)}`, data: value, nodeClass: 'actionNode' });
+        return;
+      }
+
+      // ── SWML sections ──────────────────────────────────────────────────
       if (verb === 'SWML' && value?.sections) {
-        // Extract SWML verbs from sections
-        Object.entries(value.sections).forEach(([section, steps]) => {
+        Object.entries(value.sections).forEach(([_section, steps]) => {
           if (!Array.isArray(steps)) return;
           steps.forEach(step => {
             if (!step || typeof step !== 'object') return;
             Object.entries(step).forEach(([swmlVerb, swmlArgs]) => {
-              // Build a concise label showing verb and key args (for Mermaid nodes)
               let label = swmlVerb;
               if (swmlArgs && typeof swmlArgs === 'object') {
                 const interesting = ['to_number', 'from_number', 'url', 'body', 'name', 'method'];
@@ -837,25 +922,30 @@ function extractInterestingActions(actions) {
                   });
                 if (parts.length > 0) label += `<br/>${parts.join('<br/>')}`;
               }
-              result.push({ verb: swmlVerb, label, data: swmlArgs ?? null });
+              result.push({ verb: swmlVerb, label, data: swmlArgs ?? null, nodeClass: 'actionNode' });
             });
           });
         });
-      } else {
-        // Other top-level action verbs (send_sms, play, etc.)
-        let label = verb;
-        if (value && typeof value === 'object') {
-          const interesting = ['to_number', 'url', 'body', 'name'];
-          const parts = interesting
-            .filter(k => value[k])
-            .map(k => {
-              const v = String(value[k]);
-              return v.length > 25 ? v.substring(0, 25) + '...' : v;
-            });
-          if (parts.length > 0) label += `<br/>${parts.join('<br/>')}`;
-        }
-        result.push({ verb, label, data: value ?? null });
+        return;
       }
+
+      // ── Generic fallback ───────────────────────────────────────────────
+      let label = verb;
+      if (value && typeof value === 'object') {
+        const interesting = ['to_number', 'url', 'body', 'name', 'dest', 'timeout'];
+        const parts = interesting
+          .filter(k => value[k])
+          .map(k => {
+            const v = String(value[k]);
+            return v.length > 25 ? v.substring(0, 25) + '...' : v;
+          });
+        if (parts.length > 0) label += `<br/>${parts.join('<br/>')}`;
+      } else if (typeof value === 'string' && value.length > 0) {
+        label += `<br/>${sanitizeLabel(value.substring(0, 30))}`;
+      } else if (typeof value === 'number') {
+        label += `: ${value}`;
+      }
+      result.push({ verb, label, data: value ?? null, nodeClass: 'actionNode' });
     });
   });
 
