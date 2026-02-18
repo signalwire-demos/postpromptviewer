@@ -587,8 +587,8 @@ async function downloadSvgAsImage(svgElement, filename, title = 'SWML Step Flow 
   const padding = 40;
   const vx = bbox.x - padding / 2;
   const vy = bbox.y - padding / 2;
-  const width = Math.ceil(bbox.width + bbox.x * 2 + padding);
-  const height = Math.ceil(bbox.height + bbox.y * 2 + padding);
+  const width = Math.ceil(bbox.width + padding);
+  const height = Math.ceil(bbox.height + padding);
   const totalHeight = height + TITLE_PAD;
 
   document.body.removeChild(tempDiv);

@@ -34,7 +34,7 @@ export async function renderStateFlow(container, payload) {
 
   if (!flowData || flowData.transitions.length === 0) {
     const debugInfo = payload.swaigLog ?
-      `Found ${payload.swaigLog.length} SWAIG log entries, but no change_step directives.` :
+      `Found ${payload.swaigLog.length} SWAIG log entries, but no step_change events.` :
       'No swaigLog found in payload.';
 
     container.innerHTML = `
@@ -267,72 +267,34 @@ function extractStateFlow(payload) {
   const swaigLog = payload.swaigLog || [];
   const callLog = payload.callLog || [];
 
-  // Extract ALL step changes from both sources
+  // Extract ALL step changes from call_log structured metadata
   const allStepChanges = [];
 
-  // 1. Extract step changes from call_log using new structured format
-  // Build a flat list of system-log entries for look-ahead
-  const systemLogEntries = callLog.filter(e => e.role === 'system-log' && e.action);
-
-  systemLogEntries.forEach((entry, idx) => {
-    if (entry.action === 'change_step' && entry.name) {
-      // Distinguish AI-initiated (next_step) from tool-forced:
-      // When a function's SWAIG response contains change_step, the call_function (or
-      // gather_submit) entry is logged within microseconds AFTER the change_step entry.
-      // When the AI calls the native next_step command, there is no function entry
-      // immediately after — next_step is never logged as call_function.
-      const TOOL_WINDOW_US = 50000; // 50ms in microseconds
-      const nextEntry = systemLogEntries[idx + 1];
-      const isFunctionEntry = nextEntry && (
-        nextEntry.action === 'call_function' ||
-        nextEntry.action === 'gather_submit'
-      );
-      const isToolForced = isFunctionEntry &&
-        (nextEntry.timestamp - entry.timestamp) < TOOL_WINDOW_US;
-
-      const source = isToolForced ? 'tool' : 'ai';
-      const triggeredBy = isToolForced
-        ? `${nextEntry.function || nextEntry.action} → change_step`
-        : 'AI: next_step';
-
-      allStepChanges.push({
-        timestamp: entry.timestamp,
-        step: entry.name,
-        stepIndex: entry.index || null,
-        triggeredBy,
-        source,
-      });
-    }
-  });
-
-  // LEGACY: Parse from content string (next_step, change_context)
   callLog.forEach(entry => {
-    if (entry.role === 'system-log' && entry.action) {
-      if (entry.content) {
-        const nextStepMatch = entry.content.match(/Calling function: next_step\(([^)]+)\)/);
-        const changeContextMatch = entry.content.match(/Calling function: change_context\(([^)]+)\)/);
+    if (entry.role !== 'system-log' || entry.action !== 'step_change') return;
+    const m = entry.metadata || {};
+    const trigger = m.trigger;
+    const source = trigger === 'ai_function' ? 'ai'
+      : trigger === 'webhook_action' ? 'tool'
+      : trigger === 'gather_complete' ? 'gather'
+      : trigger === 'auto_advance' ? 'auto'
+      : 'unknown';
+    const triggeredBy = trigger === 'ai_function' ? 'AI: next_step'
+      : trigger === 'webhook_action' ? 'webhook → step_change'
+      : trigger === 'gather_complete' ? 'gather complete → next_step'
+      : trigger === 'auto_advance' ? 'auto advance'
+      : trigger || 'unknown';
 
-        if (nextStepMatch || changeContextMatch) {
-          const match = nextStepMatch || changeContextMatch;
-          const funcName = nextStepMatch ? 'next_step' : 'change_context';
-
-          let stepName = match[1].trim();
-          stepName = stepName.replace(/^["']|["']$/g, '');
-
-          allStepChanges.push({
-            timestamp: entry.timestamp,
-            step: stepName,
-            stepIndex: null,
-            triggeredBy: `AI: ${funcName}`,
-            source: 'ai',
-          });
-        }
-      }
-    }
+    allStepChanges.push({
+      timestamp: entry.timestamp,
+      step: m.to_step,
+      stepIndex: m.to_index ?? null,
+      fromStep: m.from_step || null,
+      fromIndex: m.from_index ?? null,
+      triggeredBy,
+      source,
+    });
   });
-
-  // call_log is the authoritative source for step changes (new format)
-  // swaig_log change_step actions are the same transitions already captured above
 
   // Sort all step changes by timestamp
   allStepChanges.sort((a, b) => a.timestamp - b.timestamp);
@@ -352,45 +314,46 @@ function extractStateFlow(payload) {
   // MUST be defined BEFORE we check for initial state
   const functionCalls = [];
 
-  // Pre-build an ordered queue of questions from system messages
-  // Each "Ask the user: ..." system message maps to the next gather_submit in sequence
-  const questionQueue = [];
+  // Build ordered list of swaig_log gather_submit entries for answer value lookup
+  const swaigGathers = swaigLog
+    .filter(e => (e.command_name || e.commandName) === 'gather_submit')
+    .sort((a, b) => (a.epoch_time || a.epochTime) - (b.epoch_time || b.epochTime));
+  let swaigGatherIdx = 0;
+
+  // Extract function calls and gather answers from call_log structured metadata
   callLog.forEach(entry => {
-    if (entry.role === 'system' && entry.content) {
-      const match = entry.content.match(/Ask the user:\s*["']([^"']+)["']/i);
-      if (match) {
-        questionQueue.push({ timestamp: entry.timestamp, question: match[1] });
+    if (entry.role !== 'system-log' || !entry.action) return;
+
+    if (entry.action === 'gather_answer') {
+      const m = entry.metadata || {};
+      // Pull answer value from the corresponding swaig_log gather_submit (in order)
+      let answerArg = null;
+      const swaigSubmit = swaigGathers[swaigGatherIdx++];
+      if (swaigSubmit) {
+        answerArg = swaigSubmit.command_arg || swaigSubmit.commandArg || null;
       }
+      functionCalls.push({
+        timestamp: entry.timestamp,
+        metaStep: m.step || null,
+        name: 'gather_submit',
+        args: answerArg,
+        result: null,
+        question: m.key || null,
+        source: 'call_log',
+      });
     }
-  });
-  let questionIdx = 0;
-
-  // Extract from call_log using new structured format (system-log entries only)
-  callLog.forEach((entry, idx) => {
-    if (entry.role === 'system-log' && entry.action) {
-      // NEW FORMAT: Explicit action fields
-      if (entry.action === 'gather_submit') {
-        // Assign next question from the pre-built queue in order
-        let question = null;
-        if (questionIdx < questionQueue.length) {
-          question = questionQueue[questionIdx++].question;
-        }
-
+    else if (entry.action === 'function_call') {
+      const m = entry.metadata || {};
+      if (m.function) {
         functionCalls.push({
           timestamp: entry.timestamp,
-          name: 'gather_submit',
-          args: entry.args || null,
-          result: entry.result || null,
-          question: question,
-          source: 'call_log',
-        });
-      }
-      else if (entry.action === 'call_function' && entry.function) {
-        functionCalls.push({
-          timestamp: entry.timestamp,
-          name: entry.function,
-          args: entry.args || null,
-          result: entry.result || null,
+          metaStep: m.step || null,
+          name: m.function,
+          native: m.native || false,
+          durationMs: m.duration_ms || 0,
+          error: m.error || null,
+          args: null,
+          result: null,
           source: 'call_log',
         });
       }
@@ -462,24 +425,16 @@ function extractStateFlow(payload) {
   functionCalls.length = 0;
   functionCalls.push(...deduplicatedFunctionCalls);
 
+  // Get initial step name from session_start metadata
+  const sessionStartEntry = callLog.find(e => e.role === 'system-log' && e.action === 'session_start');
+  const initialStepName = sessionStartEntry?.metadata?.step || 'Initial State';
+
   // NOW check for initial state (after functionCalls is populated)
   // If we have function calls but no step changes, create an initial implicit state
   if (stepChanges.length === 0 && functionCalls.length > 0) {
-    // Infer initial state name from first system prompt
-    let initialStateName = 'Initial State';
-    const firstSystemPrompt = callLog.find(e => e.role === 'system' && e.content);
-    if (firstSystemPrompt) {
-      // Try to infer from content
-      if (firstSystemPrompt.content.includes('collect') || firstSystemPrompt.content.includes('gather')) {
-        initialStateName = 'Gathering Profile';
-      } else if (firstSystemPrompt.content.includes('greeting') || firstSystemPrompt.content.includes('Welcome')) {
-        initialStateName = 'Greeting';
-      }
-    }
-
     stepChanges.push({
       timestamp: callLog[0]?.timestamp || Date.now() * 1000,
-      step: initialStateName,
+      step: initialStepName,
       stepIndex: 0,
       triggeredBy: 'Initial state',
       source: 'implicit',
@@ -492,20 +447,10 @@ function extractStateFlow(payload) {
     const functionsBeforeFirstStep = functionCalls.filter(fc => fc.timestamp < firstStepChangeTime);
 
     if (functionsBeforeFirstStep.length > 0) {
-      // Infer initial state name
-      let initialStateName = 'Initial State';
-      const firstSystemPrompt = callLog.find(e => e.role === 'system' && e.content && e.timestamp < firstStepChangeTime);
-      if (firstSystemPrompt) {
-        if (firstSystemPrompt.content.includes('collect') || firstSystemPrompt.content.includes('gather')) {
-          initialStateName = 'Gathering Profile';
-        } else if (firstSystemPrompt.content.includes('greeting') || firstSystemPrompt.content.includes('Welcome')) {
-          initialStateName = 'Initial Greeting';
-        }
-      }
 
       stepChanges.unshift({
         timestamp: callLog[0]?.timestamp || functionCalls[0].timestamp,
-        step: initialStateName,
+        step: initialStepName,
         stepIndex: 0,
         triggeredBy: 'Implicit initial state',
         source: 'implicit',
@@ -547,10 +492,15 @@ function extractStateFlow(payload) {
           assignedFunctionIndices.add(fcIdx);
         }
       }
-      // For other states
-      else if (fc.timestamp >= stepStartTime && fc.timestamp < stepEndTime) {
-        functionsCalledInStep.push(fc.name);
-        assignedFunctionIndices.add(fcIdx);
+      // For other states: prefer metaStep (authoritative from enriched format),
+      // fall back to timestamp window for gap-fill entries from swaig_log
+      else {
+        const matchesByMeta = fc.metaStep && fc.metaStep === stepChange.step;
+        const matchesByTime = !fc.metaStep && fc.timestamp >= stepStartTime && fc.timestamp < stepEndTime;
+        if (matchesByMeta || matchesByTime) {
+          functionsCalledInStep.push(fc.name);
+          assignedFunctionIndices.add(fcIdx);
+        }
       }
     });
 
@@ -650,6 +600,7 @@ function extractStateFlow(payload) {
       result: fc.result,
       source: fc.source,
       swaigActions: fc.swaigActions || [],
+      metaStep: fc.metaStep || null,
     });
   });
 
@@ -707,6 +658,11 @@ function generateFlowDiagram(flowData) {
     const nextTrans = transitions[idx + 1];
     const funcs = detailedTimeline.filter(item => {
       if (item.type !== 'function') return false;
+      // Prefer metaStep assignment (authoritative from enriched format)
+      if (item.metaStep) {
+        return item.metaStep === currentState;
+      }
+      // Fall back to timestamp window for gap-fill entries from swaig_log
       const start = trans.timestamp;
       const end = nextTrans ? nextTrans.timestamp : Infinity;
       return item.timestamp >= start && item.timestamp < end;
@@ -1130,8 +1086,8 @@ async function downloadSvgAsImage(svgElement, filename, title = 'State Flow Diag
   const padding = 40;
   const vx = bbox.x - padding / 2;
   const vy = bbox.y - padding / 2;
-  const width = Math.ceil(bbox.width + bbox.x * 2 + padding);
-  const height = Math.ceil(bbox.height + bbox.y * 2 + padding);
+  const width = Math.ceil(bbox.width + padding);
+  const height = Math.ceil(bbox.height + padding);
   const totalHeight = height + TITLE_PAD;
 
   document.body.removeChild(tempDiv);

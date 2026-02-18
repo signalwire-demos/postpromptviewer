@@ -16,7 +16,14 @@ const REGION_COLORS = {
   step: 'rgba(148, 163, 184, 0.12)',
 };
 
-function classifySystemLog(content) {
+function classifySystemLog(entry) {
+  // New enriched format: classify by action field
+  if (entry.action) {
+    if (entry.action === 'step_change') return 'step';
+    return null; // function_call, gather_*, session_* etc — skip
+  }
+  // Legacy format: classify by content string
+  const content = entry.content;
   if (!content || typeof content !== 'string') return null;
   const trimmed = content.trim();
   if (trimmed.startsWith('Thinking:')) return 'assistant-thinking';
@@ -60,14 +67,9 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
 
   if (payload.recordCallStart) {
     // Exact recording start timestamp from SWMLVars – best possible anchor.
+    // All call_log timestamps are wall-clock microseconds; no scaling needed.
     bestAnchor = payload.recordCallStart;
-    const endRef = payload.callEndDate || payload.aiEndDate;
-    if (endRef) {
-      const expectedDuration = (endRef - payload.recordCallStart) / 1_000_000;
-      scale = expectedDuration > 0 ? recordingDuration / expectedDuration : 1;
-    } else {
-      scale = 1;
-    }
+    scale = 1;
   } else if (payload.aiStartDate && firstBotAudioSec != null) {
     // No record_call_start – calibrate from the waveform.  Align the first
     // speaking event's start_timestamp to where audio actually begins in the
@@ -122,6 +124,28 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
 
   const regions = [];
 
+  // Build step regions from step_change events (enriched format)
+  const stepChanges = (payload.callLog || [])
+    .filter(e => e.role === 'system-log' && e.action === 'step_change')
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  for (let si = 0; si < stepChanges.length; si++) {
+    const sc = stepChanges[si];
+    const nextSc = stepChanges[si + 1];
+    const startSec = toSec(sc.timestamp);
+    const endSec = nextSc ? toSec(nextSc.timestamp) : recordingDuration;
+    if (startSec >= recordingDuration || endSec <= 0) continue;
+    const stepName = sc.metadata?.to_step || sc.content || 'step';
+    regions.push({
+      start: Math.max(0, startSec),
+      end: Math.min(endSec, recordingDuration),
+      color: REGION_COLORS.step,
+      role: 'step',
+      content: truncate(stepName, 40),
+      fullContent: stepName,
+    });
+  }
+
   // Index callLog for next-timestamp lookups (system-log duration)
   const allMessages = payload.callLog.filter(m => m.timestamp || m.start_timestamp).sort((a, b) => (a.start_timestamp || a.timestamp) - (b.start_timestamp || b.timestamp));
 
@@ -130,9 +154,9 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
     const role = msg.role;
 
     // Handle system-log entries (thinking, step)
-    // "Calling function:" is merged into the tool region instead.
+    // "Calling function:" and step_change are handled elsewhere or skipped.
     if (role === 'system-log') {
-      const category = classifySystemLog(msg.content);
+      const category = classifySystemLog(msg);
       if (!category || category === 'calling' || category === 'step') continue;
       const startSec = toSec(msg.timestamp);
       if (startSec < 0) continue;
@@ -144,7 +168,8 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
       }
       let durSec = ((nextTs - msg.timestamp) / 1_000_000) * scale;
       if (durSec < 0.02) continue;
-      const displayContent = msg.content.trim()
+      const rawContent = msg.content || '';
+      const displayContent = rawContent.trim()
         .replace(/^Thinking:\s*/, '')
         .replace(/^Steps function:\s*/, '');
       regions.push({
@@ -476,7 +501,7 @@ export function renderRecording(container, payload) {
 
   const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', 'assistant-thinking': 'Thinking', step: 'Step', overlap: 'Barge-in' };
 
-  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, endpointing: 1, tool: 1, 'assistant-thinking': 1, step: 0, assistant: 0 };
+  const ROLE_PRIORITY = { user: 3, 'assistant-manual': 2, endpointing: 1, tool: 1, 'assistant-thinking': 1, assistant: 0, step: -1 };
 
   wavesurfer.on('timeupdate', (time) => {
     currentEl.textContent = formatTime(time);

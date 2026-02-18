@@ -161,16 +161,49 @@ function renderDataItems(data, parentKey = '') {
     return `<div class="swml-data-value">${escapeHtml(String(data))}</div>`;
   }
 
+  if (Array.isArray(data)) {
+    return `
+      <div class="swml-data-items">
+        ${data.map((item, idx) => {
+          const isObject = typeof item === 'object' && item !== null;
+          if (isObject) {
+            return `
+              <div class="swml-data-item swml-data-item--nested">
+                <span class="swml-data-key">[${idx}]</span>
+                <div class="swml-data-item-children">${renderDataItems(item, `${parentKey}[${idx}]`)}</div>
+              </div>
+            `;
+          }
+          return `
+            <div class="swml-data-item">
+              <span class="swml-data-key">[${idx}]</span>
+              <span class="swml-data-value">${escapeHtml(String(item))}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
   return `
     <div class="swml-data-items">
       ${Object.entries(data).map(([key, value]) => {
         const isObject = typeof value === 'object' && value !== null;
-        const displayValue = isObject ? (Array.isArray(value) ? `Array[${value.length}]` : 'Object') : String(value);
+        const isArr = Array.isArray(value);
+
+        if (isObject) {
+          return `
+            <div class="swml-data-item swml-data-item--nested">
+              <span class="swml-data-key">${escapeHtml(key)}</span>
+              <div class="swml-data-item-children">${renderDataItems(value, `${parentKey}.${key}`)}</div>
+            </div>
+          `;
+        }
 
         return `
           <div class="swml-data-item">
             <span class="swml-data-key">${escapeHtml(key)}</span>
-            <span class="swml-data-value">${escapeHtml(displayValue)}</span>
+            <span class="swml-data-value">${escapeHtml(String(value))}</span>
           </div>
         `;
       }).join('')}

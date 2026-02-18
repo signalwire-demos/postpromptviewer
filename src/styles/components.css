@@ -2331,6 +2331,13 @@
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
 }
+.swml-data-item--nested {
+  flex-direction: column;
+}
+.swml-data-item-children {
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+}
 .swml-data-key {
   font-weight: 600;
   color: var(--accent);
