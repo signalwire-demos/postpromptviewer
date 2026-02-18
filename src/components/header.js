@@ -19,11 +19,6 @@ export function renderHeader(container, payload, metrics) {
     hardTimeoutBadge = '<span class="header__badge" style="background:rgba(239,68,68,0.15);color:#ef4444">Hard Timeout</span>';
   }
 
-  let recordingLink = '';
-  if (payload.swmlVars && payload.swmlVars.record_call_url) {
-    recordingLink = `<a href="${payload.swmlVars.record_call_url}" target="_blank" rel="noopener" class="header__badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6;text-decoration:none">Recording</a>`;
-  }
-
   const type = payload.swmlCall.type || payload.conversationType || '';
   const direction = payload.swmlCall.direction || '';
   const appName = payload.appName || '';
@@ -47,7 +42,6 @@ export function renderHeader(container, payload, metrics) {
       <span class="header__badge header__badge--duration">${durationText}</span>
       ${endBadge}
       ${hardTimeoutBadge}
-      ${recordingLink}
       ${aiResultBadge}
       <div class="header__meta">
         ${appName ? `<span>${appName}</span>` : ''}

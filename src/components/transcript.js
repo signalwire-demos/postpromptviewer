@@ -126,6 +126,9 @@ export function renderTranscript(container, payload) {
       // Garbage response filter
       if (activeFilters.hasGarbage && !isGarbageContent(msg.content)) return false;
 
+      // Interrupted (barged) filter
+      if (activeFilters.hasInterrupted && !(msg.barged ?? msg.metadata?.barged)) return false;
+
       // Response time rating filter
       if (activeFilters.responseTimeRating) {
         let latency;
@@ -411,6 +414,7 @@ export function renderTranscript(container, payload) {
                            activeFilters.hasMerge ||
                            activeFilters.hasToolCalls ||
                            activeFilters.hasGarbage ||
+                           activeFilters.hasInterrupted ||
                            activeFilters.responseTimeRating;
 
     return `
@@ -447,6 +451,10 @@ export function renderTranscript(container, payload) {
           <button class="filter-chip filter-chip--garbage ${activeFilters.hasGarbage ? 'filter-chip--active' : ''}"
                   data-filter="garbage">
             ⚠️ Garbage
+          </button>
+          <button class="filter-chip filter-chip--interrupted ${activeFilters.hasInterrupted ? 'filter-chip--active' : ''}"
+                  data-filter="interrupted">
+            ⏸ Interrupted
           </button>
           <select class="filter-dropdown" id="response-time-filter" aria-label="Filter by response time">
             <option value="">⏱️ Response Time</option>
@@ -589,12 +597,15 @@ export function renderTranscript(container, payload) {
           transcriptFilters.hasToolCalls = !transcriptFilters.hasToolCalls;
         } else if (filterType === 'garbage') {
           transcriptFilters.hasGarbage = !transcriptFilters.hasGarbage;
+        } else if (filterType === 'interrupted') {
+          transcriptFilters.hasInterrupted = !transcriptFilters.hasInterrupted;
         } else if (filterType === 'clear') {
           transcriptFilters.roles = [];
           transcriptFilters.hasBarge = false;
           transcriptFilters.hasMerge = false;
           transcriptFilters.hasToolCalls = false;
           transcriptFilters.hasGarbage = false;
+          transcriptFilters.hasInterrupted = false;
           transcriptFilters.responseTimeRating = '';
 
           // Also clear search

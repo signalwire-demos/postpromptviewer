@@ -36,9 +36,14 @@ const SWML_TABS = [
   { id: 'swml-config', label: 'Configuration' },
 ];
 
-function getTabs(viewMode) {
+function getTabs(viewMode, payload) {
   if (viewMode === 'swml') return SWML_TABS;
-  if (viewMode === 'postprompt') return POSTPROMPT_TABS;
+  if (viewMode === 'postprompt') {
+    if (!payload?.recordCallUrl) {
+      return POSTPROMPT_TABS.filter(t => t.id !== 'recording');
+    }
+    return POSTPROMPT_TABS;
+  }
   return [];
 }
 
@@ -49,7 +54,7 @@ function render(state) {
   }
 
   const { payload, metrics, swml, activeTab, viewMode } = state;
-  const tabs = getTabs(viewMode);
+  const tabs = getTabs(viewMode, payload);
 
   app.innerHTML = `
     <div id="header-container"></div>
