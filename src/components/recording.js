@@ -70,10 +70,27 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
   let bestAnchor, scale;
 
   if (payload.recordCallStart) {
-    // Exact recording start timestamp from SWMLVars – best possible anchor.
-    // All call_log timestamps are wall-clock microseconds; no scaling needed.
+    // record_call_start from SWMLVars – good anchor but may drift from actual
+    // recording start.  Cross-check against waveform when possible.
     bestAnchor = payload.recordCallStart;
     scale = 1;
+
+    // If we can detect first bot audio in the waveform, compare it to the first
+    // assistant speech timestamp.  Any delta is recording-start drift — apply it.
+    if (firstBotAudioSec != null) {
+      const firstSpeaker = payload.callLog.find(m =>
+        (m.role === 'assistant' || m.role === 'assistant-manual') && m.start_timestamp && m.content);
+      if (firstSpeaker) {
+        const expectedSec = (firstSpeaker.start_timestamp - bestAnchor) / 1_000_000;
+        const drift = expectedSec - firstBotAudioSec; // positive = anchor is too early (regions shift right)
+        console.log('Waveform drift check:', { expectedSec, firstBotAudioSec, drift: drift.toFixed(3) });
+        if (Math.abs(drift) > 0.05 && Math.abs(drift) < 5) {
+          // Adjust anchor forward to compensate for drift
+          bestAnchor += Math.round(drift * 1_000_000);
+          console.log('Applied drift correction:', drift.toFixed(3) + 's');
+        }
+      }
+    }
   } else if (payload.aiStartDate && firstBotAudioSec != null) {
     // No record_call_start – calibrate from the waveform.  Align the first
     // speaking event's start_timestamp to where audio actually begins in the
@@ -115,8 +132,11 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
     scale = 1;
   }
 
+  // Manual offset (seconds) — loaded from localStorage for persistence
+  const savedOffset = parseFloat(localStorage.getItem('recording_align_offset') || '0');
+
   // Helper: convert microsecond timestamp to audio-relative seconds
-  const toSec = (us) => ((us - bestAnchor) / 1_000_000) * scale;
+  const toSec = (us) => ((us - bestAnchor) / 1_000_000) * scale - savedOffset;
 
   console.log('Recording alignment debug:', {
     bestAnchor,
@@ -412,6 +432,11 @@ export function renderRecording(container, payload) {
           <label class="recording__zoom-label" title="Zoom">&#128269;</label>
           <input type="range" class="recording__zoom-slider" min="0" max="500" step="1" value="0" />
         </div>
+        <div class="recording__align">
+          <label class="recording__align-label" title="Region alignment offset (seconds)">&#9646;&#9654;</label>
+          <input type="range" class="recording__align-slider" min="-2" max="2" step="0.05" value="${parseFloat(localStorage.getItem('recording_align_offset') || '0')}" />
+          <span class="recording__align-value">${parseFloat(localStorage.getItem('recording_align_offset') || '0').toFixed(2)}s</span>
+        </div>
         <a class="recording__download" href="${url}" target="_blank" title="Download">&#11015;</a>
       </div>
 
@@ -641,5 +666,35 @@ export function renderRecording(container, payload) {
     const val = parseInt(e.target.value);
     wavesurfer.zoom(val || 0);
   });
+
+  // Alignment offset slider — rebuilds regions on change
+  const alignSlider = container.querySelector('.recording__align-slider');
+  const alignValue = container.querySelector('.recording__align-value');
+  if (alignSlider) {
+    alignSlider.addEventListener('input', (e) => {
+      const offset = parseFloat(e.target.value);
+      alignValue.textContent = `${offset.toFixed(2)}s`;
+      localStorage.setItem('recording_align_offset', offset);
+
+      // Clear existing regions and rebuild
+      regions.clearRegions();
+      const buf = wavesurfer.getDecodedData();
+      const botCh = buf && buf.numberOfChannels >= 2 ? 1 : 0;
+      const fbas = findFirstAudioSec(buf, botCh);
+      const callRegions = buildRegions(payload, wavesurfer.getDuration(), fbas);
+      const dur = wavesurfer.getDuration();
+      for (const r of callRegions) {
+        const region = regions.addRegion({
+          start: r.start,
+          end: Math.min(r.end, dur),
+          color: r.color,
+          drag: false,
+          resize: false,
+        });
+        region._original = { start: r.start, end: Math.min(r.end, dur), role: r.role, content: r.content };
+        region._meta = { role: r.role, fullContent: r.fullContent };
+      }
+    });
+  }
 
 }
