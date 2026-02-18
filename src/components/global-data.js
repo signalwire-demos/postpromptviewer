@@ -539,8 +539,7 @@ function renderTimelinePlayer(container, payload) {
         <div class="gd-speed-buttons">
           <button class="gd-speed-btn gd-speed-btn--active" data-speed="1">1×</button>
           <button class="gd-speed-btn" data-speed="2">2×</button>
-          <button class="gd-speed-btn" data-speed="5">5×</button>
-          <button class="gd-speed-btn" data-speed="10">10×</button>
+          <button class="gd-speed-btn" data-speed="3">3×</button>
         </div>
         <span class="gd-event-count">${events.length} mutation${events.length !== 1 ? 's' : ''}</span>
         <span class="gd-time-display" id="gd-time-display">0:00.0 / ${formatTimeSec(totalDuration)}</span>
