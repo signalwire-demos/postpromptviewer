@@ -537,7 +537,7 @@ function renderTimelinePlayer(container, payload) {
         <button class="gd-btn gd-btn--primary" id="gd-play" title="Play / Pause">&#9654;</button>
         <button class="gd-btn" id="gd-next" title="Next event">&#x25B6;</button>
         <div class="gd-speed-buttons">
-          <button class="gd-speed-btn gd-speed-btn--active" data-speed="1">1×</button>
+          <button class="gd-speed-btn" data-speed="1">1×</button>
           <button class="gd-speed-btn" data-speed="2">2×</button>
           <button class="gd-speed-btn" data-speed="3">3×</button>
         </div>
@@ -671,12 +671,17 @@ function renderTimelinePlayer(container, payload) {
     }
   });
 
-  // Speed buttons
+  // Speed buttons — restore saved speed, then persist on click
+  const savedSpeed = parseFloat(localStorage.getItem('gd_timeline_speed') || '1');
+  player.setSpeed(savedSpeed);
   container.querySelectorAll('.gd-speed-btn').forEach(btn => {
+    if (parseFloat(btn.dataset.speed) === savedSpeed) btn.classList.add('gd-speed-btn--active');
     btn.addEventListener('click', () => {
+      const speed = parseFloat(btn.dataset.speed);
       container.querySelectorAll('.gd-speed-btn').forEach(b => b.classList.remove('gd-speed-btn--active'));
       btn.classList.add('gd-speed-btn--active');
-      player.setSpeed(parseFloat(btn.dataset.speed));
+      player.setSpeed(speed);
+      localStorage.setItem('gd_timeline_speed', speed);
     });
   });
 
