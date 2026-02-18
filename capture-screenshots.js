@@ -1,7 +1,8 @@
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { mkdirSync, copyFileSync } from 'fs';
+import { mkdirSync, copyFileSync, unlinkSync } from 'fs';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -166,8 +167,14 @@ async function captureScreenshots() {
 
   await page.close();
   const videoPath = await page.video().path();
-  const finalVideo = join(videoDir, 'ui-walkthrough.webm');
-  copyFileSync(videoPath, finalVideo);
+  const webmTmp = join(videoDir, '_tmp.webm');
+  copyFileSync(videoPath, webmTmp);
+
+  // Convert webm → mp4 (H.264) for universal playback
+  const finalVideo = join(videoDir, 'ui-walkthrough.mp4');
+  console.log('🔄 Converting webm → mp4...');
+  execSync(`ffmpeg -y -i "${webmTmp}" -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p -movflags +faststart "${finalVideo}"`, { stdio: 'pipe' });
+  unlinkSync(webmTmp);
   console.log('🎬 Video saved to:', finalVideo);
 
   await context.close();
