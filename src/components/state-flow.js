@@ -76,10 +76,6 @@ export async function renderStateFlow(container, payload) {
           <div class="swml-stat-card__value" style="color:#10b981">${flowData.aiInitiated}</div>
         </div>
         <div class="swml-stat-card">
-          <div class="swml-stat-card__label">Tool-Forced</div>
-          <div class="swml-stat-card__value" style="color:#f59e0b">${flowData.toolForced}</div>
-        </div>
-        <div class="swml-stat-card">
           <div class="swml-stat-card__label">Tool Calls</div>
           <div class="swml-stat-card__value">${flowData.totalFunctions}</div>
         </div>
@@ -93,7 +89,6 @@ export async function renderStateFlow(container, payload) {
         <div class="flow-legend">
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function Call</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f97316;border-color:#ea580c"></span>Webhook-Forced</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>Action</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#0284c7;border-color:#0369a1"></span>Navigation</span>
@@ -133,8 +128,7 @@ export async function renderStateFlow(container, payload) {
                   ` : ''}
                 ` : `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
-                    <code style="color:${item.webhookForced ? '#f97316' : '#f59e0b'};font-size:0.9rem">${escapeHtml(item.functionName)}</code>
-                    ${item.webhookForced ? '<span style="color:#f97316;font-size:0.7rem;margin-left:0.5rem;font-weight:600">⚡ webhook-forced</span>' : ''}
+                    <code style="color:#f59e0b;font-size:0.9rem">${escapeHtml(item.functionName)}</code>
                     <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.source === 'swaig_log' ? '(swaig)' : ''}</span>
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
@@ -232,7 +226,6 @@ export async function renderStateFlow(container, payload) {
         await downloadSvgAsImage(svg, 'state-flow-diagram.png', 'State Flow Diagram', [
           { color: '#3b82f6', stroke: '#2563eb', label: 'Step / State' },
           { color: '#f59e0b', stroke: '#d97706', label: 'Function Call' },
-          { color: '#f97316', stroke: '#ea580c', label: 'Webhook-Forced' },
           { color: '#6b7280', stroke: '#4b5563', label: 'Gather / Q&A' },
           { color: '#7c3aed', stroke: '#6d28d9', label: 'Action' },
           { color: '#0284c7', stroke: '#0369a1', label: 'Navigation' },
@@ -757,7 +750,7 @@ function generateFlowDiagram(flowData) {
 
       // Build label
       let label = funcName;
-      let styleClass = item.webhookForced ? 'forcedNode' : 'funcNode';
+      let styleClass = 'funcNode';
 
       try {
         const argsObj = args ? JSON.parse(args) : null;
