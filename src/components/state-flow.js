@@ -96,6 +96,7 @@ export async function renderStateFlow(container, payload) {
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f97316;border-color:#ea580c"></span>Webhook-Forced</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>SWML Action</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#0d9488;border-color:#0f766e"></span>Data Mutation</span>
         </div>
         <div class="state-flow__zoom-controls">
           <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
@@ -233,6 +234,7 @@ export async function renderStateFlow(container, payload) {
           { color: '#f97316', stroke: '#ea580c', label: 'Webhook-Forced' },
           { color: '#6b7280', stroke: '#4b5563', label: 'Gather / Q&A' },
           { color: '#7c3aed', stroke: '#6d28d9', label: 'SWML Action' },
+          { color: '#0d9488', stroke: '#0f766e', label: 'Data Mutation' },
         ]);
         downloadImageBtn.textContent = 'Downloaded!';
         setTimeout(() => {
@@ -639,6 +641,7 @@ function generateFlowDiagram(flowData) {
   lines.push('    classDef forcedNode fill:#f97316,stroke:#ea580c,stroke-width:2px,color:#000');
   lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
   lines.push('    classDef actionNode fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff');
+  lines.push('    classDef dataNode fill:#0d9488,stroke:#0f766e,stroke-width:2px,color:#fff');
   lines.push('');
 
   let nodeId = 0;
@@ -771,12 +774,14 @@ function generateFlowDiagram(flowData) {
         lines.push(`    ${stepNodes[step]} -.-> ${funcNodeId}`);
       }
 
-      // Add SWML action child nodes tied to this function
+      // Add action child nodes tied to this function
       if (item.swaigActions && item.swaigActions.length > 0) {
         item.swaigActions.forEach(action => {
           const actionNodeId = `A${nodeId++}`;
           const actionLabel = sanitizeLabel(action.label);
-          lines.push(`    ${actionNodeId}["${actionLabel}"]:::actionNode`);
+          const actionClass = (action.verb === 'set_global_data' || action.verb === 'add_dynamic_hints')
+            ? 'dataNode' : 'actionNode';
+          lines.push(`    ${actionNodeId}["${actionLabel}"]:::${actionClass}`);
           lines.push(`    ${funcNodeId} -.-> ${actionNodeId}`);
         });
       }
@@ -795,8 +800,23 @@ function extractInterestingActions(actions) {
     if (!action || typeof action !== 'object') return;
 
     Object.entries(action).forEach(([verb, value]) => {
-      // Skip internal/boring actions
-      if (['set_global_data', 'add_dynamic_hints', 'change_step'].includes(verb)) return;
+      // change_step is already shown as a transition arrow — skip to avoid duplication
+      if (verb === 'change_step') return;
+
+      if (verb === 'set_global_data' && value && typeof value === 'object') {
+        // Show which keys were written
+        const keys = Object.keys(value);
+        const keyList = keys.slice(0, 4).join(', ') + (keys.length > 4 ? ` +${keys.length - 4}` : '');
+        result.push({ verb, label: `set_global_data<br/>${keyList}`, data: value });
+        return;
+      }
+
+      if (verb === 'add_dynamic_hints' && Array.isArray(value)) {
+        const preview = value.slice(0, 3).map(h => String(h).substring(0, 18)).join(', ')
+          + (value.length > 3 ? ` +${value.length - 3}` : '');
+        result.push({ verb, label: `add_hints<br/>${preview}`, data: value });
+        return;
+      }
 
       if (verb === 'SWML' && value?.sections) {
         // Extract SWML verbs from sections
