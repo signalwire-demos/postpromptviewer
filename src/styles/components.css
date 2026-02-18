@@ -559,8 +559,6 @@
 /* ===== Transcript ===== */
 .transcript {
   padding: 1.5rem;
-  max-height: 70vh;
-  overflow-y: auto;
 }
 .transcript__msg {
   display: flex;
@@ -797,6 +795,11 @@
   word-break: break-all;
 }
 
+/* ===== Content Container ===== */
+#content-container {
+  width: 100%;
+}
+
 /* ===== Post-Prompt ===== */
 .post-prompt {
   padding: 1.5rem;
@@ -832,7 +835,7 @@
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 60vh;
+  max-height: calc(100vh - 12rem);
   overflow-y: auto;
 }
 
@@ -2148,6 +2151,7 @@
 /* ===== SWML Inspector ===== */
 .swml-overview {
   padding: 1.5rem;
+  width: 100%;
 }
 .swml-overview__header {
   margin-bottom: 2rem;
@@ -2312,6 +2316,7 @@
 /* SWML Prompts */
 .swml-prompts {
   padding: 1.5rem;
+  width: 100%;
 }
 .swml-prompts__section {
   margin-bottom: 2rem;
@@ -2467,6 +2472,7 @@
 /* SWML Functions */
 .swml-functions {
   padding: 1.5rem;
+  width: 100%;
 }
 .swml-functions__header {
   margin-bottom: 1.5rem;
@@ -2680,6 +2686,7 @@
 /* SWML Config */
 .swml-config {
   padding: 1.5rem;
+  width: 100%;
 }
 .swml-config-section {
   margin-bottom: 2rem;
@@ -3415,8 +3422,46 @@
   border: 1px solid rgba(220, 38, 38, 0.3);
 }
 
+/* Transcript: Barge-in (assistant interrupted) */
+.transcript__meta-tag--barged {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  font-weight: 600;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.transcript__content--barged {
+  border-right: 3px solid rgba(239, 68, 68, 0.4);
+  padding-right: 0.5rem;
+}
+.transcript__barge-detail {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  border-left: 2px solid rgba(239, 68, 68, 0.3);
+  padding-left: 0.5rem;
+}
+.transcript__barge-heard {
+  color: var(--text-primary);
+}
+.transcript__barge-cutoff {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #ef4444;
+  margin: 0 2px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+}
+.transcript__barge-unheard {
+  color: var(--text-muted);
+  opacity: 0.5;
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.4);
+}
+
 /* Recording: Transcript role colors for new types */
 .recording__transcript-role--filler { color: rgba(253, 230, 138, 0.9); }
 .recording__transcript-role--manual-say { color: rgba(251, 146, 60, 0.9); }
 .recording__transcript-role--attention-timeout { color: rgba(239, 68, 68, 0.9); }
 .recording__transcript-role--function-error { color: rgba(220, 38, 38, 0.9); }
+.recording__transcript-role--barge-cutoff { color: rgba(239, 68, 68, 0.9); }

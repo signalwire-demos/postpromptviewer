@@ -244,6 +244,7 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
       const startSec = toSec(msg.start_timestamp);
       const endSec = toSec(msg.end_timestamp);
       if (endSec <= 0) continue; // Only skip if region ends before recording starts
+      const aBarged = msg.barged ?? msg.metadata?.barged ?? false;
       regions.push({
         start: Math.max(0, startSec),
         end: endSec,
@@ -252,6 +253,24 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
         content: truncate(msg.content || '', 40),
         fullContent: msg.content || '',
       });
+      // Barge cutoff marker — thin red line showing where caller interrupted
+      if (aBarged) {
+        const aBargeMs = msg.barge_elapsed_ms ?? msg.metadata?.barge_elapsed_ms ?? null;
+        if (aBargeMs != null) {
+          const cutoffSec = Math.max(0, startSec) + aBargeMs / 1000;
+          if (cutoffSec > 0 && cutoffSec < endSec) {
+            const sliver = 0.04;
+            regions.push({
+              start: cutoffSec,
+              end: cutoffSec + sliver,
+              color: 'rgba(239, 68, 68, 0.85)',
+              role: 'barge-cutoff',
+              content: 'Barge',
+              fullContent: `Caller interrupted after ${(aBargeMs / 1000).toFixed(1)}s`,
+            });
+          }
+        }
+      }
     } else if (role === 'tool') {
       if (!msg.start_timestamp || !msg.end_timestamp) continue;
       const startSec = toSec(msg.start_timestamp);
@@ -350,6 +369,7 @@ function buildRegions(payload, recordingDuration, firstBotAudioSec) {
       if (a.role === 'assistant-thinking' || b.role === 'assistant-thinking') continue;
       if (a.role === 'step' || b.role === 'step') continue;
       if (a.role === 'endpointing' || b.role === 'endpointing') continue;
+      if (a.role === 'barge-cutoff' || b.role === 'barge-cutoff') continue;
       if (a.role === 'filler' || b.role === 'filler') continue;
       if (a.role === 'attention-timeout' || b.role === 'attention-timeout') continue;
       if (a.role === 'function-error' || b.role === 'function-error') continue;
@@ -592,9 +612,9 @@ export function renderRecording(container, payload) {
   const transcriptText = transcriptEl.querySelector('.recording__transcript-text');
   let lastTranscriptId = null;
 
-  const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', 'assistant-thinking': 'Thinking', step: 'Step', overlap: 'Barge-in', filler: 'Filler', 'manual-say': 'System Say', 'attention-timeout': 'Timeout', 'function-error': 'Error' };
+  const ROLE_LABELS = { user: 'User', endpointing: 'Endpointing', assistant: 'Assistant', 'assistant-manual': 'Manual Say', tool: 'Tool', 'assistant-thinking': 'Thinking', step: 'Step', overlap: 'Barge-in', 'barge-cutoff': 'Barge Cutoff', filler: 'Filler', 'manual-say': 'System Say', 'attention-timeout': 'Timeout', 'function-error': 'Error' };
 
-  const ROLE_PRIORITY = { user: 3, 'function-error': 3, 'attention-timeout': 3, 'assistant-manual': 2, 'manual-say': 2, endpointing: 1, tool: 1, 'assistant-thinking': 1, filler: 0, assistant: 0, step: -1 };
+  const ROLE_PRIORITY = { user: 3, 'function-error': 3, 'attention-timeout': 3, 'barge-cutoff': 3, 'assistant-manual': 2, 'manual-say': 2, endpointing: 1, tool: 1, 'assistant-thinking': 1, filler: 0, assistant: 0, step: -1 };
 
   wavesurfer.on('timeupdate', (time) => {
     currentEl.textContent = formatTime(time);

@@ -223,6 +223,19 @@ export function renderTimeline(container, payload, metrics) {
       audioLatency: msg.audio_latency || msg.utterance_latency || msg.latency || 0,
     };
 
+    // Barge-in data (assistant was interrupted by caller)
+    if (msg.role === 'assistant') {
+      const barged = msg.barged ?? msg.metadata?.barged ?? false;
+      if (barged) {
+        ev.barged = true;
+        ev.bargeElapsedMs = msg.barge_elapsed_ms ?? msg.metadata?.barge_elapsed_ms ?? null;
+        const heard = msg.text_heard_approx ?? msg.metadata?.text_heard_approx ?? null;
+        const spoken = msg.text_spoken_total ?? msg.metadata?.text_spoken_total ?? null;
+        ev.bargeHeardPct = (heard && spoken && spoken.length > 0)
+          ? Math.round((heard.length / spoken.length) * 100) : null;
+      }
+    }
+
     if (msg.role === 'user') {
       ev.speakingToTurn = msg.speaking_to_turn_detection || 0;
       ev.turnToFinal = msg.turn_detection_to_final_event || 0;
@@ -312,6 +325,12 @@ export function renderTimeline(container, payload, metrics) {
       seg.confidence = ev.confidence;
     }
 
+    if (ev.barged) {
+      seg.barged = true;
+      seg.bargeElapsedMs = ev.bargeElapsedMs;
+      seg.bargeHeardPct = ev.bargeHeardPct;
+    }
+
     segments.push(seg);
   }
 
@@ -391,6 +410,12 @@ export function renderTimeline(container, payload, metrics) {
         attrs += ` data-speaking-to-turn="${seg.speakingToTurn || 0}"`;
         attrs += ` data-turn-to-final="${seg.turnToFinal || 0}"`;
         attrs += ` data-confidence="${seg.confidence || 0}"`;
+      }
+
+      if (seg.barged) {
+        attrs += ` data-barged="true"`;
+        attrs += ` data-barge-elapsed="${seg.bargeElapsedMs || 0}"`;
+        if (seg.bargeHeardPct != null) attrs += ` data-barge-heard-pct="${seg.bargeHeardPct}"`;
       }
 
       return `<div class="swimlane__segment" style="left:${left}%;width:${width}%;background:${bg}" ${attrs}>${showLabel ? `<span class="swimlane__label">${seg.label}</span>` : ''}</div>`;
@@ -579,6 +604,24 @@ export function renderTimeline(container, payload, metrics) {
         html += `<div class="swimlane__tooltip-row swimlane__tooltip-row--gap"><span>Gap from prev</span><strong>${formatMs(gap)}</strong></div>`;
       }
 
+    } else if (role === 'assistant') {
+      html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--assistant">Assistant</div>`;
+      if (content) html += `<div class="swimlane__tooltip-text">${content}</div>`;
+      html += `<div class="swimlane__tooltip-row"><span>Duration</span><strong>${formatMs(duration)}</strong></div>`;
+      html += `<div class="swimlane__tooltip-row"><span>Offset</span><span>${formatMs(startMs)}</span></div>`;
+      if (gap > 0) {
+        html += `<div class="swimlane__tooltip-row swimlane__tooltip-row--gap"><span>Gap from prev</span><strong>${formatMs(gap)}</strong></div>`;
+      }
+      // Barge-in info
+      if (seg.dataset.barged === 'true') {
+        const bargeMs = parseInt(seg.dataset.bargeElapsed) || 0;
+        const heardPct = seg.dataset.bargeHeardPct;
+        html += `<div class="swimlane__tooltip-divider"></div>`;
+        html += `<div class="swimlane__tooltip-row" style="color:#ef4444"><span>Interrupted after</span><strong>${formatMs(bargeMs)}</strong></div>`;
+        if (heardPct) {
+          html += `<div class="swimlane__tooltip-row" style="color:#ef4444"><span>Response heard</span><strong>${heardPct}%</strong></div>`;
+        }
+      }
     } else {
       const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
       html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--${role}">${roleLabel}</div>`;

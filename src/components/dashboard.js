@@ -155,7 +155,7 @@ export function renderDashboard(container, metrics) {
   // Enriched Event Metrics (only show if any enriched data is present)
   const hasEnrichedData = e.functionErrorCount > 0 || e.gatherRejectCount > 0 ||
     e.textRewriteCount > 0 || e.fillerCount > 0 || e.attentionTimeoutCount > 0 ||
-    e.startupHookDuration != null;
+    e.startupHookDuration != null || e.bargedCount > 0;
 
   if (hasEnrichedData) {
     const enrichedCards = [];
@@ -214,9 +214,31 @@ export function renderDashboard(container, metrics) {
       });
     }
 
+    if (e.bargedCount > 0) {
+      enrichedCards.push({
+        label: 'Responses Interrupted',
+        value: `${(e.bargedRate * 100).toFixed(0)}`,
+        unit: `% (${e.bargedCount}/${e.totalAssistantContent})`,
+      });
+      if (e.avgBargeElapsedMs != null) {
+        enrichedCards.push({
+          label: 'Avg Listen Before Barge',
+          value: `${(e.avgBargeElapsedMs / 1000).toFixed(1)}`,
+          unit: 's',
+        });
+      }
+      if (e.avgResponseHeardPct != null) {
+        enrichedCards.push({
+          label: 'Avg Response Heard',
+          value: `${e.avgResponseHeardPct}`,
+          unit: '%',
+        });
+      }
+    }
+
     sections.push({
       title: 'Enriched Events',
-      subtitle: 'Errors, rewrites, fillers, and lifecycle events',
+      subtitle: 'Errors, rewrites, fillers, barge-ins, and lifecycle events',
       cards: enrichedCards,
     });
   }

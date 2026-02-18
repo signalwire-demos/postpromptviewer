@@ -259,6 +259,32 @@ export function renderTranscript(container, payload) {
       if (msg.speaking_to_final_event != null) metaTags.push(`speak-to-final: ${msg.speaking_to_final_event}ms`);
       if (isGarbage) metaTags.push({ text: '⚠️ Garbage Response', class: 'garbage' });
 
+      // Barge-in on assistant response (caller interrupted this response)
+      const msgBarged = (role === 'assistant') && (msg.barged ?? msg.metadata?.barged ?? false);
+      const bargeElapsed = msg.barge_elapsed_ms ?? msg.metadata?.barge_elapsed_ms ?? null;
+      const textHeard = msg.text_heard_approx ?? msg.metadata?.text_heard_approx ?? null;
+      const textSpoken = msg.text_spoken_total ?? msg.metadata?.text_spoken_total ?? null;
+
+      let bargeDetailHtml = '';
+      if (msgBarged) {
+        let bargeText = 'interrupted';
+        if (bargeElapsed != null) bargeText += ` after ${(bargeElapsed / 1000).toFixed(1)}s`;
+        if (textHeard && textSpoken && textSpoken.length > 0) {
+          const pct = Math.round((textHeard.length / textSpoken.length) * 100);
+          bargeText += ` (${pct}% heard)`;
+        }
+        metaTags.push({ text: `⏸ ${bargeText}`, class: 'barged' });
+
+        // Build heard/unheard detail block
+        if (textHeard && textSpoken) {
+          const unheard = textSpoken.slice(textHeard.length).trim();
+          bargeDetailHtml = `
+            <div class="transcript__barge-detail">
+              <span class="transcript__barge-heard">${escapeHtml(textHeard)}</span><span class="transcript__barge-cutoff"></span>${unheard ? `<span class="transcript__barge-unheard">${escapeHtml(unheard)}</span>` : ''}
+            </div>`;
+        }
+      }
+
       // hearing_hint badge: show on user messages when a hint was applied just before
       if (role === 'user' && msg.timestamp && hintIdx < enrichedEvents.hearingHints.length) {
         const hint = enrichedEvents.hearingHints[hintIdx];
@@ -331,9 +357,10 @@ export function renderTranscript(container, payload) {
         <div class="transcript__msg transcript__msg--${roleClass}" ${dataAttrs}>
           <div class="transcript__role">${role}</div>
           <div class="transcript__body">
-            <div class="transcript__content${isGarbage ? ' transcript__content--garbage' : ''}" id="msg-content-${idx}">
+            <div class="transcript__content${isGarbage ? ' transcript__content--garbage' : ''}${msgBarged ? ' transcript__content--barged' : ''}" id="msg-content-${idx}">
               ${displayContent}
             </div>
+            ${bargeDetailHtml}
             ${toolCallsHtml}
             ${metaTags.length > 0 ? `
               <div class="transcript__meta">
