@@ -93,6 +93,7 @@ export async function renderStateFlow(container, payload) {
         <div class="flow-legend">
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function Call</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f97316;border-color:#ea580c"></span>Webhook-Forced</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>SWML Action</span>
         </div>
@@ -130,7 +131,8 @@ export async function renderStateFlow(container, payload) {
                   ` : ''}
                 ` : `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
-                    <code style="color:#f59e0b;font-size:0.9rem">${escapeHtml(item.functionName)}</code>
+                    <code style="color:${item.webhookForced ? '#f97316' : '#f59e0b'};font-size:0.9rem">${escapeHtml(item.functionName)}</code>
+                    ${item.webhookForced ? '<span style="color:#f97316;font-size:0.7rem;margin-left:0.5rem;font-weight:600">⚡ webhook-forced</span>' : ''}
                     <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.source === 'swaig_log' ? '(swaig)' : ''}</span>
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
@@ -228,6 +230,7 @@ export async function renderStateFlow(container, payload) {
         await downloadSvgAsImage(svg, 'state-flow-diagram.png', 'State Flow Diagram', [
           { color: '#3b82f6', stroke: '#2563eb', label: 'Step / State' },
           { color: '#f59e0b', stroke: '#d97706', label: 'Function Call' },
+          { color: '#f97316', stroke: '#ea580c', label: 'Webhook-Forced' },
           { color: '#6b7280', stroke: '#4b5563', label: 'Gather / Q&A' },
           { color: '#7c3aed', stroke: '#6d28d9', label: 'SWML Action' },
         ]);
@@ -416,7 +419,10 @@ function extractStateFlow(payload) {
 
     const matchIdx = swaigMatchIndex[fc.name] || 0;
     if (matchIdx < candidates.length) {
-      fc.swaigActions = extractInterestingActions(candidates[matchIdx].actions);
+      const rawActions = candidates[matchIdx].actions;
+      fc.swaigActions = extractInterestingActions(rawActions);
+      // Flag if this function's response contained a change_step — it forced the transition
+      fc.webhookForced = rawActions.some(a => a.change_step !== undefined);
       swaigMatchIndex[fc.name] = matchIdx + 1;
     }
   });
@@ -601,6 +607,7 @@ function extractStateFlow(payload) {
       source: fc.source,
       swaigActions: fc.swaigActions || [],
       metaStep: fc.metaStep || null,
+      webhookForced: fc.webhookForced || false,
     });
   });
 
@@ -629,6 +636,7 @@ function generateFlowDiagram(flowData) {
   let lines = ['graph LR'];
   lines.push('    classDef stepNode fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff');
   lines.push('    classDef funcNode fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000');
+  lines.push('    classDef forcedNode fill:#f97316,stroke:#ea580c,stroke-width:2px,color:#000');
   lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
   lines.push('    classDef actionNode fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff');
   lines.push('');
@@ -650,7 +658,8 @@ function generateFlowDiagram(flowData) {
         type: 'step_change',
         from: previousState || 'START',
         to: currentState,
-        timestamp: trans.timestamp
+        timestamp: trans.timestamp,
+        source: trans.source,
       });
     }
 
@@ -675,7 +684,8 @@ function generateFlowDiagram(flowData) {
         functionName: f.functionName,
         args: f.args,
         question: f.question || null,
-        swaigActions: f.swaigActions || []
+        swaigActions: f.swaigActions || [],
+        webhookForced: f.webhookForced || false,
       });
     });
 
@@ -703,8 +713,14 @@ function generateFlowDiagram(flowData) {
   // Second pass: Create step chain and attach functions
   flow.forEach(item => {
     if (item.type === 'step_change') {
-      // Create step transition
-      lines.push(`    ${stepNodes[item.from]} --> ${stepNodes[item.to]}`);
+      // Create step transition with source label
+      const edgeLabel = item.source === 'ai' ? 'AI'
+        : item.source === 'tool' ? '⚡ forced'
+        : item.source === 'gather' ? 'gather'
+        : item.source === 'auto' ? 'auto'
+        : '';
+      const edge = edgeLabel ? `-->|"${sanitizeLabel(edgeLabel)}"|` : '-->';
+      lines.push(`    ${stepNodes[item.from]} ${edge} ${stepNodes[item.to]}`);
 
     } else if (item.type === 'function_call') {
       const funcNodeId = `F${nodeId++}`;
@@ -713,7 +729,7 @@ function generateFlowDiagram(flowData) {
 
       // Build label
       let label = funcName;
-      let styleClass = 'funcNode';
+      let styleClass = item.webhookForced ? 'forcedNode' : 'funcNode';
 
       try {
         const argsObj = args ? JSON.parse(args) : null;
