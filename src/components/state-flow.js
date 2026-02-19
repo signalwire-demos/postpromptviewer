@@ -991,6 +991,7 @@ function generateFlowDiagram(flowData) {
   // Build flow structure with from/to for each transition
   const flow = [];
   let previousState = null;
+  const claimed = new Set(); // track timeline items already assigned to a transition
 
   transitions.forEach((trans, idx) => {
     const currentState = trans.toState;
@@ -1011,13 +1012,15 @@ function generateFlowDiagram(flowData) {
     const timeStart = trans.timestamp;
     const timeEnd = nextTrans ? nextTrans.timestamp : Infinity;
 
-    const funcs = detailedTimeline.filter(item => {
+    const funcs = detailedTimeline.filter((item, i) => {
+      if (claimed.has(i)) return false;
       if (item.type !== 'function') return false;
       if (item.metaStep) return item.metaStep === currentState;
       return item.timestamp >= timeStart && item.timestamp < timeEnd;
     });
 
     funcs.forEach(f => {
+      claimed.add(detailedTimeline.indexOf(f));
       flow.push({
         type: 'function_call',
         step: currentState,
@@ -1030,26 +1033,32 @@ function generateFlowDiagram(flowData) {
     });
 
     // Add function_error nodes for this state
-    const errors = detailedTimeline.filter(item =>
-      item.type === 'function_error' && item.timestamp >= timeStart && item.timestamp < timeEnd
-    );
+    const errors = detailedTimeline.filter((item, i) => {
+      if (claimed.has(i)) return false;
+      return item.type === 'function_error' && item.timestamp >= timeStart && item.timestamp < timeEnd;
+    });
     errors.forEach(e => {
+      claimed.add(detailedTimeline.indexOf(e));
       flow.push({ type: 'function_error', step: currentState, functionName: e.functionName, errorType: e.errorType, httpCode: e.httpCode });
     });
 
     // Add context_enter transitions for this state
-    const ctxEnters = detailedTimeline.filter(item =>
-      item.type === 'context_enter' && item.timestamp >= timeStart && item.timestamp < timeEnd
-    );
+    const ctxEnters = detailedTimeline.filter((item, i) => {
+      if (claimed.has(i)) return false;
+      return item.type === 'context_enter' && item.timestamp >= timeStart && item.timestamp < timeEnd;
+    });
     ctxEnters.forEach(c => {
+      claimed.add(detailedTimeline.indexOf(c));
       flow.push({ type: 'context_enter', step: currentState, fromContext: c.fromContext, toContext: c.toContext });
     });
 
     // Add reset markers for this state
-    const resets = detailedTimeline.filter(item =>
-      item.type === 'reset' && item.timestamp >= timeStart && item.timestamp < timeEnd
-    );
+    const resets = detailedTimeline.filter((item, i) => {
+      if (claimed.has(i)) return false;
+      return item.type === 'reset' && item.timestamp >= timeStart && item.timestamp < timeEnd;
+    });
     resets.forEach(r => {
+      claimed.add(detailedTimeline.indexOf(r));
       flow.push({ type: 'reset', step: currentState, resetType: r.resetType });
     });
 
