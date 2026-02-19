@@ -94,7 +94,7 @@ export async function renderStateFlow(container, payload) {
           <div class="swml-stat-card__value" style="color:#10b981">${flowData.aiInitiated}</div>
         </div>
         <div class="swml-stat-card">
-          <div class="swml-stat-card__label">Forced (Tool)</div>
+          <div class="swml-stat-card__label">Forced</div>
           <div class="swml-stat-card__value" style="color:#f97316">${flowData.toolForced}</div>
         </div>
         <div class="swml-stat-card">
@@ -150,7 +150,7 @@ export async function renderStateFlow(container, payload) {
                     <div class="flow-timeline-trigger">
                       <strong>Triggered by:</strong> <code>${escapeHtml(item.triggeredBy)}</code>
                       ${item.source === 'ai' ? '<span style="color:#10b981;margin-left:0.5rem;font-size:0.7rem">● AI-initiated</span>' : ''}
-                      ${item.source === 'tool' ? '<span style="color:#f59e0b;margin-left:0.5rem;font-size:0.7rem">● Tool-forced</span>' : ''}
+                      ${item.source === 'tool' || item.source === 'gather' ? '<span style="color:#f59e0b;margin-left:0.5rem;font-size:0.7rem">● Forced</span>' : ''}
                       ${item.source === 'explicit' ? '<span style="color:#3b82f6;margin-left:0.5rem;font-size:0.7rem">● Explicit transition</span>' : ''}
                       ${item.source === 'implicit' ? '<span style="color:#9ca3af;margin-left:0.5rem;font-size:0.7rem">● Implicit state</span>' : ''}
                     </div>
@@ -726,7 +726,7 @@ function extractStateFlow(payload) {
   const uniqueStates = new Set(realTransitions.map(t => t.toState));
   const totalFunctions = transitions.reduce((sum, trans) => sum + (trans.totalFunctionCalls || trans.functionsInState.length), 0);
   const aiInitiated = realTransitions.filter(t => t.source === 'ai').length;
-  const toolForced = realTransitions.filter(t => t.source === 'tool').length;
+  const toolForced = realTransitions.filter(t => t.source === 'tool' || t.source === 'gather').length;
 
   let duration = 'N/A';
   if (transitions.length > 0) {
