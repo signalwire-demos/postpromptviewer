@@ -171,22 +171,22 @@ export async function renderStateFlow(container, payload) {
                   ${item.args ? `
                     <div class="flow-timeline-detail">
                       <span class="flow-timeline-detail-label">Args</span>
-                      <pre class="flow-timeline-json">${escapeHtml(formatJson(item.args))}</pre>
+                      ${renderDataItems(parseJsonValue(item.args), `flow-${idx}-args`)}
                     </div>
                   ` : ''}
                   ${item.result ? `
                     <div class="flow-timeline-detail">
                       <span class="flow-timeline-detail-label" style="color:#10b981">Result</span>
-                      <pre class="flow-timeline-json">${escapeHtml(formatJson(item.result))}</pre>
+                      ${renderDataItems(parseJsonValue(item.result), `flow-${idx}-result`)}
                     </div>
                   ` : ''}
                   ${item.swaigActions && item.swaigActions.length > 0 ? `
                     <div class="flow-timeline-detail">
                       <span class="flow-timeline-detail-label" style="color:#7c3aed">Actions</span>
-                      ${item.swaigActions.map(a => `
+                      ${item.swaigActions.map((a, ai) => `
                         <div class="flow-timeline-action-block">
                           <span class="flow-timeline-action-tag">${escapeHtml(a.verb)}</span>
-                          ${a.data ? `<pre class="flow-timeline-json flow-timeline-json--action">${escapeHtml(formatJson(a.data))}</pre>` : ''}
+                          ${a.data ? renderDataItems(parseJsonValue(a.data), `flow-${idx}-action-${ai}`) : ''}
                         </div>
                       `).join('')}
                     </div>
@@ -397,6 +397,26 @@ export async function renderStateFlow(container, payload) {
       }
     });
   });
+
+  // Add expand/collapse handlers for nested data items
+  container.querySelectorAll('.swaig-data-nested-toggle').forEach(toggle => {
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggle.closest('.swaig-data-item').classList.toggle('expanded');
+    });
+  });
+
+  // Copy item button handlers
+  container.querySelectorAll('.swaig-data-item-copy').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(btn.dataset.value).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+      });
+    });
+  });
 }
 
 function extractStateFlow(payload) {
@@ -525,8 +545,11 @@ function extractStateFlow(payload) {
     const epochUs = (entry.epochTime || entry.epoch_time) * 1000000;
     const actions = (entry.postResponse || entry.post_response)?.action || [];
 
+    const commandArg = entry.commandArg || entry.command_arg || null;
+    const response = (entry.postResponse || entry.post_response)?.response || null;
+
     if (!swaigActionsByFunc[name]) swaigActionsByFunc[name] = [];
-    swaigActionsByFunc[name].push({ epochUs, actions });
+    swaigActionsByFunc[name].push({ epochUs, actions, commandArg, response });
   });
   // Sort each by time so we can match in order
   Object.values(swaigActionsByFunc).forEach(arr => arr.sort((a, b) => a.epochUs - b.epochUs));
@@ -554,10 +577,14 @@ function extractStateFlow(payload) {
 
     const matchIdx = swaigMatchIndex[fc.name] || 0;
     if (matchIdx < candidates.length) {
-      const rawActions = candidates[matchIdx].actions;
+      const match = candidates[matchIdx];
+      const rawActions = match.actions;
       fc.swaigActions = extractInterestingActions(rawActions);
       // Flag if this function's response contained a change_step — it forced the transition
       fc.webhookForced = rawActions.some(a => a.change_step !== undefined);
+      // Backfill args/result from swaig_log when call_log didn't have them
+      if (!fc.args && match.commandArg) fc.args = match.commandArg;
+      if (!fc.result && match.response) fc.result = match.response;
       swaigMatchIndex[fc.name] = matchIdx + 1;
     }
   });
@@ -1523,6 +1550,65 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function parseJsonValue(data) {
+  if (!data) return null;
+  if (typeof data === 'object') return data;
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch { return data; }
+  }
+  return data;
+}
+
+function formatValue(value) {
+  if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
+  if (typeof value === 'string') return `"${value}"`;
+  if (typeof value === 'boolean') return value.toString();
+  if (typeof value === 'number') return value.toString();
+  return String(value);
+}
+
+function renderDataItems(data, parentKey = '') {
+  if (data === null || data === undefined) {
+    return `<div class="swaig-data-items"><div class="swaig-data-value-only">${formatValue(data)}</div></div>`;
+  }
+  if (Array.isArray(data)) {
+    return `<div class="swaig-data-items">${data.map((item, idx) => {
+      const itemKey = `${parentKey}[${idx}]`;
+      return renderDataItem(idx, item, itemKey);
+    }).join('')}</div>`;
+  }
+  if (typeof data === 'object') {
+    return `<div class="swaig-data-items">${Object.entries(data).map(([key, value]) => {
+      const itemKey = parentKey ? `${parentKey}.${key}` : key;
+      return renderDataItem(key, value, itemKey);
+    }).join('')}</div>`;
+  }
+  return `<div class="swaig-data-items"><div class="swaig-data-value-only">${escapeHtml(formatValue(data))}</div></div>`;
+}
+
+function renderDataItem(key, value, fullKey) {
+  const isObject = typeof value === 'object' && value !== null;
+  const isArray = Array.isArray(value);
+  const displayValue = isObject ? (isArray ? `Array[${value.length}]` : 'Object') : formatValue(value);
+  const valueString = JSON.stringify(value, null, 2);
+  return `
+    <div class="swaig-data-item ${isObject ? 'has-nested' : ''}" data-key="${escapeHtml(fullKey || String(key))}">
+      <div class="swaig-data-item-row">
+        ${isObject ? '<span class="swaig-data-nested-toggle">&#x25B6;</span>' : '<span class="swaig-data-item-spacer"></span>'}
+        <span class="swaig-data-item-key">${escapeHtml(String(key))}</span>
+        <span class="swaig-data-item-value ${isObject ? 'is-object' : ''}">${escapeHtml(displayValue)}</span>
+        <button class="swaig-data-item-copy" data-value="${escapeHtml(valueString)}" title="Copy value">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+      ${isObject ? `<div class="swaig-data-item-nested">${renderDataItems(value, fullKey || String(key))}</div>` : ''}
+    </div>`;
 }
 
 async function downloadSvgAsImage(svgElement, filename, title = 'State Flow Diagram', legendItems = []) {
