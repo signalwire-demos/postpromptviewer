@@ -3465,3 +3465,222 @@
 .recording__transcript-role--attention-timeout { color: rgba(239, 68, 68, 0.9); }
 .recording__transcript-role--function-error { color: rgba(220, 38, 38, 0.9); }
 .recording__transcript-role--barge-cutoff { color: rgba(239, 68, 68, 0.9); }
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+
+  /* --- Drop Zone (landing page) --- */
+  .drop-zone__grid {
+    grid-template-columns: 1fr;
+  }
+  .drop-zone__area {
+    padding: 2rem 1rem;
+  }
+  .drop-zone__header {
+    right: 1rem;
+  }
+  .drop-zone__buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* --- Header --- */
+  .header__badge {
+    font-size: 0.65rem;
+  }
+  .header__meta {
+    gap: 0.5rem;
+  }
+
+  /* --- Tabs --- */
+  .tabs {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  /* --- Dashboard --- */
+  .dashboard {
+    padding: 0.75rem;
+  }
+  .metric-card__value {
+    font-size: 1.1rem;
+  }
+
+  /* --- Charts --- */
+  .charts {
+    padding: 0.75rem;
+  }
+
+  /* --- Timeline --- */
+  .timeline {
+    padding: 0.75rem;
+  }
+  .swimlane__row-label {
+    width: 48px;
+    font-size: 0.6rem;
+  }
+  .swimlane__marker {
+    margin-left: calc(48px + 0.75rem);
+  }
+  .swimlane__tooltip {
+    min-width: 150px;
+    max-width: 260px;
+  }
+
+  /* --- Transcript --- */
+  .transcript {
+    padding: 0.75rem;
+  }
+  .transcript__msg {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+  .transcript__role {
+    min-width: 50px;
+    font-size: 0.6rem;
+  }
+  .transcript__barge-detail {
+    width: 100%;
+  }
+
+  /* --- Search & Filter Bar --- */
+  .filter-chip {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .search-nav__counter {
+    min-width: 45px;
+  }
+
+  /* --- SWAIG Inspector --- */
+  .swaig-inspector {
+    padding: 0.75rem;
+  }
+  .swaig-entry__json {
+    max-height: 250px;
+  }
+
+  /* --- Post-Prompt --- */
+  .post-prompt {
+    padding: 0.75rem;
+  }
+  .post-prompt__content {
+    max-height: calc(100vh - 9rem);
+  }
+
+  /* --- Recording --- */
+  .recording {
+    padding: 0.75rem;
+  }
+  .recording__controls {
+    flex-wrap: wrap;
+  }
+  .recording__speed {
+    margin-left: 0;
+  }
+  .recording__volume-slider {
+    width: 60px;
+  }
+  .recording__zoom-slider {
+    width: 60px;
+  }
+  .recording__align-slider {
+    width: 50px;
+  }
+  .recording__transcript-text {
+    font-size: 1rem;
+  }
+
+  /* --- State Flow --- */
+  .state-flow {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+  .state-flow__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .state-flow__diagram {
+    padding: 1rem;
+    max-height: 500px;
+  }
+  .flow-legend {
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+
+  /* --- Global Data --- */
+  .gd-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  .gd-event-pane {
+    width: 100%;
+    max-height: 200px;
+  }
+  .gd-tree-pane {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .global-data-viewer {
+    padding: 0.75rem;
+  }
+  .global-data-item-key {
+    min-width: 80px;
+  }
+  .gd-tree-key {
+    min-width: 70px;
+  }
+
+  /* --- SWML Inspector --- */
+  .swml-overview {
+    padding: 0.75rem;
+  }
+  .swml-overview__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .swml-prompts {
+    padding: 0.75rem;
+  }
+  .swml-functions {
+    padding: 0.75rem;
+  }
+  .swml-config {
+    padding: 0.75rem;
+  }
+  .swml-language-list {
+    grid-template-columns: 1fr;
+  }
+  .swml-language-grid {
+    grid-template-columns: 1fr;
+  }
+  .swml-steps-grid {
+    grid-template-columns: 1fr;
+  }
+  .swml-step-list-item {
+    grid-template-columns: 40px 1fr;
+  }
+  .swml-config-key {
+    min-width: 120px;
+  }
+  .swml-config-item {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  /* --- Flow Timeline --- */
+  .flow-timeline-detail {
+    padding-left: 0.75rem;
+  }
+  .flow-timeline-json {
+    max-height: 150px;
+  }
+
+}
