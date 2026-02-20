@@ -13,8 +13,10 @@
   position: absolute;
   top: 1.5rem;
   right: 2rem;
+  display: flex;
+  gap: 0.5rem;
 }
-.drop-zone__github-link {
+.drop-zone__header-link {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -28,7 +30,7 @@
   font-weight: 500;
   transition: all 0.2s;
 }
-.drop-zone__github-link:hover {
+.drop-zone__header-link:hover {
   background: var(--bg-hover);
   border-color: var(--text-primary);
   color: var(--text-primary);
