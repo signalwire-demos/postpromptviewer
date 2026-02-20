@@ -969,10 +969,10 @@ function generateFlowDiagram(flowData) {
   const { transitions, detailedTimeline } = flowData;
 
   if (!transitions || transitions.length === 0) {
-    return 'graph LR\n    START([Start]) --> END([End])\n';
+    return 'graph TB\n    START([Start]) --> END([End])\n';
   }
 
-  let lines = ['graph LR'];
+  let lines = ['graph TB']; // direction updated after flow detection
   lines.push('    classDef stepNode fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff');
   lines.push('    classDef funcNode fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000');
   lines.push('    classDef forcedNode fill:#f97316,stroke:#ea580c,stroke-width:2px,color:#000');
@@ -985,8 +985,6 @@ function generateFlowDiagram(flowData) {
   lines.push('');
 
   let nodeId = 0;
-  const stepNodes = {};
-  const lastFuncPerStep = {};
 
   // Build flow structure with from/to for each transition
   const flow = [];
@@ -1015,8 +1013,14 @@ function generateFlowDiagram(flowData) {
     const funcs = detailedTimeline.filter((item, i) => {
       if (claimed.has(i)) return false;
       if (item.type !== 'function') return false;
-      if (item.metaStep) return item.metaStep === currentState;
-      return item.timestamp >= timeStart && item.timestamp < timeEnd;
+      if (item.metaStep === currentState && item.timestamp >= timeStart) {
+        // Ensure no later transition to the same state is a closer match
+        const laterMatch = transitions.slice(idx + 1).find(t =>
+          t.toState === currentState && t.timestamp <= item.timestamp
+        );
+        return !laterMatch;
+      }
+      return !item.metaStep && item.timestamp >= timeStart && item.timestamp < timeEnd;
     });
 
     funcs.forEach(f => {
@@ -1065,129 +1069,212 @@ function generateFlowDiagram(flowData) {
     previousState = currentState;
   });
 
-  // First pass: Create all step nodes
-  const allSteps = new Set();
+  // ── Detect flow boundaries ──────────────────────────────────────────
+  // Walk through step_change items in order. When a step_change targets a
+  // step we've already visited *in the current flow*, that transition
+  // starts a new flow. The visited set is cleared on each boundary so
+  // that revisiting steps from a previous flow doesn't cascade into
+  // extra splits.
+  const flows = [[]];
+  const visited = new Set();
+  let currentFlowIdx = 0;
+
   flow.forEach(item => {
     if (item.type === 'step_change') {
-      allSteps.add(item.from);
-      allSteps.add(item.to);
+      if (visited.has(item.to)) {
+        currentFlowIdx++;
+        flows.push([]);
+        item.crossFlow = true;
+        visited.clear();
+        visited.add(item.to);
+      } else {
+        visited.add(item.from);
+        visited.add(item.to);
+      }
+    }
+    item.flowIdx = currentFlowIdx;
+    flows[currentFlowIdx].push(item);
+  });
+
+  const multiFlow = flows.length > 1;
+  if (multiFlow) lines[0] = 'graph LR';
+
+  // ── Assign unique node per step visit ─────────────────────────────
+  // Each step_change creates a NEW node for its 'to' step, so revisited
+  // steps get distinct nodes and the diagram flows linearly.
+  const nodeInfo = {};          // nodeId → { label, flowIdx }
+  const latestNodeForStep = {}; // stepName → nodeId (most recent)
+
+  flows.forEach((flowItems, fi) => {
+    flowItems.forEach(item => {
+      if (item.type === 'step_change') {
+        // 'from' node: reuse latest or create first occurrence
+        if (!latestNodeForStep[item.from]) {
+          const fromId = `S${nodeId++}`;
+          latestNodeForStep[item.from] = fromId;
+          nodeInfo[fromId] = { label: item.from, flowIdx: fi };
+        }
+        item._fromNodeId = latestNodeForStep[item.from];
+
+        // 'to' node: always create new
+        const toId = `S${nodeId++}`;
+        latestNodeForStep[item.to] = toId;
+        nodeInfo[toId] = { label: item.to, flowIdx: fi };
+        item._toNodeId = toId;
+      } else if (item.step) {
+        item._stepNodeId = latestNodeForStep[item.step] || null;
+      }
+    });
+  });
+
+  // Pre-count function names to detect duplicates
+  const funcNameCounts = {};
+  flow.forEach(item => {
+    if (item.type === 'function_call') {
+      funcNameCounts[item.functionName] = (funcNameCounts[item.functionName] || 0) + 1;
     }
   });
+  const funcNameSeq = {}; // running sequence number per function name
 
-  allSteps.forEach(step => {
-    const stepNodeId = `S${nodeId++}`;
-    stepNodes[step] = stepNodeId;
-    const safeLabel = sanitizeLabel(step);
-    lines.push(`    ${stepNodeId}["${safeLabel}"]:::stepNode`);
-  });
+  // ── Render flows ────────────────────────────────────────────────────
+  let edgeNum = 0; // global edge counter for step_change numbering
 
-  lines.push('');
+  flows.forEach((flowItems, fi) => {
+    // Open subgraph wrapper when multi-flow
+    if (multiFlow) {
+      lines.push(`  subgraph flow${fi}["Flow ${fi + 1}"]`);
+      lines.push('    direction TB');
+    }
 
-  // Second pass: Create step chain and attach functions
-  flow.forEach(item => {
-    if (item.type === 'step_change') {
-      // Create step transition with source label
-      const edgeLabel = item.source === 'ai' ? 'AI'
-        : item.source === 'tool' ? '⚡ forced'
-        : item.source === 'gather' ? '🎤 gather'
-        : item.source === 'auto' ? 'auto'
-        : '';
-      const edge = edgeLabel ? `-->|"${sanitizeLabel(edgeLabel)}"|` : '-->';
-      lines.push(`    ${stepNodes[item.from]} ${edge} ${stepNodes[item.to]}`);
+    // Declare step nodes that belong to this flow
+    const declared = new Set();
+    flowItems.forEach(item => {
+      if (item.type !== 'step_change') return;
+      // 'to' node always belongs to this flow
+      if (!declared.has(item._toNodeId)) {
+        lines.push(`    ${item._toNodeId}["${sanitizeLabel(nodeInfo[item._toNodeId].label)}"]:::stepNode`);
+        declared.add(item._toNodeId);
+      }
+      // 'from' node belongs to this flow only if it was created here
+      if (nodeInfo[item._fromNodeId]?.flowIdx === fi && !declared.has(item._fromNodeId)) {
+        lines.push(`    ${item._fromNodeId}["${sanitizeLabel(nodeInfo[item._fromNodeId].label)}"]:::stepNode`);
+        declared.add(item._fromNodeId);
+      }
+    });
 
-    } else if (item.type === 'function_call') {
-      const funcNodeId = `F${nodeId++}`;
-      const funcName = item.functionName;
-      const args = item.args;
+    lines.push('');
 
-      // Build label
-      let label = funcName;
-      let styleClass = 'funcNode';
+    // Emit edges and child nodes for items in this flow
+    flowItems.forEach(item => {
+      if (item.type === 'step_change') {
+        edgeNum++;
+        const edgeLabel = item.source === 'ai' ? 'AI'
+          : item.source === 'tool' ? '⚡ forced'
+          : item.source === 'gather' ? '🎤 gather'
+          : item.source === 'auto' ? 'auto'
+          : '';
+        const numberedLabel = edgeLabel ? `${edgeNum}. ${sanitizeLabel(edgeLabel)}` : `${edgeNum}.`;
 
-      try {
-        const argsObj = args ? JSON.parse(args) : null;
-
-        if (funcName === 'gather_submit' && argsObj) {
-          const answer = sanitizeLabel(argsObj.answer || '');
-          const question = item.question ? sanitizeLabel(item.question) : null;
-
-          if (question && answer) {
-            label = `Q: ${question}<br/>A: ${answer}`;
-          } else if (answer) {
-            label = `gather_submit<br/>${answer}`;
-          } else {
-            label = 'gather_submit';
-          }
-          styleClass = 'gatherNode';
-        } else if (funcName === 'resolve_location' && argsObj) {
-          const location = sanitizeLabel(argsObj.location_text || '');
-          const locType = argsObj.location_type || '';
-          label = location ? `resolve_location<br/>${location} (${locType})` : 'resolve_location';
-        } else if (funcName === 'select_trip_type' && argsObj) {
-          const trip = (argsObj.trip_type || '').replace(/_/g, ' ');
-          label = trip ? `select_trip_type<br/>${trip}` : 'select_trip_type';
-        } else if (funcName === 'select_flight' && argsObj) {
-          const option = argsObj.option_number || '';
-          label = option ? `select_flight<br/>Option ${option}` : 'select_flight';
-        } else if (['save_profile', 'search_flights', 'book_flight', 'get_flight_price', 'confirm_booking', 'summarize_conversation'].includes(funcName)) {
-          label = funcName.replace(/_/g, ' ');
+        if (item._fromNodeId && item._toNodeId) {
+          lines.push(`    ${item._fromNodeId} -->|"${numberedLabel}"| ${item._toNodeId}`);
         }
-      } catch (e) {
-        // Keep default
-      }
 
-      lines.push(`    ${funcNodeId}["${sanitizeLabel(label)}"]:::${styleClass}`);
+      } else if (item.type === 'function_call') {
+        const funcNodeId = `F${nodeId++}`;
+        const funcName = item.functionName;
+        const args = item.args;
 
-      // Attach function to its step (no chaining)
-      const step = item.step;
-      if (stepNodes[step]) {
-        lines.push(`    ${stepNodes[step]} -.-> ${funcNodeId}`);
-      }
+        // Track call order for functions that appear more than once
+        funcNameSeq[funcName] = (funcNameSeq[funcName] || 0) + 1;
+        const callNum = funcNameCounts[funcName] > 1 ? funcNameSeq[funcName] : null;
 
-      // Add action child nodes tied to this function
-      if (item.swaigActions && item.swaigActions.length > 0) {
-        item.swaigActions.forEach(action => {
-          const actionNodeId = `A${nodeId++}`;
-          const actionLabel = sanitizeLabel(action.label);
-          const actionClass = action.nodeClass || 'actionNode';
-          lines.push(`    ${actionNodeId}["${actionLabel}"]:::${actionClass}`);
-          lines.push(`    ${funcNodeId} -.-> ${actionNodeId}`);
+        // Build label
+        let label = funcName;
+        let styleClass = 'funcNode';
 
-          // For navigation actions, draw a dashed edge to the target step node for clarity
-          if ((action.verb === 'change_step' || action.verb === 'change_context') && action.data) {
-            const targetStepId = stepNodes[String(action.data)];
-            if (targetStepId) {
-              lines.push(`    ${actionNodeId} -.-> ${targetStepId}`);
+        try {
+          const argsObj = args ? JSON.parse(args) : null;
+
+          if (funcName === 'gather_submit' && argsObj) {
+            const answer = sanitizeLabel(argsObj.answer || '');
+            const question = item.question ? sanitizeLabel(item.question) : null;
+
+            if (question && answer) {
+              label = `Q: ${question}<br/>A: ${answer}`;
+            } else if (answer) {
+              label = `gather_submit<br/>${answer}`;
+            } else {
+              label = 'gather_submit';
             }
+            styleClass = 'gatherNode';
+          } else if (funcName === 'resolve_location' && argsObj) {
+            const location = sanitizeLabel(argsObj.location_text || '');
+            const locType = argsObj.location_type || '';
+            label = location ? `resolve_location<br/>${location} (${locType})` : 'resolve_location';
+          } else if (funcName === 'select_trip_type' && argsObj) {
+            const trip = (argsObj.trip_type || '').replace(/_/g, ' ');
+            label = trip ? `select_trip_type<br/>${trip}` : 'select_trip_type';
+          } else if (funcName === 'select_flight' && argsObj) {
+            const option = argsObj.option_number || '';
+            label = option ? `select_flight<br/>Option ${option}` : 'select_flight';
+          } else if (['save_profile', 'search_flights', 'book_flight', 'get_flight_price', 'confirm_booking', 'summarize_conversation'].includes(funcName)) {
+            label = funcName.replace(/_/g, ' ');
           }
-        });
-      }
+        } catch (e) {
+          // Keep default
+        }
 
-    } else if (item.type === 'function_error') {
-      const errNodeId = `E${nodeId++}`;
-      const errLabel = sanitizeLabel(`${item.functionName} ERROR${item.httpCode ? ` (${item.httpCode})` : ''}`);
-      lines.push(`    ${errNodeId}["${errLabel}"]:::errorNode`);
-      if (stepNodes[item.step]) {
-        lines.push(`    ${stepNodes[item.step]} -.-> ${errNodeId}`);
-      }
+        const numberedLabel = callNum ? `${callNum}. ${sanitizeLabel(label)}` : sanitizeLabel(label);
+        lines.push(`    ${funcNodeId}["${numberedLabel}"]:::${styleClass}`);
 
-    } else if (item.type === 'context_enter') {
-      const ctxNodeId = `CTX${nodeId++}`;
-      const ctxLabel = item.toContext
-        ? sanitizeLabel(`context → ${item.toContext}`)
-        : 'context switch';
-      lines.push(`    ${ctxNodeId}["${ctxLabel}"]:::navNode`);
-      if (stepNodes[item.step]) {
-        lines.push(`    ${stepNodes[item.step]} -.-> ${ctxNodeId}`);
-      }
+        // Attach function to its step
+        if (item._stepNodeId) {
+          lines.push(`    ${item._stepNodeId} -.-> ${funcNodeId}`);
+        }
 
-    } else if (item.type === 'reset') {
-      const resetNodeId = `RST${nodeId++}`;
-      const resetLabel = sanitizeLabel(item.resetType || 'reset');
-      lines.push(`    ${resetNodeId}["${resetLabel}"]:::terminalNode`);
-      if (stepNodes[item.step]) {
-        lines.push(`    ${stepNodes[item.step]} -.-> ${resetNodeId}`);
+        // Add action child nodes tied to this function
+        if (item.swaigActions && item.swaigActions.length > 0) {
+          item.swaigActions.forEach(action => {
+            const actionNodeId = `A${nodeId++}`;
+            const actionLabel = sanitizeLabel(action.label);
+            const actionClass = action.nodeClass || 'actionNode';
+            lines.push(`    ${actionNodeId}["${actionLabel}"]:::${actionClass}`);
+            lines.push(`    ${funcNodeId} -.-> ${actionNodeId}`);
+          });
+        }
+
+      } else if (item.type === 'function_error') {
+        const errNodeId = `E${nodeId++}`;
+        const errLabel = sanitizeLabel(`${item.functionName} ERROR${item.httpCode ? ` (${item.httpCode})` : ''}`);
+        lines.push(`    ${errNodeId}["${errLabel}"]:::errorNode`);
+        if (item._stepNodeId) {
+          lines.push(`    ${item._stepNodeId} -.-> ${errNodeId}`);
+        }
+
+      } else if (item.type === 'context_enter') {
+        const ctxNodeId = `CTX${nodeId++}`;
+        const ctxLabel = item.toContext
+          ? sanitizeLabel(`context → ${item.toContext}`)
+          : 'context switch';
+        lines.push(`    ${ctxNodeId}["${ctxLabel}"]:::navNode`);
+        if (item._stepNodeId) {
+          lines.push(`    ${item._stepNodeId} -.-> ${ctxNodeId}`);
+        }
+
+      } else if (item.type === 'reset') {
+        const resetNodeId = `RST${nodeId++}`;
+        const resetLabel = sanitizeLabel(item.resetType || 'reset');
+        lines.push(`    ${resetNodeId}["${resetLabel}"]:::terminalNode`);
+        if (item._stepNodeId) {
+          lines.push(`    ${item._stepNodeId} -.-> ${resetNodeId}`);
+        }
       }
+    });
+
+    // Close subgraph wrapper
+    if (multiFlow) {
+      lines.push('  end');
+      lines.push('');
     }
   });
 
