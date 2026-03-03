@@ -296,6 +296,27 @@ export async function renderStateFlow(container, payload) {
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
 
+                ` : item.type === 'auto_correct' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <span style="color:#a78bfa;font-size:0.85rem">Auto-correct: <code>${escapeHtml(item.original)}</code> → <code>${escapeHtml(item.corrected)}</code></span>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'text_normalize' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <span style="color:#a78bfa;font-size:0.85rem">${item.direction.toUpperCase()}: <code>${escapeHtml(item.original)}</code> → <code>${escapeHtml(item.normalized)}</code></span>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+
+                ` : item.type === 'inner_dialog' ? `
+                  <div class="flow-timeline-step" style="padding-left:1.5rem">
+                    <strong style="color:#a78bfa">Inner Dialog</strong>
+                  </div>
+                  <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
+                  <div class="flow-timeline-detail">
+                    <span style="color:var(--text-secondary);font-size:0.8rem;white-space:pre-wrap">${escapeHtml(item.content.length > 200 ? item.content.slice(0, 200) + '...' : item.content)}</span>
+                  </div>
+
                 ` : ''}
               </div>
             </div>
@@ -937,6 +958,33 @@ function extractStateFlow(payload) {
         detailedTimeline.push({
           type: 'summarize_start',
           timestamp: entry.timestamp,
+        });
+        break;
+
+      case 'auto_correct':
+        detailedTimeline.push({
+          type: 'auto_correct',
+          timestamp: entry.timestamp,
+          original: m.original || '',
+          corrected: m.corrected || '',
+        });
+        break;
+
+      case 'inner_dialog':
+        detailedTimeline.push({
+          type: 'inner_dialog',
+          timestamp: entry.timestamp,
+          content: entry.content || '',
+        });
+        break;
+
+      case 'text_normalize':
+        detailedTimeline.push({
+          type: 'text_normalize',
+          timestamp: entry.timestamp,
+          direction: m.direction || 'unknown',
+          original: m.original || '',
+          normalized: m.normalized || '',
         });
         break;
     }

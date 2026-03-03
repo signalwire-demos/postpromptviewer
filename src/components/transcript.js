@@ -97,6 +97,34 @@ function getResponseTimeRating(latency) {
   }
 }
 
+/**
+ * Format inner dialog content into structured sections.
+ * Splits on ## headers and renders each as a labeled block.
+ */
+function formatInnerDialog(content) {
+  if (!content || typeof content !== 'string') return '<span class="inner-dialog-section__content">No content</span>';
+
+  const sections = content.split(/^## /m).filter(Boolean);
+  if (sections.length <= 1 && !content.startsWith('## ')) {
+    // No section headers found — render as plain text
+    return `<div class="inner-dialog-section"><div class="inner-dialog-section__content">${escapeHtml(content)}</div></div>`;
+  }
+
+  return sections.map(section => {
+    const lines = section.split('\n');
+    const title = lines[0].trim();
+    const body = lines.slice(1).join('\n').trim();
+    // Detect confidence scores like "Confidence: 0.9" or "confidence: high"
+    const confidenceMatch = body.match(/confidence[:\s]+([^\n]+)/i);
+    return `
+      <div class="inner-dialog-section">
+        <div class="inner-dialog-section__title">${escapeHtml(title)}</div>
+        <div class="inner-dialog-section__content">${escapeHtml(body)}</div>
+        ${confidenceMatch ? `<span class="inner-dialog-confidence">${escapeHtml(confidenceMatch[1].trim())}</span>` : ''}
+      </div>`;
+  }).join('');
+}
+
 export function renderTranscript(container, payload) {
   let activeLog = 'processed';
   let unsubscribe = null;
@@ -168,7 +196,7 @@ export function renderTranscript(container, payload) {
   }
 
   // Build lookup maps for enriched events that annotate messages
-  const enrichedEvents = { hearingHints: [], pronounceRules: [], fillers: [], manualSays: [], functionErrors: [] };
+  const enrichedEvents = { hearingHints: [], pronounceRules: [], fillers: [], manualSays: [], functionErrors: [], autoCorrects: [], innerDialogs: [], textNormalizeItn: [], textNormalizeTn: [] };
   (payload.callLog || []).forEach(entry => {
     if (entry.role !== 'system-log' || !entry.action) return;
     const m = entry.metadata || {};
@@ -188,6 +216,18 @@ export function renderTranscript(container, payload) {
       case 'function_error':
         enrichedEvents.functionErrors.push({ timestamp: entry.timestamp, functionName: m.function || m.name || 'unknown', errorType: m.error_type || m.type || 'unknown', httpCode: m.http_code || m.status_code || null, errorMessage: m.message || m.error || null });
         break;
+      case 'auto_correct':
+        enrichedEvents.autoCorrects.push({ timestamp: entry.timestamp, original: m.original || '', corrected: m.corrected || '' });
+        break;
+      case 'inner_dialog':
+        enrichedEvents.innerDialogs.push({ timestamp: entry.timestamp, content: entry.content || '' });
+        break;
+      case 'text_normalize': {
+        const tnMeta = { timestamp: entry.timestamp, original: m.original || '', normalized: m.normalized || '' };
+        if (m.direction === 'itn') enrichedEvents.textNormalizeItn.push(tnMeta);
+        else if (m.direction === 'tn') enrichedEvents.textNormalizeTn.push(tnMeta);
+        break;
+      }
     }
   });
 
@@ -200,12 +240,18 @@ export function renderTranscript(container, payload) {
     enrichedEvents.fillers.forEach(f => inlineEvents.push({ ...f, _type: 'filler' }));
     enrichedEvents.manualSays.forEach(s => inlineEvents.push({ ...s, _type: 'manual_say' }));
     enrichedEvents.functionErrors.forEach(e => inlineEvents.push({ ...e, _type: 'function_error' }));
+    enrichedEvents.innerDialogs.forEach(d => inlineEvents.push({ ...d, _type: 'inner_dialog' }));
     inlineEvents.sort((a, b) => a.timestamp - b.timestamp);
 
     // Track which hearing hints have been consumed
     let hintIdx = 0;
     // Track which pronounce rules have been consumed
     let pronounceIdx = 0;
+    // Track which auto-corrects have been consumed
+    let autoCorrectIdx = 0;
+    // Track which text_normalize ITN/TN events have been consumed
+    let itnIdx = 0;
+    let tnIdx = 0;
     // Track inline event cursor
     let inlineIdx = 0;
 
@@ -214,7 +260,8 @@ export function renderTranscript(container, payload) {
       const roleClass = role.replace(/[^a-z-]/g, '');
       const isGarbage = isGarbageContent(msg.content);
       const time = msg.timestamp ? formatTimestamp(epochToDate(msg.timestamp)) : '';
-      const contentDisplay = msg.content || '';
+      const { showRedacted } = getState();
+      const contentDisplay = (showRedacted && msg.redacted) ? msg.redacted : (msg.content || '');
 
       // Apply highlighting if searching; show visible badges for garbage chars
       const displayContent = isGarbage
@@ -297,12 +344,49 @@ export function renderTranscript(container, payload) {
         }
       }
 
+      // auto_correct badge: show on user messages when an auto-correct was applied
+      if (role === 'user' && msg.timestamp && autoCorrectIdx < enrichedEvents.autoCorrects.length) {
+        const ac = enrichedEvents.autoCorrects[autoCorrectIdx];
+        if (ac.timestamp <= msg.timestamp) {
+          metaTags.push({ text: `corrected: ${truncate(ac.original, 30)} → ${truncate(ac.corrected, 30)}`, class: 'rewrite' });
+          autoCorrectIdx++;
+        }
+      }
+
+      // text_normalize ITN badge: show on user messages
+      if (role === 'user' && msg.timestamp && itnIdx < enrichedEvents.textNormalizeItn.length) {
+        const itn = enrichedEvents.textNormalizeItn[itnIdx];
+        if (itn.timestamp <= msg.timestamp) {
+          metaTags.push({ text: `ITN: ${itn.original} → ${itn.normalized}`, class: 'rewrite' });
+          itnIdx++;
+        }
+      }
+
+      // Entry-level original field (ASR auto-correct on the message itself)
+      if (role === 'user' && msg.original && msg.original !== msg.content) {
+        metaTags.push({ text: `ASR: ${truncate(msg.original, 40)}`, class: 'rewrite' });
+      }
+
+      // Redacted badge
+      if (showRedacted && msg.redacted) {
+        metaTags.push({ text: 'redacted', class: 'redacted' });
+      }
+
       // pronounce_rule badge: show on assistant messages when a pronunciation rule was applied
       if (role === 'assistant' && msg.timestamp && pronounceIdx < enrichedEvents.pronounceRules.length) {
         const rule = enrichedEvents.pronounceRules[pronounceIdx];
         if (rule.timestamp <= msg.timestamp) {
           metaTags.push({ text: `TTS: ${rule.original} → ${rule.result}`, class: 'rewrite' });
           pronounceIdx++;
+        }
+      }
+
+      // text_normalize TN badge: show on assistant messages
+      if (role === 'assistant' && msg.timestamp && tnIdx < enrichedEvents.textNormalizeTn.length) {
+        const tn = enrichedEvents.textNormalizeTn[tnIdx];
+        if (tn.timestamp <= msg.timestamp) {
+          metaTags.push({ text: `TN: ${tn.original} → ${tn.normalized}`, class: 'rewrite' });
+          tnIdx++;
         }
       }
 
@@ -351,6 +435,18 @@ export function renderTranscript(container, payload) {
               <code>${escapeHtml(ev.functionName)}</code>
               <span class="transcript__inline-error-detail">${escapeHtml(ev.errorType)}${ev.httpCode ? ` (HTTP ${ev.httpCode})` : ''}</span>
               ${ev.errorMessage ? `<span class="transcript__inline-error-msg">${escapeHtml(ev.errorMessage)}</span>` : ''}
+            </div>`;
+        } else if (ev._type === 'inner_dialog') {
+          const dialogId = `inner-dialog-${idx}-${inlineIdx}`;
+          inlineHtml += `
+            <div class="transcript__inline transcript__inline--inner-dialog">
+              <button class="transcript__inner-dialog-toggle" data-target="${dialogId}">
+                <span class="transcript__inner-dialog-label">Inner Dialog</span>
+                <span class="transcript__inner-dialog-chevron">&#9654;</span>
+              </button>
+              <div class="transcript__inner-dialog-body" id="${dialogId}" style="display:none">
+                ${formatInnerDialog(ev.content)}
+              </div>
             </div>`;
         }
         inlineIdx++;
@@ -523,10 +619,10 @@ export function renderTranscript(container, payload) {
     const allMessages = activeLog === 'processed' ? payload.callLog : (payload.rawCallLog || payload.callLog);
     const filteredMessages = applyFilters(allMessages);
     const hasRawLog = !!payload.rawCallLog;
-    const { search, filters } = getState();
+    const { search, filters, showRedacted } = getState();
 
     // Store current state for comparison
-    lastState = { search: { ...search }, filters: { ...filters } };
+    lastState = { search: { ...search }, filters: { ...filters }, showRedacted };
 
     const toggleStyle = 'padding:0.5rem 1rem;font-size:0.8rem;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text-muted);border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s';
     const activeStyle = 'padding:0.5rem 1rem;font-size:0.8rem;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text-primary);border-bottom:2px solid var(--accent)';
@@ -571,6 +667,20 @@ export function renderTranscript(container, payload) {
       btn.addEventListener('click', () => {
         activeLog = btn.dataset.log;
         renderLog();
+      });
+    });
+
+    // Inner dialog toggle handlers
+    container.querySelectorAll('.transcript__inner-dialog-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const body = container.querySelector(`#${targetId}`);
+        const chevron = btn.querySelector('.transcript__inner-dialog-chevron');
+        if (body) {
+          const isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'block';
+          if (chevron) chevron.innerHTML = isOpen ? '&#9654;' : '&#9660;';
+        }
       });
     });
 
@@ -745,8 +855,9 @@ export function renderTranscript(container, payload) {
 
         const searchChanged = JSON.stringify(state.search) !== JSON.stringify(lastState.search);
         const filtersChanged = JSON.stringify(state.filters) !== JSON.stringify(lastState.filters);
+        const redactedChanged = state.showRedacted !== lastState.showRedacted;
 
-        if (searchChanged || filtersChanged) {
+        if (searchChanged || filtersChanged || redactedChanged) {
           renderLog();
         }
       });

@@ -195,6 +195,22 @@
   border-color: var(--text-muted);
   color: var(--text-primary);
 }
+.header__btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.header__btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-muted);
+}
 
 /* ===== Tabs ===== */
 .tabs {
@@ -3414,6 +3430,88 @@
   border: 1px solid rgba(168, 85, 247, 0.3);
   font-family: var(--font-mono);
   font-size: 0.65rem;
+}
+
+/* Transcript: Redacted badge */
+.transcript__meta-tag--redacted {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  font-weight: 500;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* Header: Redact button active state */
+.header__btn--redact.active {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Transcript: Inner Dialog */
+.transcript__inline--inner-dialog {
+  background: rgba(139, 92, 246, 0.06);
+  border-left: 2px solid rgba(139, 92, 246, 0.4);
+  padding: 0;
+}
+.transcript__inner-dialog-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+.transcript__inner-dialog-toggle:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+.transcript__inner-dialog-label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #a78bfa;
+}
+.transcript__inner-dialog-chevron {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.transcript__inner-dialog-body {
+  padding: 0.5rem 0.75rem 0.75rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.15);
+}
+.inner-dialog-section {
+  margin-bottom: 0.5rem;
+}
+.inner-dialog-section:last-child {
+  margin-bottom: 0;
+}
+.inner-dialog-section__title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a78bfa;
+  margin-bottom: 0.25rem;
+}
+.inner-dialog-section__content {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.inner-dialog-confidence {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  background: rgba(139, 92, 246, 0.12);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #a78bfa;
 }
 
 /* Transcript: Error badge */

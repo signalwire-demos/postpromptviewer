@@ -1,5 +1,6 @@
 import { formatDuration, formatTimestamp, truncate } from '../../lib/utils.js';
-import { update } from '../state.js';
+import { toVcon } from '../../lib/vcon.js';
+import { getState, update } from '../state.js';
 
 export function renderHeader(container, payload, metrics) {
   const dur = metrics.duration;
@@ -33,6 +34,9 @@ export function renderHeader(container, payload, metrics) {
     conversationIdHtml = `<span title="${payload.conversationId}">Conv: ${truncate(payload.conversationId, 12)}</span>`;
   }
 
+  const hasRedacted = (payload.callLog || []).some(e => e.redacted);
+  const { showRedacted } = getState();
+
   container.innerHTML = `
     <div class="header">
       <button class="header__back" id="header-back" title="Load another file">&#x2190; New File</button>
@@ -43,6 +47,8 @@ export function renderHeader(container, payload, metrics) {
       ${endBadge}
       ${hardTimeoutBadge}
       ${aiResultBadge}
+      <button class="header__btn header__btn--vcon" id="header-vcon-btn" title="Download as vCon JSON">Download vCon</button>
+      ${hasRedacted ? `<button class="header__btn header__btn--redact${showRedacted ? ' active' : ''}" id="header-redact-btn">${showRedacted ? 'Show Full' : 'Show Redacted'}</button>` : ''}
       <div class="header__meta">
         ${appName ? `<span>${appName}</span>` : ''}
         ${type ? `<span>${type}${direction ? ` / ${direction}` : ''}</span>` : ''}
@@ -64,4 +70,30 @@ export function renderHeader(container, payload, metrics) {
   document.getElementById('header-back').addEventListener('click', () => {
     update({ payload: null, metrics: null, activeTab: 'dashboard' });
   });
+
+  const vconBtn = document.getElementById('header-vcon-btn');
+  vconBtn.addEventListener('click', () => {
+    const vcon = toVcon(payload);
+    const blob = new Blob([JSON.stringify(vcon, null, 2)], { type: 'application/vcon+json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${payload.callId}.vcon.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    vconBtn.textContent = 'Downloaded!';
+    setTimeout(() => { vconBtn.textContent = 'Download vCon'; }, 2000);
+  });
+
+  const redactBtn = document.getElementById('header-redact-btn');
+  if (redactBtn) {
+    redactBtn.addEventListener('click', () => {
+      const current = getState().showRedacted;
+      update({ showRedacted: !current });
+      redactBtn.textContent = !current ? 'Show Full' : 'Show Redacted';
+      redactBtn.classList.toggle('active', !current);
+    });
+  }
 }

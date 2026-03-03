@@ -4,6 +4,7 @@ const state = {
   swml: null,
   activeTab: 'dashboard',
   viewMode: null, // 'postprompt' or 'swml'
+  showRedacted: false,
   search: {
     query: '',
     caseSensitive: false,

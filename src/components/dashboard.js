@@ -155,7 +155,8 @@ export function renderDashboard(container, metrics) {
   // Enriched Event Metrics (only show if any enriched data is present)
   const hasEnrichedData = e.functionErrorCount > 0 || e.gatherRejectCount > 0 ||
     e.textRewriteCount > 0 || e.fillerCount > 0 || e.attentionTimeoutCount > 0 ||
-    e.startupHookDuration != null || e.bargedCount > 0;
+    e.startupHookDuration != null || e.bargedCount > 0 ||
+    e.innerDialogCount > 0 || e.redactedMessageCount > 0;
 
   if (hasEnrichedData) {
     const enrichedCards = [];
@@ -184,10 +185,16 @@ export function renderDashboard(container, metrics) {
     }
 
     if (e.textRewriteCount > 0) {
+      const parts = [];
+      if (e.hearingHintCount) parts.push(`${e.hearingHintCount} ASR`);
+      if (e.pronounceRuleCount) parts.push(`${e.pronounceRuleCount} TTS`);
+      if (e.autoCorrectCount) parts.push(`${e.autoCorrectCount} auto-correct`);
+      if (e.textNormalizeItnCount) parts.push(`${e.textNormalizeItnCount} ITN`);
+      if (e.textNormalizeTnCount) parts.push(`${e.textNormalizeTnCount} TN`);
       enrichedCards.push({
         label: 'Text Rewrites',
         value: e.textRewriteCount,
-        unit: `${e.hearingHintCount} ASR + ${e.pronounceRuleCount} TTS`,
+        unit: parts.join(' + '),
       });
     }
 
@@ -203,6 +210,20 @@ export function renderDashboard(container, metrics) {
       enrichedCards.push({
         label: 'Attention Timeouts',
         value: e.attentionTimeoutCount,
+      });
+    }
+
+    if (e.innerDialogCount > 0) {
+      enrichedCards.push({
+        label: 'Inner Dialogs',
+        value: e.innerDialogCount,
+      });
+    }
+
+    if (e.redactedMessageCount > 0) {
+      enrichedCards.push({
+        label: 'Redacted Messages',
+        value: e.redactedMessageCount,
       });
     }
 
