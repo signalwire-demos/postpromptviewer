@@ -2,7 +2,7 @@ export function renderSwmlFunctions(container, swml) {
   const aiConfig = findAiConfig(swml);
 
   if (!aiConfig) {
-    container.innerHTML = '<div style="padding:1.5rem;color:var(--text-muted)">No AI configuration found</div>';
+    container.innerHTML = '<div class="p-6 text-sm opacity-50">No AI configuration found</div>';
     return;
   }
 
@@ -11,31 +11,29 @@ export function renderSwmlFunctions(container, swml) {
   const defaults = swaigConfig.defaults || {};
 
   if (functions.length === 0) {
-    container.innerHTML = '<div style="padding:1.5rem;color:var(--text-muted)">No SWAIG functions defined</div>';
+    container.innerHTML = '<div class="p-6 text-sm opacity-50">No SWAIG functions defined</div>';
     return;
   }
 
   container.innerHTML = `
-    <div class="swml-functions">
-      <div class="swml-functions__header">
+    <div class="p-6 max-w-6xl mx-auto space-y-4">
+      <div class="flex items-center justify-between">
         <div>
-          <h3 style="margin:0;font-size:0.95rem;font-weight:600;color:var(--text-secondary)">SWAIG Functions</h3>
-          <p style="margin:0.25rem 0 0 0;font-size:0.75rem;color:var(--text-muted)">${functions.length} function${functions.length !== 1 ? 's' : ''} defined</p>
+          <h3 class="text-lg font-bold" style="font-family: var(--font-heading)">SWAIG Functions</h3>
+          <p class="text-xs opacity-50 mt-1">${functions.length} function${functions.length !== 1 ? 's' : ''} defined</p>
         </div>
       </div>
 
       ${Object.keys(defaults).length > 0 ? `
-        <div class="swml-defaults-card">
-          <div class="swml-defaults-card__header">
-            <span class="swml-defaults-card__title">Default Configuration</span>
-          </div>
-          <div class="swml-defaults-card__body">
+        <div class="card bg-base-200 shadow-sm">
+          <div class="card-body p-4">
+            <h4 class="text-sm font-semibold opacity-60">Default Configuration</h4>
             ${renderDataItems(defaults, 'defaults')}
           </div>
         </div>
       ` : ''}
 
-      <div class="swml-functions-list">
+      <div class="space-y-2">
         ${functions.map((fn, idx) => renderFunctionCard(fn, idx)).join('')}
       </div>
     </div>
@@ -49,7 +47,7 @@ export function renderSwmlFunctions(container, swml) {
       navigator.clipboard.writeText(text).then(() => {
         const originalHtml = btn.innerHTML;
         btn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         `;
@@ -85,14 +83,14 @@ function renderFunctionCard(fn, idx) {
   const required = parameters.required || [];
 
   return `
-    <div class="swml-function-card" data-fn-id="${idx}">
-      <div class="swml-function-card__header">
-        <div>
-          <span class="swml-function-arrow">&#x25B6;</span>
-          <span class="swml-function-card__name">${escapeHtml(fn.function || 'Unnamed Function')}</span>
-          ${required.length > 0 ? `<span class="swml-function-badge">${required.length} required</span>` : ''}
+    <div class="swml-function-card card bg-base-200 shadow-sm" data-fn-id="${idx}">
+      <div class="swml-function-card__header card-body p-4 cursor-pointer flex-row items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="swml-function-arrow text-xs opacity-50">&#x25B6;</span>
+          <span class="font-mono font-medium text-sm">${escapeHtml(fn.function || 'Unnamed Function')}</span>
+          ${required.length > 0 ? `<div class="badge badge-primary badge-xs">${required.length} required</div>` : ''}
         </div>
-        <button class="swml-function-copy" data-value="${escapeHtml(JSON.stringify(fn, null, 2))}" title="Copy function">
+        <button class="swml-function-copy btn btn-ghost btn-xs" data-value="${escapeHtml(JSON.stringify(fn, null, 2))}" title="Copy function">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -101,31 +99,42 @@ function renderFunctionCard(fn, idx) {
       </div>
       <div class="swml-function-card__body">
         ${fn.description ? `
-          <div class="swml-function-detail">
-            <div class="swml-function-detail__label">Description</div>
-            <div class="swml-function-description">${escapeHtml(fn.description)}</div>
+          <div class="mb-3">
+            <div class="text-xs font-medium opacity-50 uppercase mb-1">Description</div>
+            <div class="text-sm">${escapeHtml(fn.description)}</div>
           </div>
         ` : ''}
 
         ${fn.web_hook_url ? `
-          <div class="swml-function-detail">
-            <div class="swml-function-detail__label">Webhook URL</div>
-            <div class="swml-function-url">${escapeHtml(fn.web_hook_url)}</div>
+          <div class="mb-3">
+            <div class="text-xs font-medium opacity-50 uppercase mb-1">Webhook URL</div>
+            <div class="text-sm font-mono opacity-70 break-all">${escapeHtml(fn.web_hook_url)}</div>
           </div>
         ` : ''}
 
         ${fn.wait_file ? `
-          <div class="swml-function-detail">
-            <div class="swml-function-detail__label">Wait File</div>
-            <div class="swml-function-url">${escapeHtml(fn.wait_file)}</div>
+          <div class="mb-3">
+            <div class="text-xs font-medium opacity-50 uppercase mb-1">Wait File</div>
+            <div class="text-sm font-mono opacity-70 break-all">${escapeHtml(fn.wait_file)}</div>
           </div>
         ` : ''}
 
         ${Object.keys(properties).length > 0 ? `
-          <div class="swml-function-detail">
-            <div class="swml-function-detail__label">Parameters</div>
-            <div class="swml-function-params">
-              ${Object.entries(properties).map(([key, value]) => renderParameter(key, value, required.includes(key))).join('')}
+          <div>
+            <div class="text-xs font-medium opacity-50 uppercase mb-2">Parameters</div>
+            <div class="overflow-x-auto rounded-box border border-base-300">
+              <table class="table table-xs">
+                <thead><tr class="bg-base-300"><th>Name</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  ${Object.entries(properties).map(([key, value]) => `
+                    <tr class="hover">
+                      <td class="font-mono text-sm">${escapeHtml(key)}${required.includes(key) ? '<span class="text-error">*</span>' : ''}</td>
+                      <td class="text-xs"><div class="badge badge-ghost badge-xs">${escapeHtml(value.type || 'any')}</div></td>
+                      <td class="text-xs opacity-70">${escapeHtml(value.description || '')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
             </div>
           </div>
         ` : ''}
@@ -134,50 +143,28 @@ function renderFunctionCard(fn, idx) {
   `;
 }
 
-function renderParameter(key, value, isRequired) {
-  const type = value.type || 'any';
-  const description = value.description || '';
-  const hasNested = typeof value === 'object' && Object.keys(value).length > 2;
-
-  return `
-    <div class="swml-param-item ${hasNested ? 'has-nested' : ''}">
-      <div class="swml-param-row">
-        ${hasNested ? '<span class="swml-param-toggle">&#x25B6;</span>' : '<span class="swml-param-spacer"></span>'}
-        <span class="swml-param-name">${escapeHtml(key)}${isRequired ? '<span class="swml-param-required">*</span>' : ''}</span>
-        <span class="swml-param-type">${escapeHtml(type)}</span>
-        ${description ? `<span class="swml-param-desc">${escapeHtml(description)}</span>` : ''}
-      </div>
-      ${hasNested ? `
-        <div class="swml-param-nested">
-          ${renderDataItems(value, `param-${key}`)}
-        </div>
-      ` : ''}
-    </div>
-  `;
-}
-
 function renderDataItems(data, parentKey = '') {
   if (typeof data !== 'object' || data === null) {
-    return `<div class="swml-data-value">${escapeHtml(String(data))}</div>`;
+    return `<div class="text-sm font-mono opacity-70">${escapeHtml(String(data))}</div>`;
   }
 
   if (Array.isArray(data)) {
     return `
-      <div class="swml-data-items">
+      <div class="space-y-1">
         ${data.map((item, idx) => {
           const isObject = typeof item === 'object' && item !== null;
           if (isObject) {
             return `
-              <div class="swml-data-item swml-data-item--nested">
-                <span class="swml-data-key">[${idx}]</span>
-                <div class="swml-data-item-children">${renderDataItems(item, `${parentKey}[${idx}]`)}</div>
+              <div class="ml-3">
+                <span class="text-xs font-mono opacity-50">[${idx}]</span>
+                ${renderDataItems(item, `${parentKey}[${idx}]`)}
               </div>
             `;
           }
           return `
-            <div class="swml-data-item">
-              <span class="swml-data-key">[${idx}]</span>
-              <span class="swml-data-value">${escapeHtml(String(item))}</span>
+            <div class="flex gap-2">
+              <span class="text-xs font-mono opacity-50">[${idx}]</span>
+              <span class="text-sm">${escapeHtml(String(item))}</span>
             </div>
           `;
         }).join('')}
@@ -186,24 +173,23 @@ function renderDataItems(data, parentKey = '') {
   }
 
   return `
-    <div class="swml-data-items">
+    <div class="space-y-1">
       ${Object.entries(data).map(([key, value]) => {
         const isObject = typeof value === 'object' && value !== null;
-        const isArr = Array.isArray(value);
 
         if (isObject) {
           return `
-            <div class="swml-data-item swml-data-item--nested">
-              <span class="swml-data-key">${escapeHtml(key)}</span>
-              <div class="swml-data-item-children">${renderDataItems(value, `${parentKey}.${key}`)}</div>
+            <div class="ml-3">
+              <span class="text-xs font-mono font-medium">${escapeHtml(key)}</span>
+              ${renderDataItems(value, `${parentKey}.${key}`)}
             </div>
           `;
         }
 
         return `
-          <div class="swml-data-item">
-            <span class="swml-data-key">${escapeHtml(key)}</span>
-            <span class="swml-data-value">${escapeHtml(String(value))}</span>
+          <div class="flex gap-2">
+            <span class="text-xs font-mono font-medium">${escapeHtml(key)}</span>
+            <span class="text-sm opacity-70">${escapeHtml(String(value))}</span>
           </div>
         `;
       }).join('')}

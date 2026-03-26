@@ -21,14 +21,15 @@ Chart.register(
 );
 
 const COLORS = {
-  blue: '#3b82f6',
-  green: '#10b981',
-  yellow: '#f59e0b',
+  blue: '#044EF4',
+  green: '#22c55e',
+  yellow: '#FFD700',
   red: '#ef4444',
   purple: '#8b5cf6',
-  cyan: '#06b6d4',
+  cyan: '#40E0D0',
   gray: '#6b7280',
   indigo: '#818cf8',
+  pink: '#F72A72',
 };
 
 // Stacked segment colors — brighter for assistant, dimmer for tool
@@ -43,10 +44,10 @@ const SEGMENT = {
 };
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#1a1d27',
-  borderColor: '#2d3244',
+  backgroundColor: '#1e1e1f',
+  borderColor: '#333338',
   borderWidth: 1,
-  titleColor: '#e4e6eb',
+  titleColor: '#ffffff',
   bodyColor: '#9ca3af',
   padding: 10,
 };
@@ -543,7 +544,7 @@ export function renderCharts(container, payload, metrics) {
             datasets: [{
               data: roles.map(r => c.messagesByRole[r]),
               backgroundColor: roles.map(r => roleColors[r] || COLORS.cyan),
-              borderColor: '#1a1d27',
+              borderColor: '#1e1e1f',
               borderWidth: 2,
             }],
           },

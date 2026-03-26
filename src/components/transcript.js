@@ -74,19 +74,19 @@ function getResponseTimeRating(latency) {
     return {
       name: 'Excellent',
       class: 'excellent',
-      color: '#10b981'
+      color: '#22c55e'
     };
   } else if (latency < 1800) {
     return {
       name: 'Good',
       class: 'good',
-      color: '#3b82f6'
+      color: '#044EF4'
     };
   } else if (latency < 2500) {
     return {
       name: 'Fair',
       class: 'fair',
-      color: '#f59e0b'
+      color: '#FFD700'
     };
   } else {
     return {

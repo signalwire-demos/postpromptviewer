@@ -1,0 +1,84 @@
+/* SignalWire DaisyUI Theme - Auto-generated from signalwire-tokens.dtcg.json */
+/* Do not edit manually. Run: python3 build_design.py */
+/* Usage: load after daisyui CSS, set data-theme='signalwire-dark' or 'signalwire-light' */
+
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+[data-theme='signalwire-dark'] {
+  color-scheme: dark;
+  --color-base-100: #1e1e1f;
+  --color-base-200: #2a2a2e;
+  --color-base-300: #333338;
+  --color-base-content: #ffffff;
+  --color-primary: #044EF4;
+  --color-primary-content: #ffffff;
+  --color-secondary: #F72A72;
+  --color-secondary-content: #ffffff;
+  --color-accent: #40E0D0;
+  --color-accent-content: #0a0a12;
+  --color-neutral: #333333;
+  --color-neutral-content: #e8e8ec;
+  --color-info: #044EF4;
+  --color-info-content: #ffffff;
+  --color-success: #22c55e;
+  --color-success-content: #ffffff;
+  --color-warning: #FFD700;
+  --color-warning-content: #0a0a12;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+  --radius-selector: 8px;
+  --radius-field: 8px;
+  --radius-box: 12px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+[data-theme='signalwire-light'] {
+  color-scheme: light;
+  --color-base-100: #F5F3EF;
+  --color-base-200: #EDEAE5;
+  --color-base-300: #E5E2DC;
+  --color-base-content: #1E1D1B;
+  --color-primary: #044EF4;
+  --color-primary-content: #F5F3EF;
+  --color-secondary: #F72A72;
+  --color-secondary-content: #F5F3EF;
+  --color-accent: #40E0D0;
+  --color-accent-content: #1E1D1B;
+  --color-neutral: #3E3B37;
+  --color-neutral-content: #F5F3EF;
+  --color-info: #044EF4;
+  --color-info-content: #F5F3EF;
+  --color-success: #16a34a;
+  --color-success-content: #F5F3EF;
+  --color-warning: #a16207;
+  --color-warning-content: #F5F3EF;
+  --color-error: #dc2626;
+  --color-error-content: #F5F3EF;
+  --radius-selector: 8px;
+  --radius-field: 8px;
+  --radius-box: 12px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Typography */
+[data-theme='signalwire-dark'], [data-theme='signalwire-light'] {
+  font-family: 'Outfit', sans-serif;
+}
+[data-theme='signalwire-dark'] h1, [data-theme='signalwire-dark'] h2, [data-theme='signalwire-dark'] h3,
+[data-theme='signalwire-light'] h1, [data-theme='signalwire-light'] h2, [data-theme='signalwire-light'] h3 {
+  font-family: 'Instrument Sans', sans-serif;
+  letter-spacing: -0.02em;
+}
+[data-theme='signalwire-dark'] code, [data-theme='signalwire-dark'] pre,
+[data-theme='signalwire-light'] code, [data-theme='signalwire-light'] pre {
+  font-family: 'JetBrains Mono', monospace;
+}

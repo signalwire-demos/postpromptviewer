@@ -1,8 +1,8 @@
-# Post-Prompt Observability Viewer
+# P.I.E. — PostPrompt Ingestion Engine
 
-A single-page application for visualizing SignalWire AI Agent post-conversation webhook payloads and SWML configuration files. Upload a JSON payload from a completed call and instantly see performance metrics, conversation flow, tool usage, latency analysis, and full call recordings with stereo waveform visualization. Also supports SWML inspection with interactive state diagrams and prompt analysis.
+A full-stack application for ingesting, storing, searching, and visualizing SignalWire AI Agent post-conversation webhook payloads. Combines a **Python/FastAPI** backend with **SQLite** storage and a **Vanilla JS** single-page viewer powered by **DaisyUI 5**, **Chart.js**, **Mermaid**, and **wavesurfer.js**.
 
-Built with **Vanilla JS**, **Vite**, **Chart.js**, **Mermaid**, and **wavesurfer.js** — no framework dependencies.
+Point your SignalWire AI agent's `post_url` at the webhook endpoint and every completed call is automatically indexed with 30+ searchable metadata columns. Then browse, filter, and drill into any call from the web UI.
 
 <div align="center">
 
@@ -12,282 +12,259 @@ Built with **Vanilla JS**, **Vite**, **Chart.js**, **Mermaid**, and **wavesurfer
 
 </div>
 
-## Agent Builder
-
-The project now includes a **visual drag-and-drop agent builder** for creating SignalWire AI agents!
-
-- **Location**: `/ui` directory
-- **Dev Server**: `http://localhost:5177` (when running)
-- **Features**: Visual canvas, step/function nodes, SWML export, Python SDK code generation
-
-See [`ui/README.md`](ui/README.md) for full documentation.
-
-## Screenshots
-
-### Drop Zone (Start Screen)
-Dual upload interface supporting both Post-Prompt conversation files and SWML configuration files. Features drag-and-drop, file browsing, instant example loading, and GitHub repository link.
-
-<img src="images/01-drop-zone.png" alt="Drop Zone — file upload interface with example loading" width="800" />
-
-### Dashboard
-KPI metric cards covering call duration, response latency (assistant and tool), system performance rating, conversation stats, token usage, SWAIG details, and media/billing summaries.
-
-<img src="images/02-dashboard.png" alt="Dashboard — KPI metrics overview" width="800" />
-
-### Charts
-Six interactive Chart.js visualizations: dual latency breakdown charts (assistant responses and tool calls), tokens per second, ASR confidence per utterance, speech detection timing, message role breakdown donut, and SWAIG latency by command.
-
-<img src="images/03-charts.png" alt="Charts — latency, TPS, ASR, and role breakdown" width="800" />
-
-### Timeline
-Horizontal swimlane view of the full call lifecycle. The top bar shows call phases (ring, setup, AI session, teardown). Below, a conversation flow chart maps every user, assistant, tool, say, and system message to its real timestamp.
-
-<img src="images/04-timeline.png" alt="Timeline — call phases and conversation flow swimlane" width="800" />
-
-### Transcript (Processed Log)
-Scrollable conversation log with role-colored message bubbles (system, assistant, tool, user). Each message includes expandable metadata badges for latency, audio timing, ASR confidence, and timestamps. Includes response time rating badges (Excellent, Good, Fair, Needs Improvement) and filters for finding slow responses.
-
-<img src="images/05-transcript.png" alt="Transcript — role-colored conversation with metadata" width="800" />
-
-### Transcript (Raw Call Log)
-Unprocessed call log showing every raw entry including system-log events, step changes, function calls, gather answers, and session lifecycle markers. Toggle between Processed and Raw views.
-
-<img src="images/06-raw-call-log.png" alt="Raw Call Log — unprocessed system events and call entries" width="800" />
-
-### SWAIG Inspector
-Expandable accordion of every SWAIG function call made during the session. Each entry shows the full `post_data` request and `post_response` as formatted JSON with search functionality that auto-expands nested items and filters to matching fields only.
-
-<img src="images/07-swaig-inspector.png" alt="SWAIG Inspector — function call request/response details" width="800" />
-
-### Post-Prompt
-Displays the post-prompt execution result with Raw and Substituted sub-tabs. Shows what the AI agent executed after the conversation ended (e.g., summary functions, data extraction).
-
-<img src="images/08-post-prompt.png" alt="Post-Prompt — post-conversation function results" width="800" />
-
-### State Flow
-Interactive Mermaid diagram visualizing the actual conversation flow as a state machine. Shows step transitions, function calls, SWAIG actions (set_global_data, change_step, transfer, hangup, etc.), gather Q&A, and navigation edges. Includes zoom/pan, Mermaid/SVG copy, and PNG export with legend.
-
-<img src="images/09-state-flow.png" alt="State Flow — conversation state machine diagram with actions" width="800" />
-
-### Recording
-Stereo waveform visualization powered by wavesurfer.js with color-coded overlay regions (user speech, endpointing, assistant, tool calls, thinking, manual say, barge-in). Includes synced video playback, speed controls, and a scrubbing cursor that displays the matching transcript line.
-
-<img src="images/10-recording.png" alt="Recording — stereo waveform with overlay regions and video" width="800" />
-
-### Global Data (Snapshot)
-Expandable JSON view of session state at end of call, including `global_data` (set by SWAIG `set_global_data` actions), `SWMLVars` (runtime call variables), and `SWMLCall` signaling-layer metadata. Includes search with auto-expand and field-level filtering.
-
-<img src="images/11-global-data-snapshot.png" alt="Global Data Snapshot — session state and call metadata JSON" width="800" />
-
-### Global Data (Timeline)
-Animated timeline player showing every `set_global_data` mutation over the call timeline. Watch keys being added (green), updated (red), and removed (fade out) in real time. Includes playback controls with 1x/2x/3x speed, event list sidebar with mutation badges, and a seekable progress bar.
-
-<img src="images/12-global-data-timeline.png" alt="Global Data Timeline — animated mutation player" width="800" />
-
-### SWML Overview
-Inspector for SignalWire Markup Language (SWML) configuration files. Overview tab shows general configuration, sections, and high-level structure.
-
-<img src="images/13-swml-overview.png" alt="SWML Overview — configuration summary" width="800" />
-
-### SWML Prompts & Steps
-Detailed view of SWML prompts and steps with interactive Mermaid state diagrams. Supports both text and bullet-point prompt formats with PNG export for diagrams.
-
-<img src="images/14-swml-prompts.png" alt="SWML Prompts — prompts and state flow visualization" width="800" />
-
-### SWML Functions
-Expandable list of all SWML functions with their parameters, purposes, and metadata arguments.
-
-<img src="images/15-swml-functions.png" alt="SWML Functions — function definitions and parameters" width="800" />
-
-### SWML Configuration
-Raw JSON view of SWML configuration including parameters, hints, language settings, and other top-level configuration options.
-
-<img src="images/16-swml-config.png" alt="SWML Configuration — raw configuration JSON" width="800" />
-
-## What This Does
-
-When a SignalWire AI Agent call completes, the platform emits a `post_conversation` webhook payload containing everything that happened during the call: the full conversation log, SWAIG function calls, ASR confidence scores, token usage, latency measurements, and more.
-
-This viewer parses that payload and presents it across interactive tabs:
-
-| Tab | What It Shows |
-|-----|---------------|
-| **Dashboard** | 16 KPI metric cards — call duration, response latency, token usage, ASR confidence, barge-in rate, SWAIG call count, TPS stats |
-| **Charts** | 6 Chart.js visualizations — response latency over time, tokens per second, ASR confidence distribution, message role breakdown, SWAIG execution latency, call timeline phases |
-| **Timeline** | Horizontal swimlane showing the full call lifecycle — user speech, assistant responses, tool calls, thinking, manual says, all mapped to real timestamps |
-| **Transcript** | Scrollable conversation with role-colored message bubbles, expandable metadata (latency, confidence, tool results), response time rating badges, toggle between processed and raw call log |
-| **SWAIG Inspector** | Accordion list of every SWAIG function call with full `post_data` and `post_response` as formatted JSON, search with auto-expand and field-level filtering |
-| **Post-Prompt** | Tabbed view of raw, substituted, and parsed post-prompt data |
-| **State Flow** | Interactive Mermaid diagram of actual state transitions, function calls, SWAIG actions (navigation, terminal, data), gather Q&A — with zoom/pan and PNG export |
-| **Recording** | Stereo waveform visualization with call-log regions overlaid, synced video playback for MP4 recordings, playback controls with speed adjustment |
-| **Global Data** | Snapshot view of final session state + animated timeline player showing every `set_global_data` mutation with playback controls |
-
-Additionally, the viewer supports **SWML Inspector** mode for analyzing SignalWire Markup Language configuration files with four dedicated tabs:
-
-| SWML Tab | What It Shows |
-|----------|---------------|
-| **Overview** | General configuration summary, sections, and high-level structure |
-| **Prompts & Steps** | Interactive Mermaid state diagrams showing prompt flow with PNG export |
-| **Functions** | Expandable list of all functions with parameters and metadata |
-| **Configuration** | Raw JSON view of all SWML configuration options |
-
 ## Quick Start
 
 ```bash
-# Clone the repo
+# Clone and install
 git clone https://github.com/signalwire-demos/postpromptviewer.git
 cd postpromptviewer
-
-# Install dependencies
 npm install
 
-# Start the dev server
+# Set up Python backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Start both servers
+uvicorn backend.main:app --reload --port 8000 &
 npm run dev
 ```
 
-Open the URL shown in the terminal (default: `http://localhost:5173`), then either:
-- Click **"Load Example"** to instantly try the app with sample data
-- Drag and drop your own post-conversation JSON file
-- Click **"Browse Files"** to select a file from your computer
+Open **http://localhost:5173** — the Vite dev server proxies `/api` requests to the FastAPI backend automatically.
 
-## Building for Production
+### What You Can Do
+
+- **Browse Records** — click the P.I.E. button on the landing page to search/filter stored calls
+- **Drop a File** — drag-and-drop a `post_conversation` JSON to view it instantly, then click **Save to DB** to store it
+- **Webhook Ingest** — point SignalWire's `post_url` at the webhook endpoint for automatic ingestion
+- **SWML Inspector** — drop a SWML configuration file to inspect prompts, steps, and functions
+
+## Webhook Ingestion
+
+### Setting Up the Webhook
+
+Configure your SignalWire AI agent's `post_url` to point at the ingest endpoint:
+
+```
+https://your-domain.com/api/v1/ingest/webhook
+```
+
+Every completed call will be automatically ingested with metadata extracted and indexed.
+
+### HTTP Basic Auth
+
+Protect the ingest endpoints with HTTP Basic Auth by setting the `PIE_WEBHOOK_AUTH` environment variable:
 
 ```bash
-npm run build
+# Format: user:password
+export PIE_WEBHOOK_AUTH="pie:s3cret"
 ```
 
-The output goes to `dist/` — a static bundle you can serve from any web server, S3 bucket, or CDN. No backend required.
+Then use credentials in the `post_url`:
+
+```
+https://pie:s3cret@your-domain.com/api/v1/ingest/webhook
+```
+
+When `PIE_WEBHOOK_AUTH` is not set, ingest endpoints are open (useful for local development).
+
+Auth protects all three ingest endpoints (`/webhook`, `/upload`, `/bulk`). Read-only endpoints (`/records`, `/stats`) do not require auth.
+
+### Testing with curl
 
 ```bash
-# Preview the production build locally
-npm run preview
+# Ingest a file (no auth)
+curl -X POST http://localhost:8000/api/v1/ingest/webhook \
+  -H "Content-Type: application/json" \
+  -d @public/examples/call.json
+
+# Ingest with auth
+curl -X POST http://pie:s3cret@localhost:8000/api/v1/ingest/webhook \
+  -H "Content-Type: application/json" \
+  -d @public/examples/call.json
+
+# Bulk ingest (JSON array)
+curl -X POST http://localhost:8000/api/v1/ingest/bulk \
+  -H "Content-Type: application/json" \
+  -d '[{...}, {...}]'
+
+# Upsert (overwrite existing)
+curl -X POST "http://localhost:8000/api/v1/ingest/webhook?upsert=true" \
+  -H "Content-Type: application/json" \
+  -d @call.json
 ```
 
-## Project Structure
+## API Reference
+
+Base path: `/api/v1`
+
+### Ingest Endpoints (auth-protected when `PIE_WEBHOOK_AUTH` is set)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/ingest/webhook` | Receive raw JSON body (for SignalWire `post_url`) |
+| `POST` | `/ingest/upload` | Upload a single JSON file (multipart) |
+| `POST` | `/ingest/bulk` | Upload multiple files or a JSON array |
+
+All ingest endpoints accept `?upsert=true` to overwrite existing records with the same `call_id`.
+
+### Records Endpoints (no auth required)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/records` | List/search records (paginated, filtered, sorted) |
+| `GET` | `/records/stats` | Aggregate statistics |
+| `GET` | `/records/{call_id}` | Get full record with raw payload |
+| `DELETE` | `/records/{call_id}` | Delete a record |
+
+### Search & Filter Parameters (`GET /records`)
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `q` | string | Search call_id, phone numbers, app name |
+| `page` / `per_page` | int | Pagination (default: 1 / 25, max 100) |
+| `sort` / `order` | string | Sort field + `asc`/`desc` |
+| `ai_result` | string | Filter: `success`, `failed` |
+| `performance_rating` | string | Filter: `Excellent`, `Good`, `Fair`, `Needs Improvement` |
+| `call_ended_by` | string | Filter: `user`, `assistant`, `system` |
+| `call_direction` | string | Filter: `inbound`, `outbound` |
+| `conversation_type` | string | Filter: `voice`, etc. |
+| `app_name` | string | Filter by app name |
+| `project_id` / `space_id` | string | Filter by project or space |
+| `date_from` / `date_to` | ISO date | Date range filter |
+| `min_duration` / `max_duration` | float | Duration range (seconds) |
+
+Interactive API docs available at **http://localhost:8000/docs** (Swagger UI).
+
+## Viewer Tabs
+
+When you load a record (from the database or a dropped file), the viewer shows these tabs:
+
+| Tab | What It Shows |
+|-----|---------------|
+| **Dashboard** | KPI metric cards — duration, latency, tokens, ASR confidence, barge-in rate, SWAIG calls |
+| **Charts** | 6 Chart.js visualizations — latency breakdown, TPS, ASR confidence, role distribution |
+| **Timeline** | Horizontal swimlane — call phases + conversation flow mapped to real timestamps |
+| **Transcript** | Role-colored conversation bubbles with metadata badges, search, and filters |
+| **SWAIG Inspector** | Accordion of every function call with request/response JSON and search |
+| **Post-Prompt** | Raw, substituted, and parsed post-prompt data |
+| **State Flow** | Interactive Mermaid diagram — state transitions, function calls, SWAIG actions |
+| **Recording** | Stereo waveform with call-log regions, synced video playback |
+| **Global Data** | Session state snapshot + animated timeline of `set_global_data` mutations |
+
+## Database
+
+P.I.E. uses **SQLite** with WAL mode for concurrent read/write. The database file (`pie.db`) is created automatically on first startup.
+
+### Indexed Metadata Columns
+
+The raw JSON payload is stored as-is in a `raw_payload` JSON column. Additionally, 30+ metadata fields are extracted at ingest time for fast searching and filtering:
+
+- **Identity**: `call_id`, `project_id`, `space_id`, `app_name`, `conversation_id`
+- **Timestamps**: `call_start_ts`, `call_answer_ts`, `ai_start_ts`, `ai_end_ts`, `call_end_ts`
+- **Caller**: `caller_id_number`, `from_number`, `to_number`, `call_direction`, `call_type`
+- **Duration**: `call_duration_sec`, `ai_session_duration_sec`
+- **AI Result**: `ai_result`, `call_ended_by`, `hard_timeout`, `content_disposition`
+- **Metrics**: `turn_count`, `swaig_call_count`, `avg_latency_ms`, `p95_latency_ms`, `performance_rating`
+- **Tokens**: `total_input_tokens`, `total_output_tokens`
+- **ASR**: `avg_asr_confidence`, `barge_in_count`
+
+### Customizing the DB Location
+
+```bash
+export PIE_DB_PATH=/path/to/my/pie.db
+```
+
+## Architecture
 
 ```
-├── lib/                        # Standalone library (zero DOM dependencies)
+postpromptviewer/
+├── backend/                    # Python FastAPI backend
+│   ├── main.py                 # App, CORS, lifespan, static mount
+│   ├── config.py               # DB path, webhook auth from env
+│   ├── database.py             # SQLAlchemy async engine + session
+│   ├── models.py               # Record model (30+ columns)
+│   ├── schemas.py              # Pydantic request/response schemas
+│   ├── routers/
+│   │   ├── ingest.py           # Webhook, upload, bulk (auth-protected)
+│   │   └── records.py          # List, get, delete, stats
+│   └── services/
+│       └── extractor.py        # Metadata extraction (Python port of parser.js)
+├── lib/                        # Standalone JS library (no DOM deps)
 │   ├── index.js                # Public API: parsePayload, computeMetrics
-│   ├── parser.js               # Validates + normalizes raw JSON payload
-│   ├── utils.js                # Shared helpers (epoch→Date, stats, formatting)
-│   └── metrics/
-│       ├── duration.js         # Call/AI/ring durations from timestamps
-│       ├── latency.js          # Assistant response latency (min/max/avg/p95)
-│       ├── asr.js              # ASR confidence stats, barge-in rate
-│       ├── conversation.js     # Turn count, messages by role, word counts
-│       ├── tools.js            # SWAIG call count, execution latency, action types
-│       └── tokens.js           # Token totals, TPS stats from times[]
-├── src/                        # Viewer SPA
-│   ├── main.js                 # App entry: mounts components, wires tab navigation
-│   ├── state.js                # Pub/sub store for payload, metrics, UI state
+│   ├── parser.js               # Validate + normalize raw JSON
+│   ├── utils.js                # Shared helpers
+│   └── metrics/                # 7 metric computation modules
+├── src/                        # Frontend SPA
+│   ├── main.js                 # App entry, tab routing
+│   ├── state.js                # Pub/sub state store
+│   ├── api.js                  # API client for backend
 │   ├── components/
-│   │   ├── drop-zone.js        # Drag-and-drop + file picker + example loader
-│   │   ├── header.js           # Call ID, timestamps, duration badge, caller info
-│   │   ├── dashboard.js        # 4x4 grid of metric cards
-│   │   ├── charts.js           # 6 Chart.js visualizations
-│   │   ├── timeline.js         # Horizontal swimlane: call lifecycle phases
-│   │   ├── transcript.js       # Role-colored conversation bubbles + raw log toggle
-│   │   ├── swaig-inspector.js  # Expandable SWAIG log with formatted JSON
-│   │   ├── post-prompt.js      # Post-prompt summary (raw/substituted/parsed)
-│   │   ├── state-flow.js       # Mermaid state diagram with actions + PNG export
-│   │   ├── recording.js        # Stereo waveform + video playback via wavesurfer.js
-│   │   └── global-data.js      # Snapshot view + animated timeline mutation player
+│   │   ├── drop-zone.js        # Landing page with P.I.E. browse button
+│   │   ├── record-browser.js   # Searchable record list (DaisyUI table)
+│   │   ├── header.js           # Navbar with Save to DB / Back to Records
+│   │   ├── dashboard.js        # KPI stat cards
+│   │   └── ...                 # 12 more viewer components
 │   └── styles/
-│       ├── theme.css           # Dark theme, CSS custom properties
-│       └── components.css      # Component-specific styles
-├── public/
-│   ├── examples/
-│   │   ├── call.json           # Example post-conversation payload
-│   │   └── voyager.json        # Example SWML configuration
-│   ├── favicon.svg             # SignalWire favicon
-│   └── og-image.jpg            # OpenGraph social sharing image
-├── capture-screenshots.js      # Playwright automation for screenshots + video
-├── index.html                  # App shell with OpenGraph metadata
-├── vite.config.js              # Vite configuration
-└── package.json
+│       ├── signalwire-daisyui-theme.css  # SignalWire design tokens
+│       ├── theme.css           # CSS variable bridge
+│       └── components.css      # Component styles
+├── public/examples/            # Sample data files
+├── requirements.txt            # Python dependencies
+├── package.json                # Node dependencies
+├── vite.config.js              # Vite + API proxy config
+├── Procfile                    # Production: uvicorn
+└── pie.db                      # SQLite database (auto-created)
 ```
 
-## Using the Library Standalone
+## Design System
 
-The `lib/` directory has no DOM dependencies and can be imported independently in Node.js or other browser apps:
+The UI uses **DaisyUI 5** with the **SignalWire design tokens** (dark/light themes):
 
-```js
-import { parsePayload, computeMetrics } from './lib/index.js';
+- **Primary**: `#044EF4` (SignalWire Blue)
+- **Secondary**: `#F72A72` (SignalWire Pink)
+- **Accent**: `#40E0D0` (Turquoise)
+- **Fonts**: Outfit (body), Instrument Sans (headings), JetBrains Mono (code)
 
-const raw = JSON.parse(jsonString);
-const payload = parsePayload(raw);      // Validates, normalizes timestamps
-const metrics = computeMetrics(payload); // Returns all derived metrics
+## Deployment (Dokku)
 
-console.log(metrics.duration.callDuration);    // seconds
-console.log(metrics.latency.avgAnswerTime);    // ms
-console.log(metrics.asr.avgConfidence);        // 0-1
-console.log(metrics.conversation.turnCount);   // number
-console.log(metrics.tools.swaigCallCount);     // number
-console.log(metrics.tokens.totalInputTokens);  // number or null
+```bash
+# Add Python buildpack alongside Node.js
+cat > .buildpacks << 'EOF'
+https://github.com/heroku/heroku-buildpack-nodejs.git
+https://github.com/heroku/heroku-buildpack-python.git
+EOF
+
+# Set webhook auth
+dokku config:set myapp PIE_WEBHOOK_AUTH="pie:s3cret"
+
+# Deploy
+git push dokku main
 ```
 
-### Metric Modules
+The `Procfile` runs `uvicorn backend.main:app` which serves both the API and the Vite-built static files from `dist/`.
 
-| Module | Key Outputs |
-|--------|-------------|
-| `duration` | `callDuration`, `aiSessionDuration`, `ringTime` — handles `call_end_date=0` (in-progress calls) |
-| `latency` | `avgAnswerTime`, `p95AnswerTime`, `minAnswerTime`, `maxAnswerTime`, per-response latency array |
-| `asr` | `avgConfidence`, `bargeInRate`, `bargeInCount`, `totalUserMessages` |
-| `conversation` | `turnCount`, `messagesByRole`, `totalWords`, `assistantWordCount`, `userWordCount` |
-| `tools` | `swaigCallCount`, `avgExecutionLatency`, `toolBreakdown` (by function name), `actionTypes`, `toolCallRate` |
-| `tokens` | `totalInputTokens`, `totalOutputTokens`, `avgTps`, `peakTps`, per-response TPS array |
+## Environment Variables
 
-## Payload Format
-
-The viewer expects the standard SignalWire `post_conversation` webhook payload. Required fields:
-
-```json
-{
-  "call_id": "uuid",
-  "action": "post_conversation",
-  "call_start_date": 1770000000000000,
-  "call_log": [...]
-}
-```
-
-Key optional sections that unlock additional features:
-
-| Field | Unlocks |
-|-------|---------|
-| `call_log[].timestamp` | Timeline swimlane, transcript ordering |
-| `call_log[].audio_latency` | Response latency metrics and charts |
-| `call_log[].confidence` | ASR confidence stats and histogram |
-| `call_log[].speaking_to_final_event` | User speech duration on timeline |
-| `times[]` | Tokens per second chart, detailed latency analysis |
-| `swaig_log[]` | SWAIG Inspector tab, State Flow actions |
-| `post_prompt_data` | Post-Prompt tab |
-| `SWMLVars.record_call_url` | Recording tab with waveform + video |
-| `total_input_tokens` / `total_output_tokens` | Token usage dashboard cards |
-| `global_data` | Global Data tab (snapshot + timeline) |
-
-## Edge Cases Handled
-
-- **`call_end_date = 0`** — inferred from `session_end` log entry when available, otherwise displayed as "In Progress"
-- **Missing token fields** — cards show "N/A," token charts are skipped
-- **No `times[]` array** — TPS and detailed latency charts gracefully hidden
-- **DTMF content in call_log** — displayed appropriately in transcript
-- **Merged user messages** (`merge_count > 0`) — displayed as single messages per `call_log`
-- **Barged assistant responses** — removed from `call_log` by the platform, handled cleanly
-- **TPS int64 overflow** (from `token_time: 0`) — filtered out of stats
-- **Consecutive assistant messages** (retries, garbled output) — timeline segments don't overlap
-- **Tool timestamps** — correctly treated as call initiation time, not result time
-- **Negative `speaking_to_turn_detection`** — common in production, handled without error
-- **Webhook-forced function metaStep** — corrected when the module logs functions with the post-transition step instead of the step they actually ran in
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PIE_DB_PATH` | `./pie.db` | SQLite database file path |
+| `PIE_WEBHOOK_AUTH` | *(empty)* | HTTP Basic Auth for ingest endpoints (`user:password`) |
+| `PORT` | `8000` | Server port (set by Dokku/Heroku) |
 
 ## Tech Stack
 
 | Tool | Purpose |
 |------|---------|
-| [Vite](https://vitejs.dev/) | Build tool and dev server |
-| [Chart.js](https://www.chartjs.org/) | Dashboard and analytics charts |
-| [Mermaid](https://mermaid.js.org/) | State flow and SWML step diagrams |
-| [wavesurfer.js](https://wavesurfer.xyz/) | Stereo waveform rendering, audio/video playback, regions overlay |
-| [Playwright](https://playwright.dev/) | Automated screenshot and video capture |
+| [FastAPI](https://fastapi.tiangolo.com/) | Backend API + webhook ingestion |
+| [SQLAlchemy](https://www.sqlalchemy.org/) | Async ORM for SQLite |
+| [SQLite](https://www.sqlite.org/) | Embedded database with WAL mode |
+| [Vite](https://vitejs.dev/) | Frontend build tool and dev server |
+| [DaisyUI 5](https://daisyui.com/) | UI components + SignalWire theme |
+| [Tailwind CSS 4](https://tailwindcss.com/) | Utility-first CSS |
+| [Chart.js](https://www.chartjs.org/) | Dashboard charts |
+| [Mermaid](https://mermaid.js.org/) | State flow diagrams |
+| [wavesurfer.js](https://wavesurfer.xyz/) | Audio waveform visualization |
 
 ## License
 

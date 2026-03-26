@@ -1,38 +1,51 @@
+/* Bridge legacy CSS variables to DaisyUI/SignalWire design tokens */
 :root {
-  --bg-primary: #0f1117;
-  --bg-secondary: #1a1d27;
-  --bg-tertiary: #242836;
-  --bg-hover: #2d3244;
-  --border: #2d3244;
-  --border-subtle: #1f2330;
-  --text-primary: #e4e6eb;
+  /* Background surfaces - mapped to DaisyUI base colors */
+  --bg-primary: var(--color-base-100, #1e1e1f);
+  --bg-secondary: var(--color-base-200, #2a2a2e);
+  --bg-tertiary: var(--color-base-300, #333338);
+  --bg-hover: #3a3a40;
+  --border: var(--color-base-300, #333338);
+  --border-subtle: var(--color-base-200, #2a2a2e);
+
+  /* Text colors */
+  --text-primary: var(--color-base-content, #ffffff);
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-muted: rgba(59, 130, 246, 0.15);
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --info: #06b6d4;
+
+  /* Accent/semantic colors - mapped to DaisyUI theme */
+  --accent: var(--color-primary, #044EF4);
+  --accent-hover: #0340c5;
+  --accent-muted: rgba(4, 78, 244, 0.15);
+  --success: var(--color-success, #22c55e);
+  --warning: var(--color-warning, #FFD700);
+  --danger: var(--color-error, #ef4444);
+  --info: var(--color-info, #044EF4);
+
+  /* Role colors */
   --role-system: #8b5cf6;
-  --role-assistant: #3b82f6;
-  --role-user: #10b981;
-  --role-tool: #f59e0b;
+  --role-assistant: var(--color-primary, #044EF4);
+  --role-user: var(--color-success, #22c55e);
+  --role-tool: var(--color-warning, #FFD700);
   --role-system-log: #6b7280;
-  --radius: 8px;
+
+  /* Radii - mapped to DaisyUI */
+  --radius: var(--radius-field, 8px);
   --radius-sm: 4px;
-  --radius-lg: 12px;
+  --radius-lg: var(--radius-box, 12px);
+
+  /* Shadows */
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Fonts - mapped to SignalWire design tokens */
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Instrument Sans', var(--font-sans);
 }
 
 *, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html, body {
@@ -75,4 +88,10 @@ a:hover {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Heading font override */
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }

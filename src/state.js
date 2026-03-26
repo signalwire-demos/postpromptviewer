@@ -5,6 +5,10 @@ const state = {
   activeTab: 'dashboard',
   viewMode: null, // 'postprompt' or 'swml'
   showRedacted: false,
+  // P.I.E. browse mode
+  browseMode: false,
+  recordSource: null, // 'file' | 'database'
+  currentRecordCallId: null,
   search: {
     query: '',
     caseSensitive: false,

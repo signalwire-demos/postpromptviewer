@@ -308,7 +308,7 @@ export function renderSwaigInspector(container, payload) {
           navigator.clipboard.writeText(textToCopy).then(() => {
             const originalHtml = btn.innerHTML;
             btn.innerHTML = `
-              <svg width="${selector.includes('copy-all') ? '14' : '12'}" height="${selector.includes('copy-all') ? '14' : '12'}" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+              <svg width="${selector.includes('copy-all') ? '14' : '12'}" height="${selector.includes('copy-all') ? '14' : '12'}" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
             `;
@@ -331,7 +331,7 @@ export function renderSwaigInspector(container, payload) {
         navigator.clipboard.writeText(value).then(() => {
           const originalHtml = btn.innerHTML;
           btn.innerHTML = `
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           `;

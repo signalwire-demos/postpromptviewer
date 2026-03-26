@@ -5,21 +5,21 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
   themeVariables: {
-    primaryColor: '#3b82f6',
-    primaryTextColor: '#e5e7eb',
-    primaryBorderColor: '#60a5fa',
+    primaryColor: '#044EF4',
+    primaryTextColor: '#ffffff',
+    primaryBorderColor: '#044EF4',
     lineColor: '#9ca3af',
-    secondaryColor: '#1f2937',
-    tertiaryColor: '#111827',
-    background: '#0a0a0a',
-    mainBkg: '#1f2937',
-    secondBkg: '#111827',
-    textColor: '#e5e7eb',
-    borderColor: '#374151',
-    nodeBorder: '#60a5fa',
-    clusterBkg: '#1f2937',
-    clusterBorder: '#374151',
-    edgeLabelBackground: '#1f2937',
+    secondaryColor: '#2a2a2e',
+    tertiaryColor: '#1e1e1f',
+    background: '#1e1e1f',
+    mainBkg: '#2a2a2e',
+    secondBkg: '#1e1e1f',
+    textColor: '#ffffff',
+    borderColor: '#333338',
+    nodeBorder: '#044EF4',
+    clusterBkg: '#2a2a2e',
+    clusterBorder: '#333338',
+    edgeLabelBackground: '#2a2a2e',
   },
   flowchart: {
     curve: 'basis',
@@ -91,7 +91,7 @@ export async function renderStateFlow(container, payload) {
         </div>
         <div class="swml-stat-card">
           <div class="swml-stat-card__label">AI-Initiated</div>
-          <div class="swml-stat-card__value" style="color:#10b981">${flowData.aiInitiated}</div>
+          <div class="swml-stat-card__value" style="color:#22c55e">${flowData.aiInitiated}</div>
         </div>
         <div class="swml-stat-card">
           <div class="swml-stat-card__label">Forced</div>
@@ -115,13 +115,13 @@ export async function renderStateFlow(container, payload) {
 
       <div class="state-flow__diagram-wrapper">
         <div class="flow-legend">
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function Call</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#044EF4;border-color:#0340c5"></span>Step / State</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#FFD700;border-color:#d4b200"></span>Function Call</span>
           <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#7c3aed;border-color:#6d28d9"></span>Action</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#0284c7;border-color:#0369a1"></span>Navigation</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#dc2626;border-color:#b91c1c"></span>Terminal</span>
-          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#450a0a;border-color:#dc2626"></span>Error</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#8b5cf6;border-color:#7c3aed"></span>Action</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#40E0D0;border-color:#33b3a6"></span>Navigation</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#ef4444;border-color:#dc2626"></span>Terminal</span>
+          <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#450a0a;border-color:#ef4444"></span>Error</span>
         </div>
         <div class="state-flow__zoom-controls">
           <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
@@ -149,16 +149,16 @@ export async function renderStateFlow(container, payload) {
                   ${item.triggeredBy ? `
                     <div class="flow-timeline-trigger">
                       <strong>Triggered by:</strong> <code>${escapeHtml(item.triggeredBy)}</code>
-                      ${item.source === 'ai' ? '<span style="color:#10b981;margin-left:0.5rem;font-size:0.7rem">● AI-initiated</span>' : ''}
-                      ${item.source === 'tool' || item.source === 'gather' ? '<span style="color:#f59e0b;margin-left:0.5rem;font-size:0.7rem">● Forced</span>' : ''}
-                      ${item.source === 'explicit' ? '<span style="color:#3b82f6;margin-left:0.5rem;font-size:0.7rem">● Explicit transition</span>' : ''}
+                      ${item.source === 'ai' ? '<span style="color:#22c55e;margin-left:0.5rem;font-size:0.7rem">● AI-initiated</span>' : ''}
+                      ${item.source === 'tool' || item.source === 'gather' ? '<span style="color:#FFD700;margin-left:0.5rem;font-size:0.7rem">● Forced</span>' : ''}
+                      ${item.source === 'explicit' ? '<span style="color:#044EF4;margin-left:0.5rem;font-size:0.7rem">● Explicit transition</span>' : ''}
                       ${item.source === 'implicit' ? '<span style="color:#9ca3af;margin-left:0.5rem;font-size:0.7rem">● Implicit state</span>' : ''}
                     </div>
                   ` : ''}
 
                 ` : item.type === 'function' ? `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
-                    <code style="color:#f59e0b;font-size:0.9rem">${escapeHtml(item.functionName)}</code>
+                    <code style="color:#FFD700;font-size:0.9rem">${escapeHtml(item.functionName)}</code>
                     <span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.source === 'swaig_log' ? '(swaig)' : ''}</span>
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
@@ -176,7 +176,7 @@ export async function renderStateFlow(container, payload) {
                   ` : ''}
                   ${item.result ? `
                     <div class="flow-timeline-detail">
-                      <span class="flow-timeline-detail-label" style="color:#10b981">Result</span>
+                      <span class="flow-timeline-detail-label" style="color:#22c55e">Result</span>
                       ${renderDataItems(parseJsonValue(item.result), `flow-${idx}-result`)}
                     </div>
                   ` : ''}
@@ -261,7 +261,7 @@ export async function renderStateFlow(container, payload) {
 
                 ` : item.type === 'startup_hook' || item.type === 'hangup_hook' ? `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
-                    <code style="color:#f59e0b;font-size:0.9rem">${item.type === 'startup_hook' ? 'startup_hook' : 'hangup_hook'}</code>
+                    <code style="color:#FFD700;font-size:0.9rem">${item.type === 'startup_hook' ? 'startup_hook' : 'hangup_hook'}</code>
                     ${item.durationMs ? `<span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.durationMs}ms</span>` : ''}
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
@@ -380,8 +380,8 @@ export async function renderStateFlow(container, payload) {
     if (svg) {
       try {
         await downloadSvgAsImage(svg, 'state-flow-diagram.png', 'State Flow Diagram', [
-          { color: '#3b82f6', stroke: '#2563eb', label: 'Step / State' },
-          { color: '#f59e0b', stroke: '#d97706', label: 'Function Call' },
+          { color: '#044EF4', stroke: '#0340c5', label: 'Step / State' },
+          { color: '#FFD700', stroke: '#d4b200', label: 'Function Call' },
           { color: '#6b7280', stroke: '#4b5563', label: 'Gather / Q&A' },
           { color: '#7c3aed', stroke: '#6d28d9', label: 'Action' },
           { color: '#0284c7', stroke: '#0369a1', label: 'Navigation' },
@@ -433,7 +433,7 @@ export async function renderStateFlow(container, payload) {
       e.stopPropagation();
       navigator.clipboard.writeText(btn.dataset.value).then(() => {
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
         setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
       });
     });
@@ -1021,13 +1021,13 @@ function generateFlowDiagram(flowData) {
   }
 
   let lines = ['graph TB']; // direction updated after flow detection
-  lines.push('    classDef stepNode fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff');
-  lines.push('    classDef funcNode fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000');
+  lines.push('    classDef stepNode fill:#044EF4,stroke:#0340c5,stroke-width:2px,color:#fff');
+  lines.push('    classDef funcNode fill:#FFD700,stroke:#d4b200,stroke-width:2px,color:#000');
   lines.push('    classDef forcedNode fill:#f97316,stroke:#ea580c,stroke-width:2px,color:#000');
   lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
-  lines.push('    classDef actionNode fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff');
+  lines.push('    classDef actionNode fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff');
   lines.push('    classDef dataNode fill:#0d9488,stroke:#0f766e,stroke-width:2px,color:#fff');
-  lines.push('    classDef navNode fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff');
+  lines.push('    classDef navNode fill:#40E0D0,stroke:#33b3a6,stroke-width:2px,color:#0a0a12');
   lines.push('    classDef terminalNode fill:#dc2626,stroke:#b91c1c,stroke-width:2px,color:#fff');
   lines.push('    classDef errorNode fill:#450a0a,stroke:#dc2626,stroke-width:3px,color:#fca5a5');
   lines.push('');
@@ -1660,7 +1660,7 @@ function makeEdgesClickable(svg) {
         selectedEdge = null;
       } else {
         edge.style.strokeWidth = '3px';
-        edge.style.stroke = '#f59e0b';
+        edge.style.stroke = '#FFD700';
         selectedEdge = edge;
       }
     });

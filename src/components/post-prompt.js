@@ -1,7 +1,7 @@
 export function renderPostPrompt(container, payload) {
   const pp = payload.postPromptData;
   if (!pp || (!pp.raw && !pp.substituted && (!pp.parsed || pp.parsed.length === 0))) {
-    container.innerHTML = '<div class="post-prompt"><p style="color:var(--text-muted)">No post-prompt data available</p></div>';
+    container.innerHTML = '<div class="p-6"><p class="text-sm opacity-50">No post-prompt data available</p></div>';
     return;
   }
 
@@ -11,12 +11,12 @@ export function renderPostPrompt(container, payload) {
   if (pp.parsed && pp.parsed.length > 0) tabs.push({ id: 'parsed', label: 'Parsed' });
 
   if (tabs.length === 0) {
-    container.innerHTML = '<div class="post-prompt"><p style="color:var(--text-muted)">No post-prompt data available</p></div>';
+    container.innerHTML = '<div class="p-6"><p class="text-sm opacity-50">No post-prompt data available</p></div>';
     return;
   }
 
   const tabsHtml = tabs.map((t, i) =>
-    `<button class="post-prompt__tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`
+    `<a role="tab" class="tab ${i === 0 ? 'tab-active' : ''}" data-tab="${t.id}">${t.label}</a>`
   ).join('');
 
   const getContent = (tabId) => {
@@ -27,16 +27,18 @@ export function renderPostPrompt(container, payload) {
   };
 
   container.innerHTML = `
-    <div class="post-prompt">
-      <div class="post-prompt__tabs">${tabsHtml}</div>
-      <div class="post-prompt__content" id="pp-content">${escapeHtml(getContent(tabs[0].id))}</div>
+    <div class="p-6 max-w-5xl mx-auto">
+      <div role="tablist" class="tabs tabs-box mb-4">${tabsHtml}</div>
+      <div class="mockup-code bg-base-300">
+        <pre class="px-6 overflow-x-auto"><code id="pp-content">${escapeHtml(getContent(tabs[0].id))}</code></pre>
+      </div>
     </div>
   `;
 
-  container.querySelectorAll('.post-prompt__tab').forEach(btn => {
+  container.querySelectorAll('[role="tab"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      container.querySelectorAll('.post-prompt__tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      container.querySelectorAll('[role="tab"]').forEach(b => b.classList.remove('tab-active'));
+      btn.classList.add('tab-active');
       document.getElementById('pp-content').textContent = getContent(btn.dataset.tab);
     });
   });

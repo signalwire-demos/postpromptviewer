@@ -14,6 +14,7 @@ import { renderSwmlPrompts } from './components/swml-prompts.js';
 import { renderSwmlFunctions } from './components/swml-functions.js';
 import { renderSwmlConfig } from './components/swml-config.js';
 import { renderStateFlow } from './components/state-flow.js';
+import { renderRecordBrowser } from './components/record-browser.js';
 
 const app = document.getElementById('app');
 
@@ -49,6 +50,10 @@ function getTabs(viewMode, payload) {
 
 function render(state) {
   if (!state.payload && !state.swml) {
+    if (state.browseMode) {
+      renderRecordBrowser(app);
+      return;
+    }
     mountDropZone(app);
     return;
   }
@@ -59,7 +64,7 @@ function render(state) {
   app.innerHTML = `
     <div id="header-container"></div>
     <div id="tabs-container"></div>
-    <div id="content-container"></div>
+    <div id="content-container" class="flex-1"></div>
   `;
 
   // Header (only for post-prompt view)
@@ -67,13 +72,13 @@ function render(state) {
     renderHeader(document.getElementById('header-container'), payload, metrics);
   } else if (viewMode === 'swml') {
     document.getElementById('header-container').innerHTML = `
-      <div class="header">
-        <button class="header__back" id="back-btn">← Upload New File</button>
-        <div style="display:flex;align-items:center;gap:1rem">
-          <span style="font-size:1.5rem">⚙️</span>
+      <div class="navbar bg-base-200 border-b border-base-300 px-4 gap-3 min-h-fit py-2">
+        <button class="btn btn-ghost btn-sm" id="back-btn">&#x2190; Upload New File</button>
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">&#x2699;&#xFE0F;</span>
           <div>
-            <div style="font-weight:600;color:var(--text-primary)">SWML Inspector</div>
-            <div style="font-size:0.75rem;color:var(--text-muted)">SignalWire Markup Language Configuration</div>
+            <div class="font-semibold">SWML Inspector</div>
+            <div class="text-xs opacity-50">SignalWire Markup Language Configuration</div>
           </div>
         </div>
       </div>
@@ -87,13 +92,15 @@ function render(state) {
   // Tabs
   const tabsContainer = document.getElementById('tabs-container');
   tabsContainer.innerHTML = `
-    <div class="tabs">
-      ${tabs.map(t =>
-        `<button class="tab${t.id === activeTab ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`
-      ).join('')}
+    <div class="bg-base-200 border-b border-base-300 px-4">
+      <div role="tablist" class="tabs tabs-border">
+        ${tabs.map(t =>
+          `<a role="tab" class="tab ${t.id === activeTab ? 'tab-active' : ''}" data-tab="${t.id}">${t.label}</a>`
+        ).join('')}
+      </div>
     </div>
   `;
-  tabsContainer.querySelectorAll('.tab').forEach(btn => {
+  tabsContainer.querySelectorAll('[role="tab"]').forEach(btn => {
     btn.addEventListener('click', () => {
       update({ activeTab: btn.dataset.tab });
     });

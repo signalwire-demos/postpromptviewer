@@ -1,17 +1,17 @@
 import { formatDuration, formatMs, usToSec, truncate } from '../../lib/utils.js';
 
 const PHASE_COLORS = {
-  ring: '#3b82f6',
+  ring: '#044EF4',
   setup: '#8b5cf6',
-  ai: '#10b981',
-  teardown: '#f59e0b',
+  ai: '#22c55e',
+  teardown: '#FFD700',
 };
 
 const ROLE_BG = {
-  user: 'rgba(16, 185, 129, 0.7)',
-  assistant: 'rgba(59, 130, 246, 0.7)',
-  'assistant-manual': 'rgba(6, 182, 212, 0.6)',
-  tool: 'rgba(245, 158, 11, 0.7)',
+  user: 'rgba(34, 197, 94, 0.7)',
+  assistant: 'rgba(4, 78, 244, 0.7)',
+  'assistant-manual': 'rgba(64, 224, 208, 0.6)',
+  tool: 'rgba(255, 215, 0, 0.7)',
   system: 'rgba(139, 92, 246, 0.6)',
 };
 
@@ -37,7 +37,7 @@ export function renderTimeline(container, payload, metrics) {
   const callTotal = callEnd - callStart;
 
   if (callTotal <= 0) {
-    container.innerHTML = '<div class="timeline"><p style="color:var(--text-muted)">Timeline data unavailable</p></div>';
+    container.innerHTML = '<div class="call-timeline"><p style="color:var(--text-muted)">Timeline data unavailable</p></div>';
     return;
   }
 
@@ -427,12 +427,12 @@ export function renderTimeline(container, payload, metrics) {
     const left = callPct(p.startUs);
     const width = callPct(p.endUs) - left;
     const durSec = usToSec(p.endUs - p.startUs);
-    return `<div class="timeline__phase" style="left:${left}%;width:${width}%;background:${p.color}" title="${p.label}: ${formatDuration(durSec)}">${width > 10 ? p.label : ''}</div>`;
+    return `<div class="call-timeline__phase" style="left:${left}%;width:${width}%;background:${p.color}" title="${p.label}: ${formatDuration(durSec)}">${width > 10 ? p.label : ''}</div>`;
   }).join('');
 
   const macroLegend = phases.map(p => {
     const durSec = usToSec(p.endUs - p.startUs);
-    return `<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${p.color}"></span>${p.label}: ${formatDuration(durSec)}</div>`;
+    return `<div class="call-timeline__legend"><span class="call-timeline__legend-dot" style="background:${p.color}"></span>${p.label}: ${formatDuration(durSec)}</div>`;
   }).join('');
 
   const hasTools = segments.some(s => s.role === 'tool');
@@ -447,24 +447,24 @@ export function renderTimeline(container, payload, metrics) {
   for (const role of roles) {
     const count = segments.filter(s => s.role === role || (role === 'say' && s.role === 'assistant-manual')).length;
     const bg = role === 'say' ? ROLE_BG['assistant-manual'] : role === 'system' ? ROLE_BG.system : ROLE_BG[role];
-    roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${bg}"></span>${roleLabels[role]} (${count})</div>`);
+    roleLegendItems.push(`<div class="call-timeline__legend"><span class="call-timeline__legend-dot" style="background:${bg}"></span>${roleLabels[role]} (${count})</div>`);
   }
   if (hasSystem) {
     const hasThinking = segments.some(s => s.role === 'system' && s.category === 'assistant-thinking');
     const hasStep = segments.some(s => s.role === 'system' && s.category === 'step');
 
     if (hasThinking) {
-      roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS['assistant-thinking']}"></span>Thinking</div>`);
+      roleLegendItems.push(`<div class="call-timeline__legend"><span class="call-timeline__legend-dot" style="background:${SYSTEM_COLORS['assistant-thinking']}"></span>Thinking</div>`);
     }
     if (hasStep) {
-      roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${SYSTEM_COLORS.step}"></span>Step</div>`);
+      roleLegendItems.push(`<div class="call-timeline__legend"><span class="call-timeline__legend-dot" style="background:${SYSTEM_COLORS.step}"></span>Step</div>`);
     }
   }
   if (hasEnriched) {
     const enrichedCategories = new Set(segments.filter(s => s.role === 'enriched').map(s => s.category));
     const categoryLabels = { filler: 'Filler', 'attention-timeout': 'Timeout', 'manual-say': 'System Say', rewrite: 'Rewrite', 'context-switch': 'Context', reset: 'Reset' };
     for (const cat of enrichedCategories) {
-      roleLegendItems.push(`<div class="timeline__legend"><span class="timeline__legend-dot" style="background:${ENRICHED_COLORS[cat] || 'rgba(148,163,184,0.5)'}"></span>${categoryLabels[cat] || cat}</div>`);
+      roleLegendItems.push(`<div class="call-timeline__legend"><span class="call-timeline__legend-dot" style="background:${ENRICHED_COLORS[cat] || 'rgba(148,163,184,0.5)'}"></span>${categoryLabels[cat] || cat}</div>`);
     }
   }
   const roleLegend = roleLegendItems.join('');
@@ -479,22 +479,22 @@ export function renderTimeline(container, payload, metrics) {
   `).join('');
 
   container.innerHTML = `
-    <div class="timeline">
-      <div class="timeline__bar">
-        <div class="timeline__title">Call Phases</div>
+    <div class="call-timeline">
+      <div class="call-timeline__bar">
+        <div class="call-timeline__title">Call Phases</div>
         <div class="swimlane__row">
           <div class="swimlane__row-label" style="width:${LABEL_WIDTH}px">Phases</div>
           <div class="swimlane__track timeline__track--macro">${macroHtml}</div>
         </div>
-        <div class="timeline__legends" style="padding-left:${LABEL_WIDTH + 12}px">${macroLegend}</div>
+        <div class="call-timeline__legends" style="padding-left:${LABEL_WIDTH + 12}px">${macroLegend}</div>
       </div>
-      <div class="timeline__bar" style="margin-top:1rem">
-        <div class="timeline__title">Conversation Flow <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem">(from Answer)</span></div>
+      <div class="call-timeline__bar" style="margin-top:1rem">
+        <div class="call-timeline__title">Conversation Flow <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem">(from Answer)</span></div>
         <div class="swimlane" id="swimlane" style="position:relative">
           ${aiMarkerHtml}
           ${swimlaneRows}
         </div>
-        <div class="timeline__legends" style="padding-left:${LABEL_WIDTH + 12}px">${roleLegend}</div>
+        <div class="call-timeline__legends" style="padding-left:${LABEL_WIDTH + 12}px">${roleLegend}</div>
       </div>
       <div class="swimlane__tooltip" id="swimlane-tooltip"></div>
     </div>

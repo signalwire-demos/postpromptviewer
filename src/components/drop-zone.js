@@ -3,71 +3,87 @@ import { update } from '../state.js';
 
 export function mountDropZone(container) {
   container.innerHTML = `
-    <div class="drop-zone">
-      <div class="drop-zone__header">
-        <a href="https://signalwire.community/" target="_blank" rel="noopener" class="drop-zone__header-link">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <div class="min-h-screen flex flex-col items-center justify-center p-8 relative">
+      <div class="absolute top-6 right-8 flex gap-2">
+        <a href="https://signalwire.community/" target="_blank" rel="noopener" class="btn btn-ghost btn-sm gap-2 border border-base-300">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"></path>
             <path d="M7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"></path>
           </svg>
           <span>Community</span>
         </a>
-        <a href="https://developer.signalwire.com/sdks/agents-sdk/" target="_blank" rel="noopener" class="drop-zone__header-link">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <a href="https://developer.signalwire.com/sdks/agents-sdk/" target="_blank" rel="noopener" class="btn btn-ghost btn-sm gap-2 border border-base-300">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"></path>
             <path d="M8 15.01V13h8v2.01H8zm0 3V16h5v2.01H8z"></path>
           </svg>
           <span>Agents SDK</span>
         </a>
-        <a href="https://github.com/signalwire-demos/postpromptviewer" target="_blank" rel="noopener" class="drop-zone__header-link">
-          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+        <a href="https://github.com/signalwire-demos/postpromptviewer" target="_blank" rel="noopener" class="btn btn-ghost btn-sm gap-2 border border-base-300">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
           </svg>
           <span>GitHub</span>
         </a>
       </div>
-      <div class="drop-zone__grid">
-        <div class="drop-zone__column">
-          <div class="drop-zone__area" id="swml-drop">
-            <div class="drop-zone__icon">⚙️</div>
-            <div class="drop-zone__title">SWML Inspector</div>
-            <div class="drop-zone__subtitle">Drop a SWML configuration JSON file here</div>
-            <div class="drop-zone__buttons">
-              <button class="drop-zone__btn" id="swml-btn">
-                <span>📁</span>
-                <span>Browse Files</span>
-              </button>
-              <button class="drop-zone__btn drop-zone__btn--secondary" id="swml-example-btn">
-                <span>✨</span>
-                <span>Load Example</span>
-              </button>
-            </div>
-            <input type="file" id="swml-input" accept=".json" style="display:none" />
+
+      <div class="mb-8 w-full max-w-5xl">
+        <button class="btn btn-primary btn-lg gap-3 w-full" id="browse-records-btn">
+          <span class="text-2xl">&#x1F967;</span>
+          <div class="text-left">
+            <div class="font-bold">P.I.E. - Browse Records</div>
+            <div class="text-xs font-normal opacity-70">Search and view stored post-prompt records</div>
           </div>
-          <div class="drop-zone__hint">Inspect AI prompts, steps, functions, and configuration</div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl w-full">
+        <div class="flex flex-col gap-3">
+          <div class="card bg-base-200 border-2 border-dashed border-base-300 hover:border-primary transition-all cursor-pointer" id="swml-drop">
+            <div class="card-body items-center text-center py-12">
+              <div class="text-5xl mb-2 opacity-60">&#x2699;&#xFE0F;</div>
+              <h3 class="card-title text-lg">SWML Inspector</h3>
+              <p class="text-sm opacity-70">Drop a SWML configuration JSON file here</p>
+              <div class="card-actions mt-4">
+                <button class="btn btn-primary btn-sm gap-2" id="swml-btn">
+                  <span>&#x1F4C1;</span>
+                  <span>Browse Files</span>
+                </button>
+                <button class="btn btn-outline btn-sm gap-2" id="swml-example-btn">
+                  <span>&#x2728;</span>
+                  <span>Load Example</span>
+                </button>
+              </div>
+              <input type="file" id="swml-input" accept=".json" style="display:none" />
+            </div>
+          </div>
+          <p class="text-xs text-center opacity-50">Inspect AI prompts, steps, functions, and configuration</p>
         </div>
 
-        <div class="drop-zone__column">
-          <div class="drop-zone__area" id="postprompt-drop">
-            <div class="drop-zone__icon">📊</div>
-            <div class="drop-zone__title">Post-Prompt Viewer</div>
-            <div class="drop-zone__subtitle">Drop a post_conversation JSON file here</div>
-            <div class="drop-zone__buttons">
-              <button class="drop-zone__btn" id="postprompt-btn">
-                <span>📁</span>
-                <span>Browse Files</span>
-              </button>
-              <button class="drop-zone__btn drop-zone__btn--secondary" id="postprompt-example-btn">
-                <span>✨</span>
-                <span>Load Example</span>
-              </button>
+        <div class="flex flex-col gap-3">
+          <div class="card bg-base-200 border-2 border-dashed border-base-300 hover:border-primary transition-all cursor-pointer" id="postprompt-drop">
+            <div class="card-body items-center text-center py-12">
+              <div class="text-5xl mb-2 opacity-60">&#x1F4CA;</div>
+              <h3 class="card-title text-lg">Post-Prompt Viewer</h3>
+              <p class="text-sm opacity-70">Drop a post_conversation JSON file here</p>
+              <div class="card-actions mt-4">
+                <button class="btn btn-primary btn-sm gap-2" id="postprompt-btn">
+                  <span>&#x1F4C1;</span>
+                  <span>Browse Files</span>
+                </button>
+                <button class="btn btn-outline btn-sm gap-2" id="postprompt-example-btn">
+                  <span>&#x2728;</span>
+                  <span>Load Example</span>
+                </button>
+              </div>
+              <input type="file" id="postprompt-input" accept=".json" style="display:none" />
             </div>
-            <input type="file" id="postprompt-input" accept=".json" style="display:none" />
           </div>
-          <div class="drop-zone__hint">Analyze call metrics, transcripts, and performance data</div>
+          <p class="text-xs text-center opacity-50">Analyze call metrics, transcripts, and performance data</p>
         </div>
       </div>
-      <div id="drop-zone-error" class="drop-zone__error"></div>
+      <div id="drop-zone-error" class="text-error text-sm mt-4"></div>
     </div>
   `;
 
@@ -83,6 +99,11 @@ export function mountDropZone(container) {
 
   const errorDiv = container.querySelector('#drop-zone-error');
 
+  // Browse Records button
+  container.querySelector('#browse-records-btn').addEventListener('click', () => {
+    update({ browseMode: true });
+  });
+
   function showError(msg) {
     errorDiv.textContent = msg;
     setTimeout(() => { errorDiv.textContent = ''; }, 5000);
@@ -97,14 +118,17 @@ export function mountDropZone(container) {
 
   postPromptArea.addEventListener('dragover', (e) => {
     e.preventDefault();
-    postPromptArea.classList.add('drag-over');
+    postPromptArea.classList.add('border-primary', 'bg-primary/10');
+    postPromptArea.classList.remove('border-base-300');
   });
   postPromptArea.addEventListener('dragleave', () => {
-    postPromptArea.classList.remove('drag-over');
+    postPromptArea.classList.remove('border-primary', 'bg-primary/10');
+    postPromptArea.classList.add('border-base-300');
   });
   postPromptArea.addEventListener('drop', (e) => {
     e.preventDefault();
-    postPromptArea.classList.remove('drag-over');
+    postPromptArea.classList.remove('border-primary', 'bg-primary/10');
+    postPromptArea.classList.add('border-base-300');
     const file = e.dataTransfer.files[0];
     if (file) handlePostPromptFile(file);
   });
@@ -118,14 +142,17 @@ export function mountDropZone(container) {
 
   swmlArea.addEventListener('dragover', (e) => {
     e.preventDefault();
-    swmlArea.classList.add('drag-over');
+    swmlArea.classList.add('border-primary', 'bg-primary/10');
+    swmlArea.classList.remove('border-base-300');
   });
   swmlArea.addEventListener('dragleave', () => {
-    swmlArea.classList.remove('drag-over');
+    swmlArea.classList.remove('border-primary', 'bg-primary/10');
+    swmlArea.classList.add('border-base-300');
   });
   swmlArea.addEventListener('drop', (e) => {
     e.preventDefault();
-    swmlArea.classList.remove('drag-over');
+    swmlArea.classList.remove('border-primary', 'bg-primary/10');
+    swmlArea.classList.add('border-base-300');
     const file = e.dataTransfer.files[0];
     if (file) handleSwmlFile(file);
   });
@@ -137,7 +164,7 @@ export function mountDropZone(container) {
         const raw = JSON.parse(e.target.result);
         const payload = parsePayload(raw);
         const metrics = computeMetrics(payload);
-        update({ payload, metrics, activeTab: 'dashboard', viewMode: 'postprompt' });
+        update({ payload, metrics, rawPayload: raw, activeTab: 'dashboard', viewMode: 'postprompt', recordSource: 'file' });
       } catch (err) {
         showError(`Failed to parse post-prompt file: ${err.message}`);
       }
@@ -170,7 +197,7 @@ export function mountDropZone(container) {
       const raw = await response.json();
       const payload = parsePayload(raw);
       const metrics = computeMetrics(payload);
-      update({ payload, metrics, activeTab: 'dashboard', viewMode: 'postprompt' });
+      update({ payload, metrics, rawPayload: raw, activeTab: 'dashboard', viewMode: 'postprompt', recordSource: 'file' });
     } catch (err) {
       showError(`Failed to load example: ${err.message}`);
     }

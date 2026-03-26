@@ -445,7 +445,7 @@ export function renderRecording(container, payload) {
 
   const opts = {
     container: '#waveform',
-    cursorColor: '#e4e6eb',
+    cursorColor: '#ffffff',
     cursorWidth: 1,
     height: 250,
     autoScroll: true,
@@ -470,7 +470,7 @@ export function renderRecording(container, payload) {
         height: 30,
         waveColor: 'rgba(148, 163, 184, 0.4)',
         progressColor: 'rgba(148, 163, 184, 0.7)',
-        cursorColor: '#e4e6eb',
+        cursorColor: '#ffffff',
         container: '#waveform-minimap',
       }),
       HoverPlugin.create({

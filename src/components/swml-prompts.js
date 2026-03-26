@@ -5,21 +5,21 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
   themeVariables: {
-    primaryColor: '#3b82f6',
-    primaryTextColor: '#e5e7eb',
-    primaryBorderColor: '#60a5fa',
+    primaryColor: '#044EF4',
+    primaryTextColor: '#ffffff',
+    primaryBorderColor: '#044EF4',
     lineColor: '#9ca3af',
-    secondaryColor: '#1f2937',
-    tertiaryColor: '#111827',
-    background: '#0a0a0a',
-    mainBkg: '#1f2937',
-    secondBkg: '#111827',
-    textColor: '#e5e7eb',
-    borderColor: '#374151',
-    nodeBorder: '#60a5fa',
-    clusterBkg: '#1f2937',
-    clusterBorder: '#374151',
-    edgeLabelBackground: '#1f2937',
+    secondaryColor: '#2a2a2e',
+    tertiaryColor: '#1e1e1f',
+    background: '#1e1e1f',
+    mainBkg: '#2a2a2e',
+    secondBkg: '#1e1e1f',
+    textColor: '#ffffff',
+    borderColor: '#333338',
+    nodeBorder: '#044EF4',
+    clusterBkg: '#2a2a2e',
+    clusterBorder: '#333338',
+    edgeLabelBackground: '#2a2a2e',
   },
   flowchart: {
     curve: 'basis',
@@ -64,8 +64,8 @@ export async function renderSwmlPrompts(container, swml) {
           </div>
           <div class="swml-step-flow-diagram-wrapper">
             <div class="flow-legend">
-              <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#3b82f6;border-color:#2563eb"></span>Step / State</span>
-              <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#f59e0b;border-color:#d97706"></span>Function</span>
+              <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#044EF4;border-color:#0340c5"></span>Step / State</span>
+              <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#FFD700;border-color:#d4b200"></span>Function</span>
               <span class="flow-legend-item"><span class="flow-legend-swatch" style="background:#6b7280;border-color:#4b5563"></span>Gather / Q&A</span>
             </div>
             <div class="swml-zoom-controls">
@@ -233,8 +233,8 @@ export async function renderSwmlPrompts(container, swml) {
       if (svg) {
         try {
           await downloadSvgAsImage(svg, 'swml-step-flow-diagram.png', 'SWML Step Flow Diagram', [
-            { color: '#3b82f6', stroke: '#2563eb', label: 'Step / State' },
-            { color: '#f59e0b', stroke: '#d97706', label: 'Function' },
+            { color: '#044EF4', stroke: '#0340c5', label: 'Step / State' },
+            { color: '#FFD700', stroke: '#d4b200', label: 'Function' },
             { color: '#6b7280', stroke: '#4b5563', label: 'Gather / Q&A' },
           ]);
           downloadImageBtn.textContent = 'Downloaded!';
@@ -260,7 +260,7 @@ export async function renderSwmlPrompts(container, swml) {
       navigator.clipboard.writeText(text).then(() => {
         const originalHtml = btn.innerHTML;
         btn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         `;
@@ -285,8 +285,8 @@ function generateStepFlowDiagram(steps) {
   if (!steps || steps.length === 0) return '';
 
   let lines = ['graph LR'];
-  lines.push('    classDef stepNode fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff');
-  lines.push('    classDef funcNode fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000');
+  lines.push('    classDef stepNode fill:#044EF4,stroke:#0340c5,stroke-width:2px,color:#fff');
+  lines.push('    classDef funcNode fill:#FFD700,stroke:#d4b200,stroke-width:2px,color:#000');
   lines.push('    classDef gatherNode fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff');
   lines.push('');
 
@@ -479,7 +479,7 @@ function makeSwmlEdgesClickable(svg) {
         selectedEdge = null;
       } else {
         edge.style.strokeWidth = '3px';
-        edge.style.stroke = '#f59e0b';
+        edge.style.stroke = '#FFD700';
         selectedEdge = edge;
       }
     });

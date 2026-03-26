@@ -71,28 +71,25 @@ export function renderDashboard(container, metrics) {
   // Performance Rating
   if (l.assistantStats) {
     const ratingHtml = `
-      <div class="dashboard__section">
-        <div class="dashboard__section-header">
-          <h3 class="dashboard__section-title">System Performance Rating</h3>
-        </div>
-        <div class="dashboard__grid">
-          <div class="metric-card metric-card--rating">
-            <div class="metric-card__label">Rating</div>
-            <div class="metric-card__value" style="color:${l.performanceColor}">${l.performanceRating}</div>
-            <div class="metric-card__unit">Based on assistant responses only. Target: &lt; 1200ms avg</div>
+      <div class="mb-6">
+        <h3 class="text-lg font-bold mb-3" style="font-family: var(--font-heading)">System Performance Rating</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="stat bg-base-200 rounded-box shadow-sm">
+            <div class="stat-title">Rating</div>
+            <div class="stat-value text-lg" style="color:${l.performanceColor}">${l.performanceRating}</div>
+            <div class="stat-desc">Based on assistant responses only. Target: &lt; 1200ms avg</div>
           </div>
           ${l.toolStats ? `
-          <div class="metric-card metric-card--note">
-            <div class="metric-card__label">Note</div>
-            <div class="metric-card__value" style="font-size:0.85rem;font-weight:400;line-height:1.5">
-              Tool calls (avg ${l.toolStats.avg}ms) excluded from rating — they depend on external APIs.
+          <div class="stat bg-base-200 rounded-box shadow-sm">
+            <div class="stat-title">Note</div>
+            <div class="stat-desc mt-2" style="white-space:normal">
+              Tool calls (avg ${l.toolStats.avg}ms) excluded from rating &mdash; they depend on external APIs.
             </div>
           </div>
           ` : ''}
         </div>
       </div>
     `;
-    // We'll append this separately
     sections.push({ _ratingHtml: ratingHtml });
   }
 
@@ -130,7 +127,7 @@ export function renderDashboard(container, metrics) {
         { label: 'Total Calls', value: t.swaigCallCount },
         { label: 'Avg Execution', value: t.avgExecutionLatency ? `${Math.round(t.avgExecutionLatency)}` : 'N/A', unit: t.avgExecutionLatency ? 'ms (round-trip)' : '', na: !t.avgExecutionLatency },
         { label: 'Avg Function', value: t.avgFunctionLatency ? `${Math.round(t.avgFunctionLatency)}` : 'N/A', unit: t.avgFunctionLatency ? 'ms (remote only)' : '', na: !t.avgFunctionLatency },
-        { label: 'Action Types', value: t.actionTypes.length ? t.actionTypes.length : 'None', unit: t.actionTypes.length ? t.actionTypes.map(a => `<span class="metric-card__tag">${a}</span>`).join(' ') : '', na: !t.actionTypes.length },
+        { label: 'Action Types', value: t.actionTypes.length ? t.actionTypes.length : 'None', unit: t.actionTypes.length ? t.actionTypes.map(a => `<span class="badge badge-outline badge-xs">${a}</span>`).join(' ') : '', na: !t.actionTypes.length },
         { label: 'Call Rate', value: t.toolCallRate ? t.toolCallRate.toFixed(1) : 'N/A', unit: 'calls/min' },
       ],
     });
@@ -265,21 +262,21 @@ export function renderDashboard(container, metrics) {
   }
 
   container.innerHTML = `
-    <div class="dashboard">
+    <div class="p-6 max-w-7xl mx-auto space-y-6">
       ${sections.map(section => {
         if (section._ratingHtml) return section._ratingHtml;
         return `
-          <div class="dashboard__section">
-            <div class="dashboard__section-header">
-              <h3 class="dashboard__section-title">${section.title}</h3>
-              ${section.subtitle ? `<span class="dashboard__section-subtitle">${section.subtitle}</span>` : ''}
+          <div class="mb-6">
+            <div class="flex items-baseline gap-3 mb-3">
+              <h3 class="text-lg font-bold" style="font-family: var(--font-heading)">${section.title}</h3>
+              ${section.subtitle ? `<span class="text-xs opacity-50">${section.subtitle}</span>` : ''}
             </div>
-            <div class="dashboard__grid">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
               ${section.cards.map(card => `
-                <div class="metric-card${card.na ? ' metric-card--na' : ''}">
-                  <div class="metric-card__label">${card.label}</div>
-                  <div class="metric-card__value">${card.value}</div>
-                  ${card.unit ? `<div class="metric-card__unit">${card.unit}</div>` : ''}
+                <div class="stat bg-base-200 rounded-box shadow-sm p-4 ${card.na ? 'opacity-50' : ''}">
+                  <div class="stat-title text-xs">${card.label}</div>
+                  <div class="stat-value text-xl">${card.value}</div>
+                  ${card.unit ? `<div class="stat-desc text-xs">${card.unit}</div>` : ''}
                 </div>
               `).join('')}
             </div>

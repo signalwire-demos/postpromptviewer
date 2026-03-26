@@ -2,7 +2,7 @@ export function renderSwmlOverview(container, swml) {
   const aiConfig = findAiConfig(swml);
 
   if (!aiConfig) {
-    container.innerHTML = '<div style="padding:1.5rem;color:var(--text-muted)">No AI configuration found in SWML</div>';
+    container.innerHTML = '<div class="p-6 text-sm opacity-50">No AI configuration found in SWML</div>';
     return;
   }
 
@@ -26,31 +26,33 @@ export function renderSwmlOverview(container, swml) {
   ];
 
   container.innerHTML = `
-    <div class="swml-overview">
-      <div class="swml-overview__header">
-        <h2 style="margin:0;font-size:1.25rem;font-weight:700;color:var(--text-primary)">SWML Configuration Overview</h2>
-        <p style="margin:0.5rem 0 0 0;font-size:0.875rem;color:var(--text-secondary)">SignalWire Markup Language AI Agent Configuration</p>
+    <div class="p-6 max-w-6xl mx-auto space-y-6">
+      <div>
+        <h2 class="text-xl font-bold" style="font-family: var(--font-heading)">SWML Configuration Overview</h2>
+        <p class="text-sm opacity-60 mt-1">SignalWire Markup Language AI Agent Configuration</p>
       </div>
 
-      <div class="swml-overview__stats">
+      <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-200">
         ${stats.map(stat => `
-          <div class="swml-stat-card">
-            <div class="swml-stat-card__label">${stat.label}</div>
-            <div class="swml-stat-card__value">${stat.value}</div>
+          <div class="stat">
+            <div class="stat-title">${stat.label}</div>
+            <div class="stat-value text-lg">${stat.value}</div>
           </div>
         `).join('')}
       </div>
 
       ${languages.length > 0 ? `
-        <div class="swml-overview__section">
-          <h3 class="swml-section-title">Languages</h3>
-          <div class="swml-language-list">
+        <div>
+          <h3 class="text-lg font-bold mb-3" style="font-family: var(--font-heading)">Languages</h3>
+          <div class="flex flex-wrap gap-3">
             ${languages.map(lang => `
-              <div class="swml-language-card">
-                <div class="swml-language-card__name">${escapeHtml(lang.name || 'Unknown')}</div>
-                <div class="swml-language-card__details">
-                  <span class="swml-language-card__code">${escapeHtml(lang.code || '')}</span>
-                  <span class="swml-language-card__voice">${escapeHtml(lang.voice || '')}</span>
+              <div class="card bg-base-200 shadow-sm">
+                <div class="card-body p-3">
+                  <div class="font-medium text-sm">${escapeHtml(lang.name || 'Unknown')}</div>
+                  <div class="flex gap-2">
+                    <div class="badge badge-primary badge-sm">${escapeHtml(lang.code || '')}</div>
+                    <div class="badge badge-ghost badge-sm">${escapeHtml(lang.voice || '')}</div>
+                  </div>
                 </div>
               </div>
             `).join('')}
@@ -59,34 +61,44 @@ export function renderSwmlOverview(container, swml) {
       ` : ''}
 
       ${Object.keys(globalData).length > 0 ? `
-        <div class="swml-overview__section">
-          <h3 class="swml-section-title">Global Data Summary</h3>
-          <div class="swml-global-data-preview">
-            ${Object.entries(globalData).map(([key, value]) => `
-              <div class="swml-global-item">
-                <span class="swml-global-key">${escapeHtml(key)}</span>
-                <span class="swml-global-value">${escapeHtml(typeof value === 'object' ? JSON.stringify(value) : String(value))}</span>
-              </div>
-            `).join('')}
+        <div>
+          <h3 class="text-lg font-bold mb-3" style="font-family: var(--font-heading)">Global Data Summary</h3>
+          <div class="overflow-x-auto rounded-box border border-base-300 bg-base-200">
+            <table class="table table-sm">
+              <thead><tr class="bg-base-300"><th>Key</th><th>Value</th></tr></thead>
+              <tbody>
+                ${Object.entries(globalData).map(([key, value]) => `
+                  <tr class="hover">
+                    <td class="font-mono text-sm">${escapeHtml(key)}</td>
+                    <td class="text-sm opacity-70">${escapeHtml(typeof value === 'object' ? JSON.stringify(value) : String(value))}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
           </div>
         </div>
       ` : ''}
 
-      <div class="swml-overview__section">
-        <h3 class="swml-section-title">Conversation Steps (${steps.length})</h3>
-        <p class="swml-section-subtitle">View detailed step instructions and flow diagram in Prompts & Steps tab</p>
-        <div class="swml-steps-list">
-          ${steps.map((step, idx) => {
-            const funcs = normalizeFunctions(step.functions);
-            const funcText = funcs.length > 0 ? funcs.join(', ') : 'none';
-            return `
-              <div class="swml-step-list-item">
-                <div class="swml-step-list-number">${idx + 1}.</div>
-                <div class="swml-step-list-name">${escapeHtml(step.name || 'Unnamed Step')}</div>
-                <div class="swml-step-list-functions">${escapeHtml(funcText)}</div>
-              </div>
-            `;
-          }).join('')}
+      <div>
+        <h3 class="text-lg font-bold mb-3" style="font-family: var(--font-heading)">Conversation Steps (${steps.length})</h3>
+        <p class="text-xs opacity-50 mb-3">View detailed step instructions and flow diagram in Prompts & Steps tab</p>
+        <div class="overflow-x-auto rounded-box border border-base-300 bg-base-200">
+          <table class="table table-sm">
+            <thead><tr class="bg-base-300"><th>#</th><th>Step Name</th><th>Functions</th></tr></thead>
+            <tbody>
+              ${steps.map((step, idx) => {
+                const funcs = normalizeFunctions(step.functions);
+                const funcText = funcs.length > 0 ? funcs.join(', ') : 'none';
+                return `
+                  <tr class="hover">
+                    <td class="text-sm opacity-60">${idx + 1}</td>
+                    <td class="font-medium text-sm">${escapeHtml(step.name || 'Unnamed Step')}</td>
+                    <td class="text-sm font-mono opacity-70">${escapeHtml(funcText)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
