@@ -10,10 +10,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Resource Limits
 # ─────────────────────────────────────────────────────────────────────────────
-# Static site needs minimal resources
+# FastAPI backend + static frontend
 resources:
-  memory: 128m
-  cpu: 0.5
+  memory: 512m
+  cpu: 1
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Health Check
@@ -43,7 +43,7 @@ scale:
 environments:
   production:
     resources:
-      memory: 256m
+      memory: 512m
       cpu: 1
     scale:
       web: 1
