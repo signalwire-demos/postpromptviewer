@@ -451,7 +451,22 @@ export function renderCharts(container, payload, metrics) {
       id: 'chart-speech-timing',
       render: (canvas) => {
         const msgs = msgsWithTiming;
-        const labels = msgs.map((m, i) => m.isBargeIn ? `Msg ${i + 1} *` : `Msg ${i + 1}`);
+        const labels = msgs.map((m, i) => {
+          let label = `Msg ${i + 1}`;
+          if (m.isBargeIn) label += ' *';
+          if (m.multiMerged) label += ' †';
+          return label;
+        });
+
+        // Cap y-axis from single-segment messages so a multi-segment
+        // merged outlier (whose start_timestamp refers to an earlier
+        // segment) can't flatten every other bar. Outliers clip visually.
+        const stableTotals = msgs
+          .filter(m => !m.multiMerged)
+          .map(m => m.speakingToFinal);
+        const cap = stableTotals.length
+          ? Math.ceil(Math.max(...stableTotals) * 1.2 / 500) * 500
+          : undefined;
 
         return new Chart(canvas, {
           type: 'bar',
@@ -503,6 +518,7 @@ export function renderCharts(container, payload, metrics) {
                     const m = msgs[idx];
                     const lines = [`Total: ${m.speakingToFinal}ms`];
                     if (m.isBargeIn) lines.push('* Barge-in: user interrupted assistant');
+                    if (m.multiMerged) lines.push('† Merged utterance — timing spans multiple segments');
                     return lines;
                   },
                 },
@@ -514,6 +530,7 @@ export function renderCharts(container, payload, metrics) {
                 stacked: true,
                 ...SCALE_STYLE.y,
                 beginAtZero: true,
+                ...(cap ? { max: cap } : {}),
                 title: { display: true, text: 'ms', color: '#6b7280' },
               },
             },
@@ -532,7 +549,7 @@ export function renderCharts(container, payload, metrics) {
         const roleColors = {
           system: COLORS.purple,
           'system-log': COLORS.gray,
-          assistant: COLORS.blue,
+          assistant: COLORS.indigo,
           user: COLORS.green,
           tool: COLORS.yellow,
         };
