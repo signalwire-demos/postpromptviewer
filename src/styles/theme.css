@@ -67,11 +67,11 @@ code, pre {
   font-family: var(--font-mono);
 }
 
-a {
+a[href]:not(.btn):not(.tab) {
   color: var(--accent);
   text-decoration: none;
 }
-a:hover {
+a[href]:not(.btn):not(.tab):hover {
   text-decoration: underline;
 }
 
