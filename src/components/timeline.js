@@ -121,7 +121,7 @@ export function renderTimeline(container, payload, metrics) {
         label: truncate(m.text || 'say', 20),
         content: (m.text || 'System say') + (m.is_error ? ' [ERROR]' : ''),
       });
-    } else if (msg.action === 'hearing_hint' || msg.action === 'pronounce_rule') {
+    } else if (msg.action === 'hearing_hint' || msg.action === 'pronounce_rule' || msg.action === 'pronounce') {
       enrichedRows.push({
         role: 'enriched',
         category: 'rewrite',

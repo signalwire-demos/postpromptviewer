@@ -31,6 +31,24 @@ export function renderHeader(container, payload, metrics) {
     aiResultBadge = `<div class="badge badge-primary badge-outline badge-sm">${payload.swmlVars.ai_result}</div>`;
   }
 
+  const capabilities = payload.swmlVars?.userVariables?.capabilities || null;
+  const CAP_LABELS = {
+    audio: 'audio',
+    video: 'video',
+    transcript: 'transcript',
+    display_content: 'display',
+    self_preview: 'self-preview',
+  };
+  const capabilityChips = capabilities
+    ? Object.entries(CAP_LABELS)
+        .filter(([key]) => {
+          const v = capabilities[key];
+          return v === true || (v && typeof v === 'object');
+        })
+        .map(([, label]) => `<div class="badge badge-ghost badge-sm" title="SDK capability">${label}</div>`)
+        .join('')
+    : '';
+
   let conversationIdHtml = '';
   if (payload.conversationId) {
     conversationIdHtml = `<span class="text-xs opacity-60" title="${payload.conversationId}">Conv: ${truncate(payload.conversationId, 12)}</span>`;
@@ -51,6 +69,7 @@ export function renderHeader(container, payload, metrics) {
         ${endBadge}
         ${hardTimeoutBadge}
         ${aiResultBadge}
+        ${capabilityChips}
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <button class="btn btn-outline btn-primary btn-xs gap-1" id="header-vcon-btn" title="Download as vCon JSON">

@@ -38,6 +38,8 @@ export function renderGlobalData(container, payload) {
 
   // ---- Snapshot view (existing logic) ----
 
+  const clientWidgetHtml = renderClientWidgetSummary(payload);
+
   function buildSections() {
     const sections = [];
 
@@ -161,6 +163,7 @@ export function renderGlobalData(container, payload) {
 
     snapshotPane.innerHTML = `
       <div class="global-data-viewer">
+        ${clientWidgetHtml}
         ${renderSearchBar(allSections.length, filteredSections.length)}
         ${filteredSections.length > 0 ? filteredSections.map((section) => {
           const originalIdx = allSections.indexOf(section);
@@ -781,4 +784,87 @@ function formatValue(value) {
   if (typeof value === 'boolean') return value.toString();
   if (typeof value === 'number') return value.toString();
   return String(value);
+}
+
+// ============================================================
+// Client / Widget summary (renders SWMLVars.userVariables.metadata)
+// ============================================================
+
+function parseBrowser(ua) {
+  if (!ua) return '';
+  // Order matters: Edg/OPR before Chrome, Chrome before Safari
+  const m = ua.match(/Edg\/(\S+)/) || ua.match(/OPR\/(\S+)/) ||
+            ua.match(/Firefox\/(\S+)/) || ua.match(/Chrome\/(\S+)/) ||
+            ua.match(/Version\/(\S+).*Safari/);
+  if (!m) return '';
+  const name = m[0].split('/')[0].replace('Edg', 'Edge').replace('Version', 'Safari');
+  const ver = m[1].split('.')[0];
+  return `${name} ${ver}`;
+}
+
+function renderClientWidgetSummary(payload) {
+  const meta = payload.swmlVars?.userVariables?.metadata;
+  if (!meta || typeof meta !== 'object') return '';
+
+  const c = meta.client || {};
+  const p = meta.page || {};
+  const w = meta.widget || {};
+  if (!Object.keys(c).length && !Object.keys(p).length && !Object.keys(w).length) return '';
+
+  const browser = parseBrowser(c.user_agent);
+  const viewport = c.viewport ? `${c.viewport.width}×${c.viewport.height}` : '';
+  const dpr = c.device_pixel_ratio ? `@${c.device_pixel_ratio}x` : '';
+
+  const clientRows = [
+    c.platform && ['Platform', c.platform],
+    browser && ['Browser', browser],
+    viewport && ['Viewport', `${viewport}${dpr ? ' ' + dpr : ''}`],
+    c.language && ['Language', c.language],
+    c.timezone && ['Timezone', c.timezone],
+    c.prefers_dark != null && ['Dark mode', c.prefers_dark ? 'yes' : 'no'],
+    c.touch != null && ['Touch', c.touch ? 'yes' : 'no'],
+  ].filter(Boolean);
+
+  const pageRows = [
+    p.title && ['Title', p.title],
+    p.url && ['URL', p.url],
+    p.referrer && ['Referrer', p.referrer],
+  ].filter(Boolean);
+
+  const openedAt = w.opened_at ? new Date(w.opened_at).toLocaleString() : '';
+  const widgetRows = [
+    w.version && ['Version', w.version],
+    w.theme && ['Theme', w.theme],
+    w.layout && ['Layout', w.layout],
+    w.audio_only != null && ['Audio only', w.audio_only ? 'yes' : 'no'],
+    openedAt && ['Opened', openedAt],
+  ].filter(Boolean);
+
+  function card(title, rows) {
+    if (!rows.length) return '';
+    return `
+      <div class="card bg-base-100 border border-base-300">
+        <div class="card-body p-3">
+          <div class="text-xs font-semibold uppercase tracking-wide opacity-70 mb-1">${title}</div>
+          <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+            ${rows.map(([k, v]) => `
+              <dt class="opacity-60">${escapeHtml(k)}</dt>
+              <dd class="font-mono break-all">${escapeHtml(String(v))}</dd>
+            `).join('')}
+          </dl>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <details class="mb-3" open>
+      <summary class="cursor-pointer font-semibold text-sm py-2">Client &amp; Widget</summary>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        ${card('Client', clientRows)}
+        ${card('Page', pageRows)}
+        ${card('Widget', widgetRows)}
+      </div>
+    </details>
+  `;
 }

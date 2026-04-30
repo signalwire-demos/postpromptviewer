@@ -197,6 +197,7 @@ export function renderTranscript(container, payload) {
 
   // Build lookup maps for enriched events that annotate messages
   const enrichedEvents = { hearingHints: [], pronounceRules: [], fillers: [], manualSays: [], functionErrors: [], autoCorrects: [], innerDialogs: [], textNormalizeItn: [], textNormalizeTn: [] };
+  const seenPronounceTs = new Set();
   (payload.callLog || []).forEach(entry => {
     if (entry.role !== 'system-log' || !entry.action) return;
     const m = entry.metadata || {};
@@ -206,6 +207,7 @@ export function renderTranscript(container, payload) {
         break;
       case 'pronounce_rule':
         enrichedEvents.pronounceRules.push({ timestamp: entry.timestamp, original: m.original || '', result: m.result || '' });
+        if (entry.timestamp) seenPronounceTs.add(entry.timestamp);
         break;
       case 'filler':
         enrichedEvents.fillers.push({ timestamp: entry.timestamp, text: m.text || 'thinking...' });
@@ -230,6 +232,14 @@ export function renderTranscript(container, payload) {
       }
     }
   });
+
+  // call_timeline emits `pronounce` events that don't appear in call_log
+  (payload.callTimeline || []).forEach(entry => {
+    if (entry.type !== 'pronounce' || !entry.ts) return;
+    if (seenPronounceTs.has(entry.ts)) return;
+    enrichedEvents.pronounceRules.push({ timestamp: entry.ts, original: entry.original || '', result: entry.result || '' });
+  });
+  enrichedEvents.pronounceRules.sort((a, b) => a.timestamp - b.timestamp);
 
   function buildMessagesHtml(messages) {
     const { search } = getState();
