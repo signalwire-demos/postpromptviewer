@@ -3071,6 +3071,15 @@
   font-size: 0.65rem;
 }
 
+/* Transcript: Acoustic latency — the "honest" silence→audio measurement.
+   Teal to distinguish from the plain audio/utterance/latency tags. */
+.transcript__meta-tag--acoustic {
+  background: rgba(20, 184, 166, 0.15);
+  color: #2dd4bf;
+  font-weight: 600;
+  border: 1px solid rgba(20, 184, 166, 0.35);
+}
+
 /* Transcript: Redacted badge */
 .transcript__meta-tag--redacted {
   background: rgba(239, 68, 68, 0.12);

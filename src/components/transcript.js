@@ -308,6 +308,7 @@ export function renderTranscript(container, payload) {
 
       if (msg.latency != null) metaTags.push(`latency: ${msg.latency}ms`);
       if (msg.audio_latency != null) metaTags.push(`audio: ${msg.audio_latency}ms`);
+      if (msg.acoustic_latency != null) metaTags.push({ text: `acoustic: ${msg.acoustic_latency}ms`, class: 'acoustic' });
       if (msg.utterance_latency != null) metaTags.push(`utterance: ${msg.utterance_latency}ms`);
       if (msg.confidence != null) metaTags.push(`confidence: ${(msg.confidence * 100).toFixed(1)}%`);
       if (msg.content_type) metaTags.push(msg.content_type);

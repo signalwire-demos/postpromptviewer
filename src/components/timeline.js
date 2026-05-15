@@ -221,6 +221,7 @@ export function renderTimeline(container, payload, metrics) {
       endTimestamp: msg.end_timestamp || 0,
       content: typeof msg.content === 'string' ? msg.content.trim() : '',
       audioLatency: msg.audio_latency || msg.utterance_latency || msg.latency || 0,
+      acousticLatency: msg.acoustic_latency ?? null,
     };
 
     // Barge-in data (assistant was interrupted by caller)
