@@ -3,14 +3,14 @@
 /* Usage: load after daisyui CSS, set data-theme='signalwire-dark' or 'signalwire-light' */
 
 /* Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Lexend:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 [data-theme='signalwire-dark'] {
   color-scheme: dark;
-  --color-base-100: #1e1e1f;
-  --color-base-200: #2a2a2e;
-  --color-base-300: #333338;
-  --color-base-content: #ffffff;
+  --color-base-100: #0e0e18;
+  --color-base-200: #181a28;
+  --color-base-300: #222436;
+  --color-base-content: #f0f0f4;
   --color-primary: #044EF4;
   --color-primary-content: #ffffff;
   --color-secondary: #F72A72;
@@ -39,26 +39,26 @@
 
 [data-theme='signalwire-light'] {
   color-scheme: light;
-  --color-base-100: #F5F3EF;
-  --color-base-200: #EDEAE5;
-  --color-base-300: #E5E2DC;
-  --color-base-content: #1E1D1B;
+  --color-base-100: #FAFBFC;
+  --color-base-200: #F3F4F6;
+  --color-base-300: #E8EAF0;
+  --color-base-content: #1A1A18;
   --color-primary: #044EF4;
-  --color-primary-content: #F5F3EF;
+  --color-primary-content: #FAFBFC;
   --color-secondary: #F72A72;
-  --color-secondary-content: #F5F3EF;
+  --color-secondary-content: #FAFBFC;
   --color-accent: #40E0D0;
-  --color-accent-content: #1E1D1B;
-  --color-neutral: #3E3B37;
-  --color-neutral-content: #F5F3EF;
+  --color-accent-content: #1A1A18;
+  --color-neutral: #3A3A38;
+  --color-neutral-content: #FAFBFC;
   --color-info: #044EF4;
-  --color-info-content: #F5F3EF;
+  --color-info-content: #FAFBFC;
   --color-success: #16a34a;
-  --color-success-content: #F5F3EF;
+  --color-success-content: #FAFBFC;
   --color-warning: #a16207;
-  --color-warning-content: #F5F3EF;
+  --color-warning-content: #FAFBFC;
   --color-error: #dc2626;
-  --color-error-content: #F5F3EF;
+  --color-error-content: #FAFBFC;
   --radius-selector: 8px;
   --radius-field: 8px;
   --radius-box: 12px;
@@ -71,7 +71,7 @@
 
 /* Typography */
 [data-theme='signalwire-dark'], [data-theme='signalwire-light'] {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Lexend', sans-serif;
 }
 [data-theme='signalwire-dark'] h1, [data-theme='signalwire-dark'] h2, [data-theme='signalwire-dark'] h3,
 [data-theme='signalwire-light'] h1, [data-theme='signalwire-light'] h2, [data-theme='signalwire-light'] h3 {

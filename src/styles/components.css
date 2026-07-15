@@ -3109,9 +3109,9 @@
 
 /* Transcript: End-of-turn basis/confidence */
 .transcript__meta-tag--eot {
-  background: rgba(56, 189, 248, 0.1);
-  color: #7dd3fc;
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(64, 224, 208, 0.1);
+  color: var(--sw-turquoise, #40E0D0);
+  border: 1px solid rgba(64, 224, 208, 0.25);
 }
 
 .transcript__meta-tag--eot-warn {
@@ -3123,9 +3123,9 @@
 
 /* Transcript: Diarization speaker label */
 .transcript__meta-tag--speaker {
-  background: rgba(139, 92, 246, 0.12);
+  background: rgba(96, 27, 230, 0.15);
   color: #a78bfa;
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(96, 27, 230, 0.35);
 }
 
 /* Transcript: Inferred (estimated) user timing badge */
@@ -3636,8 +3636,8 @@
 .trace__chip--ok { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
 .trace__chip--slow { background: rgba(239, 68, 68, 0.12); color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
 .trace__chip--dim { opacity: 0.6; font-style: italic; }
-.trace__chip--dtmf { background: rgba(56, 189, 248, 0.12); color: #7dd3fc; border-color: rgba(56, 189, 248, 0.3); }
-.trace__chip--filler { background: rgba(253, 230, 138, 0.12); color: #fde68a; border-color: rgba(253, 230, 138, 0.25); }
+.trace__chip--dtmf { background: rgba(64, 224, 208, 0.12); color: var(--sw-turquoise, #40E0D0); border-color: rgba(64, 224, 208, 0.3); }
+.trace__chip--filler { background: rgba(255, 215, 0, 0.1); color: var(--sw-gold, #FFD700); border-color: rgba(255, 215, 0, 0.25); }
 
 .trace__fillers { margin: 0.3rem 0; }
 
@@ -3700,8 +3700,8 @@
 
 /* Transcript: DTMF keypad input badge */
 .transcript__meta-tag--dtmf {
-  background: rgba(56, 189, 248, 0.12);
-  color: #7dd3fc;
+  background: rgba(64, 224, 208, 0.12);
+  color: var(--sw-turquoise, #40E0D0);
   font-weight: 600;
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(64, 224, 208, 0.3);
 }

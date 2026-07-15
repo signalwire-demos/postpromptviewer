@@ -8,26 +8,28 @@
   --border: var(--color-base-300, #333338);
   --border-subtle: var(--color-base-200, #2a2a2e);
 
-  /* Text colors */
-  --text-primary: var(--color-base-content, #ffffff);
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  /* Text colors - mapped to design-token foreground layers */
+  --text-primary: var(--fg-default, var(--color-base-content, #f0f0f4));
+  --text-secondary: var(--fg-muted, #a0a0aa);
+  --text-muted: var(--fg-subtle, #73737e);
 
-  /* Accent/semantic colors - mapped to DaisyUI theme */
-  --accent: var(--color-primary, #044EF4);
-  --accent-hover: #0340c5;
-  --accent-muted: rgba(4, 78, 244, 0.15);
+  /* Accent/semantic colors - per the style guide, fuchsia is THE accent
+     (links, buttons, active tab indicators); blue stays structural */
+  --accent: var(--sw-fuchsia, #F72A72);
+  --accent-hover: #d61e63;
+  --accent-muted: rgba(247, 42, 114, 0.15);
+  --structural: var(--sw-blue, #044EF4);
   --success: var(--color-success, #22c55e);
   --warning: var(--color-warning, #FFD700);
   --danger: var(--color-error, #ef4444);
   --info: var(--color-info, #044EF4);
 
-  /* Role colors */
-  --role-system: #8b5cf6;
-  --role-assistant: var(--color-primary, #044EF4);
+  /* Role colors - brand palette (blue structural, turquoise positive) */
+  --role-system: var(--sw-purple, #601BE6);
+  --role-assistant: var(--sw-blue, #044EF4);
   --role-user: var(--color-success, #22c55e);
-  --role-tool: var(--color-warning, #FFD700);
-  --role-system-log: #6b7280;
+  --role-tool: var(--sw-gold, #FFD700);
+  --role-system-log: var(--fg-subtle, #73737e);
 
   /* Radii - mapped to DaisyUI */
   --radius: var(--radius-field, 8px);
@@ -40,7 +42,7 @@
 
   /* Fonts - mapped to SignalWire design tokens */
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Instrument Sans', var(--font-sans);
 }
 

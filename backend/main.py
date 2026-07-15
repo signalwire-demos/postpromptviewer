@@ -28,6 +28,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def cache_headers(request, call_next):
+    """
+    Vite emits content-hashed files under /assets — cache them forever.
+    Everything else (index.html especially) must revalidate, otherwise a
+    browser can keep a stale main.js whose dynamic chunk imports 404 after
+    the next deploy.
+    """
+    response = await call_next(request)
+    if request.method in ("GET", "HEAD"):
+        if request.url.path.startswith("/assets/"):
+            response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+        elif response.headers.get("content-type", "").startswith("text/html"):
+            response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}

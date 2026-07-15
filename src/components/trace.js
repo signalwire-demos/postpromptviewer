@@ -2,15 +2,16 @@ import { cleanText, formatMs } from '../../lib/utils.js';
 import { escapeHtml } from '../../lib/search-filter.js';
 import { MILESTONE_LABELS } from '../../lib/metrics/trace.js';
 
+// Brand palette: turquoise turn-detect, purple LLM, gold TTS, blue audio
 const STAGE_COLORS = {
   speaking: 'rgba(34, 197, 94, 0.75)',
-  'turn-detect': 'rgba(45, 212, 191, 0.75)',
+  'turn-detect': 'rgba(64, 224, 208, 0.75)',
   poll: 'rgba(148, 163, 184, 0.6)',
-  llm: 'rgba(147, 51, 234, 0.8)',
-  tts: 'rgba(251, 191, 36, 0.8)',
-  audio: 'rgba(129, 140, 248, 0.8)',
-  filler: 'rgba(253, 230, 138, 0.8)',
-  other: 'rgba(107, 114, 128, 0.5)',
+  llm: 'rgba(96, 27, 230, 0.8)',
+  tts: 'rgba(255, 215, 0, 0.75)',
+  audio: 'rgba(4, 78, 244, 0.75)',
+  filler: 'rgba(255, 215, 0, 0.45)',
+  other: 'rgba(115, 115, 126, 0.5)',
 };
 
 const STAGE_TITLES = {

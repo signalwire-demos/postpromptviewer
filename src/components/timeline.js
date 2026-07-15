@@ -2,7 +2,7 @@ import { formatDuration, formatMs, usToSec, truncate, fieldsOf, measuredMs } fro
 
 const PHASE_COLORS = {
   ring: '#044EF4',
-  setup: '#8b5cf6',
+  setup: '#601BE6',
   ai: '#22c55e',
   teardown: '#FFD700',
 };
@@ -12,7 +12,7 @@ const ROLE_BG = {
   assistant: 'rgba(4, 78, 244, 0.7)',
   'assistant-manual': 'rgba(64, 224, 208, 0.6)',
   tool: 'rgba(255, 215, 0, 0.7)',
-  system: 'rgba(139, 92, 246, 0.6)',
+  system: 'rgba(96, 27, 230, 0.6)',
 };
 
 const LABEL_WIDTH = 72;
@@ -414,8 +414,8 @@ export function renderTimeline(container, payload, metrics) {
   const swimPct = (us) => ((us - swimStart) / swimTotal) * 100;
 
   const SYSTEM_COLORS = {
-    'assistant-thinking': 'rgba(139, 92, 246, 0.6)',
-    calling: 'rgba(245, 158, 11, 0.5)',
+    'assistant-thinking': 'rgba(96, 27, 230, 0.6)',
+    calling: 'rgba(255, 215, 0, 0.5)',
     step: 'rgba(148, 163, 184, 0.5)',
   };
 

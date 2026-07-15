@@ -20,26 +20,29 @@ Chart.register(
   LinearScale, CategoryScale, Tooltip, Legend, Filler,
 );
 
+// SignalWire brand palette (see signalwire-tokens.dtcg.json)
 const COLORS = {
   blue: '#044EF4',
   green: '#22c55e',
   yellow: '#FFD700',
   red: '#ef4444',
-  purple: '#8b5cf6',
+  purple: '#601BE6',
   cyan: '#40E0D0',
-  gray: '#6b7280',
-  indigo: '#818cf8',
+  gray: '#73737e',
+  indigo: '#044EF4',
   pink: '#F72A72',
 };
 
-// Stacked segment colors — the full pipeline anchored at user-stopped-talking
+// Stacked segment colors — the full pipeline anchored at user-stopped-talking,
+// drawn from the brand palette (turquoise turn-detect, purple LLM, gold TTS,
+// blue audio)
 const SEGMENT = {
-  turnDetection: 'rgba(34, 197, 94, 0.7)',
-  poll: 'rgba(148, 163, 184, 0.7)',
-  llmAssistant: 'rgba(147, 51, 234, 0.8)',
-  utteranceAssistant: 'rgba(251, 191, 36, 0.8)',
-  audioAssistant: 'rgba(129, 140, 248, 0.8)',
-  toolExecution: 'rgba(245, 158, 11, 0.6)',
+  turnDetection: 'rgba(64, 224, 208, 0.7)',
+  poll: 'rgba(148, 163, 184, 0.6)',
+  llmAssistant: 'rgba(96, 27, 230, 0.8)',
+  utteranceAssistant: 'rgba(255, 215, 0, 0.75)',
+  audioAssistant: 'rgba(4, 78, 244, 0.75)',
+  toolExecution: 'rgba(255, 215, 0, 0.55)',
 };
 
 const TOOLTIP_STYLE = {

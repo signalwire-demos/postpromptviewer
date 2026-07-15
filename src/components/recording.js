@@ -7,19 +7,19 @@ import { truncate, fieldsOf, stampsOf } from '../../lib/utils.js';
 import { getState } from '../state.js';
 
 const REGION_COLORS = {
-  user: 'rgba(16, 185, 129, 0.12)',
-  endpointing: 'rgba(16, 185, 129, 0.06)',
-  assistant: 'rgba(59, 130, 246, 0.12)',
-  'assistant-manual': 'rgba(236, 72, 153, 0.12)',
-  tool: 'rgba(245, 158, 11, 0.12)',
-  'assistant-thinking': 'rgba(168, 85, 247, 0.12)',
-  calling: 'rgba(251, 146, 60, 0.12)',
+  user: 'rgba(34, 197, 94, 0.12)',
+  endpointing: 'rgba(34, 197, 94, 0.06)',
+  assistant: 'rgba(4, 78, 244, 0.12)',
+  'assistant-manual': 'rgba(64, 224, 208, 0.12)',
+  tool: 'rgba(255, 215, 0, 0.12)',
+  'assistant-thinking': 'rgba(96, 27, 230, 0.12)',
+  calling: 'rgba(255, 215, 0, 0.12)',
   step: 'rgba(148, 163, 184, 0.12)',
-  filler: 'rgba(253, 230, 138, 0.15)',
-  'manual-say': 'rgba(251, 146, 60, 0.15)',
+  filler: 'rgba(255, 215, 0, 0.15)',
+  'manual-say': 'rgba(247, 42, 114, 0.12)',
   'attention-timeout': 'rgba(239, 68, 68, 0.15)',
-  'function-error': 'rgba(220, 38, 38, 0.15)',
-  'inner-dialog': 'rgba(139, 92, 246, 0.12)',
+  'function-error': 'rgba(239, 68, 68, 0.15)',
+  'inner-dialog': 'rgba(96, 27, 230, 0.12)',
 };
 
 function classifySystemLog(entry) {
@@ -344,9 +344,9 @@ function buildRegions(payload, recordingDuration) {
   // Pipeline milestone markers from stamps_us — same wall clock as
   // record_first_frame, so recording alignment is stamp − anchor.
   const MILESTONE_MARKS = [
-    { key: 'turn_decided', label: 'EOT', color: 'rgba(45, 212, 191, 0.85)' },
-    { key: 'first_token', label: 'Token', color: 'rgba(147, 51, 234, 0.85)' },
-    { key: 'first_audio', label: 'Audio', color: 'rgba(129, 140, 248, 0.85)' },
+    { key: 'turn_decided', label: 'EOT', color: 'rgba(64, 224, 208, 0.85)' },
+    { key: 'first_token', label: 'Token', color: 'rgba(96, 27, 230, 0.85)' },
+    { key: 'first_audio', label: 'Audio', color: 'rgba(4, 78, 244, 0.85)' },
   ];
   for (const msg of payload.callLog) {
     if (msg.role !== 'assistant' && msg.role !== 'assistant-manual') continue;
