@@ -1,4 +1,4 @@
-import { epochToDate, formatTimestamp, truncate } from '../../lib/utils.js';
+import { epochToDate, formatTimestamp, truncate, fieldsOf, measuredMs, cleanText } from '../../lib/utils.js';
 import { debounce, matchesSearch, highlightMatches, scrollToElement, escapeHtml } from '../../lib/search-filter.js';
 import { getState, update, subscribe } from '../state.js';
 
@@ -98,6 +98,27 @@ function getResponseTimeRating(latency) {
 }
 
 /**
+ * The latency to rate a message by. Assistant: prefer the user-perceived
+ * acoustic_latency, fall back to audio/utterance/TTFT (null and the 0
+ * sentinel are "not measured"). Tool: the function's real execution time
+ * (end − start µs) — the execution_latency/function_latency aliases carry
+ * the surrounding turn's latency, not the tool's own.
+ */
+function responseLatencyOf(msg) {
+  if (msg.role === 'assistant' || msg.role === 'assistant-manual') {
+    return measuredMs(msg.acoustic_latency) ?? measuredMs(msg.audio_latency) ??
+      measuredMs(msg.utterance_latency) ?? measuredMs(msg.latency);
+  }
+  if (msg.role === 'tool') {
+    if (msg.start_timestamp && msg.end_timestamp) {
+      return Math.round((msg.end_timestamp - msg.start_timestamp) / 1000);
+    }
+    return null;
+  }
+  return measuredMs(msg.latency);
+}
+
+/**
  * Format inner dialog content into structured sections.
  * Splits on ## headers and renders each as a labeled block.
  */
@@ -159,22 +180,7 @@ export function renderTranscript(container, payload) {
 
       // Response time rating filter
       if (activeFilters.responseTimeRating) {
-        let latency;
-
-        // For assistant messages, use audio/utterance/latency
-        if (msg.role === 'assistant') {
-          latency = msg.audio_latency || msg.utterance_latency || msg.latency;
-        }
-        // For tool messages, use execution latency or function latency
-        else if (msg.role === 'tool') {
-          latency = msg.execution_latency || msg.function_latency || msg.latency;
-        }
-        // For other roles, use latency if available
-        else {
-          latency = msg.latency;
-        }
-
-        const rating = getResponseTimeRating(latency);
+        const rating = getResponseTimeRating(responseLatencyOf(msg));
         if (!rating || rating.class !== activeFilters.responseTimeRating) {
           return false;
         }
@@ -195,19 +201,18 @@ export function renderTranscript(container, payload) {
     });
   }
 
-  // Build lookup maps for enriched events that annotate messages
-  const enrichedEvents = { hearingHints: [], pronounceRules: [], fillers: [], manualSays: [], functionErrors: [], autoCorrects: [], innerDialogs: [], textNormalizeItn: [], textNormalizeTn: [] };
-  const seenPronounceTs = new Set();
+  // Build lookup maps for enriched events that annotate messages.
+  // fieldsOf() handles both system-log shapes: nested `metadata` (most
+  // actions) and flat top-level keys (function_error, function_loop,
+  // swaig_problem, change_step_failed, double_turn, inner_dialog,
+  // inner_dialog_scorecard).
+  const enrichedEvents = { hearingHints: [], pronounceRules: [], fillers: [], manualSays: [], functionErrors: [], functionProblems: [], autoCorrects: [], innerDialogs: [], textNormalizeItn: [] };
   (payload.callLog || []).forEach(entry => {
     if (entry.role !== 'system-log' || !entry.action) return;
-    const m = entry.metadata || {};
+    const m = fieldsOf(entry);
     switch (entry.action) {
       case 'hearing_hint':
         enrichedEvents.hearingHints.push({ timestamp: entry.timestamp, original: m.original || '', result: m.result || '' });
-        break;
-      case 'pronounce_rule':
-        enrichedEvents.pronounceRules.push({ timestamp: entry.timestamp, original: m.original || '', result: m.result || '' });
-        if (entry.timestamp) seenPronounceTs.add(entry.timestamp);
         break;
       case 'filler':
         enrichedEvents.fillers.push({ timestamp: entry.timestamp, text: m.text || 'thinking...' });
@@ -216,30 +221,44 @@ export function renderTranscript(container, payload) {
         enrichedEvents.manualSays.push({ timestamp: entry.timestamp, text: m.text || entry.content || '', isError: m.is_error || false, errorReason: m.error_reason || null });
         break;
       case 'function_error':
-        enrichedEvents.functionErrors.push({ timestamp: entry.timestamp, functionName: m.function || m.name || 'unknown', errorType: m.error_type || m.type || 'unknown', httpCode: m.http_code || m.status_code || null, errorMessage: m.message || m.error || null });
+        // Production shape: function + error ("non-existent function" |
+        // "invalid parameters") + details (schema-validation text)
+        enrichedEvents.functionErrors.push({ timestamp: entry.timestamp, functionName: m.function || 'unknown', errorType: m.error || 'unknown', errorMessage: m.details || null });
+        break;
+      case 'function_loop':
+        enrichedEvents.functionProblems.push({ timestamp: entry.timestamp, label: 'Function Loop', functionName: m.function || 'unknown', detail: m.type ? `${m.type} loop broken` : 'loop broken' });
+        break;
+      case 'swaig_problem':
+        enrichedEvents.functionProblems.push({ timestamp: entry.timestamp, label: 'SWAIG Problem', functionName: m.function || 'unknown', detail: m.error || 'problem response' });
+        break;
+      case 'change_step_failed':
+        enrichedEvents.functionProblems.push({ timestamp: entry.timestamp, label: 'Step Change Failed', functionName: m.name || 'unknown', detail: 'step not found' });
         break;
       case 'auto_correct':
         enrichedEvents.autoCorrects.push({ timestamp: entry.timestamp, original: m.original || '', corrected: m.corrected || '' });
         break;
+      case 'double_turn':
+        enrichedEvents.innerDialogs.push({ timestamp: entry.timestamp, content: entry.content || '', label: 'Double Turn Directive' });
+        break;
       case 'inner_dialog':
-        enrichedEvents.innerDialogs.push({ timestamp: entry.timestamp, content: entry.content || '' });
+      case 'inner_dialog_scorecard':
+        enrichedEvents.innerDialogs.push({ timestamp: entry.timestamp, content: entry.content || '', label: entry.action === 'inner_dialog_scorecard' ? 'Inner Dialog Scorecard' : 'Inner Dialog' });
         break;
-      case 'text_normalize': {
-        const tnMeta = { timestamp: entry.timestamp, original: m.original || '', normalized: m.normalized || '' };
-        if (m.direction === 'itn') enrichedEvents.textNormalizeItn.push(tnMeta);
-        else if (m.direction === 'tn') enrichedEvents.textNormalizeTn.push(tnMeta);
-        break;
-      }
     }
   });
 
-  // call_timeline emits `pronounce` events that don't appear in call_log
+  // ITN and pronounce/TN rewrites are NOT system-log entries — they surface
+  // only as synthetic text_normalize / pronounce events in call_timeline.
   (payload.callTimeline || []).forEach(entry => {
-    if (entry.type !== 'pronounce' || !entry.ts) return;
-    if (seenPronounceTs.has(entry.ts)) return;
-    enrichedEvents.pronounceRules.push({ timestamp: entry.ts, original: entry.original || '', result: entry.result || '' });
+    if (!entry.ts) return;
+    if (entry.type === 'pronounce') {
+      enrichedEvents.pronounceRules.push({ timestamp: entry.ts, original: entry.original || '', result: entry.result || '' });
+    } else if (entry.type === 'text_normalize') {
+      enrichedEvents.textNormalizeItn.push({ timestamp: entry.ts, original: entry.original || '', normalized: entry.normalized || '' });
+    }
   });
   enrichedEvents.pronounceRules.sort((a, b) => a.timestamp - b.timestamp);
+  enrichedEvents.textNormalizeItn.sort((a, b) => a.timestamp - b.timestamp);
 
   function buildMessagesHtml(messages) {
     const { search } = getState();
@@ -250,6 +269,7 @@ export function renderTranscript(container, payload) {
     enrichedEvents.fillers.forEach(f => inlineEvents.push({ ...f, _type: 'filler' }));
     enrichedEvents.manualSays.forEach(s => inlineEvents.push({ ...s, _type: 'manual_say' }));
     enrichedEvents.functionErrors.forEach(e => inlineEvents.push({ ...e, _type: 'function_error' }));
+    enrichedEvents.functionProblems.forEach(e => inlineEvents.push({ ...e, _type: 'function_problem' }));
     enrichedEvents.innerDialogs.forEach(d => inlineEvents.push({ ...d, _type: 'inner_dialog' }));
     inlineEvents.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -259,9 +279,8 @@ export function renderTranscript(container, payload) {
     let pronounceIdx = 0;
     // Track which auto-corrects have been consumed
     let autoCorrectIdx = 0;
-    // Track which text_normalize ITN/TN events have been consumed
+    // Track which text_normalize (ITN) events have been consumed
     let itnIdx = 0;
-    let tnIdx = 0;
     // Track inline event cursor
     let inlineIdx = 0;
 
@@ -271,7 +290,8 @@ export function renderTranscript(container, payload) {
       const isGarbage = isGarbageContent(msg.content);
       const time = msg.timestamp ? formatTimestamp(epochToDate(msg.timestamp)) : '';
       const { showRedacted } = getState();
-      const contentDisplay = (showRedacted && msg.redacted) ? msg.redacted : (msg.content || '');
+      // cleanText strips inline ~LN(...)-; TTS language directives
+      const contentDisplay = cleanText((showRedacted && msg.redacted) ? msg.redacted : (msg.content || ''));
 
       // Apply highlighting if searching; show visible badges for garbage chars
       const displayContent = isGarbage
@@ -285,18 +305,7 @@ export function renderTranscript(container, payload) {
 
       // Add response time rating for assistant and tool messages
       if (role === 'assistant' || role === 'tool') {
-        let latency;
-
-        // For assistant messages, use audio/utterance/latency
-        if (role === 'assistant') {
-          latency = msg.audio_latency || msg.utterance_latency || msg.latency;
-        }
-        // For tool messages, use execution latency or function latency
-        else if (role === 'tool') {
-          latency = msg.execution_latency || msg.function_latency || msg.latency;
-        }
-
-        const rating = getResponseTimeRating(latency);
+        const rating = getResponseTimeRating(responseLatencyOf(msg));
         if (rating) {
           metaTags.push({
             text: `⏱️ ${rating.name}`,
@@ -306,18 +315,51 @@ export function renderTranscript(container, payload) {
         }
       }
 
-      if (msg.latency != null) metaTags.push(`latency: ${msg.latency}ms`);
-      if (msg.audio_latency != null) metaTags.push(`audio: ${msg.audio_latency}ms`);
-      if (msg.acoustic_latency != null) metaTags.push({ text: `acoustic: ${msg.acoustic_latency}ms`, class: 'acoustic' });
-      if (msg.utterance_latency != null) metaTags.push(`utterance: ${msg.utterance_latency}ms`);
+      // Latency tiers: null / 0 mean "not measured" — show only real values
+      if (measuredMs(msg.latency) != null) metaTags.push(`ttft: ${msg.latency}ms`);
+      if (measuredMs(msg.utterance_latency) != null) metaTags.push(`utterance: ${msg.utterance_latency}ms`);
+      if (measuredMs(msg.audio_latency) != null) metaTags.push(`audio: ${msg.audio_latency}ms`);
+      if (measuredMs(msg.acoustic_latency) != null) metaTags.push({ text: `acoustic: ${msg.acoustic_latency}ms`, class: 'acoustic' });
+      if (measuredMs(msg.eos_to_push_latency) != null) metaTags.push(`turn-detect: ${msg.eos_to_push_latency}ms`);
+      if (measuredMs(msg.poll) != null) metaTags.push(`poll: ${msg.poll}ms`);
       if (msg.confidence != null) metaTags.push(`confidence: ${(msg.confidence * 100).toFixed(1)}%`);
-      if (msg.content_type) metaTags.push(msg.content_type);
+      if (msg.content_type === 'DTMF') metaTags.push({ text: '☎ DTMF', class: 'dtmf' });
+      else if (msg.content_type) metaTags.push(msg.content_type);
+      if (msg.speaker) metaTags.push({ text: `🗣 ${msg.speaker}`, class: 'speaker' });
       if (msg.barge_count) metaTags.push({ text: `🔴 barge-in ×${msg.barge_count}`, class: 'barge' });
       if (msg.merge_count) metaTags.push({ text: `🔀 merged ×${msg.merge_count}`, class: 'merge' });
       if (msg.merged && !msg.merge_count) metaTags.push({ text: '🔀 merged', class: 'merge' });
-      if (msg.execution_latency != null) metaTags.push(`exec: ${msg.execution_latency}ms`);
-      if (msg.function_latency != null) metaTags.push(`func: ${msg.function_latency}ms`);
+      if (role === 'tool') {
+        // Real execution time; the exec/func fields on tool entries are
+        // deprecated aliases of the surrounding turn's latency.
+        const execMs = responseLatencyOf(msg);
+        if (execMs != null) metaTags.push(`exec: ${execMs}ms`);
+        if (msg.distilled) metaTags.push({ text: 'distilled', class: 'merge' });
+      }
       if (msg.speaking_to_final_event != null) metaTags.push(`speak-to-final: ${msg.speaking_to_final_event}ms`);
+      if (msg.timings_inferred) metaTags.push({ text: '~timing estimated', class: 'inferred' });
+
+      // mod_deepgram turn telemetry (present only when the engine enriched
+      // the final): entity capture, end-of-turn basis, hold/commit timing
+      if (msg.entity && msg.entity.value) {
+        metaTags.push({
+          text: `${msg.entity.valid ? '✓' : '✕'} ${msg.entity.type}: ${msg.entity.value}`,
+          class: msg.entity.valid ? 'entity-ok' : 'entity-bad',
+        });
+      }
+      if (msg.eot && msg.eot.basis) {
+        const conf = msg.eot.confidence != null ? ` ${(msg.eot.confidence * 100).toFixed(0)}%` : '';
+        const lowConfidence = msg.eot.basis === 'ceiling' || (msg.eot.confidence != null && msg.eot.confidence < 0.6);
+        metaTags.push({
+          text: `eot: ${msg.eot.basis}${conf}${msg.eot.basis === 'ceiling' ? ' ⚠' : ''}`,
+          class: lowConfidence ? 'eot-warn' : 'eot',
+        });
+      }
+      if (msg.timing) {
+        if (msg.timing.commit_latency_ms != null) metaTags.push(`commit: ${msg.timing.commit_latency_ms}ms`);
+        if ((msg.timing.segments || 0) > 1) metaTags.push(`segments: ${msg.timing.segments}`);
+        if ((msg.timing.walkbacks || 0) > 0) metaTags.push({ text: `walkbacks: ${msg.timing.walkbacks}`, class: 'eot-warn' });
+      }
       if (isGarbage) metaTags.push({ text: '⚠️ Garbage Response', class: 'garbage' });
 
       // Barge-in on assistant response (caller interrupted this response)
@@ -383,21 +425,13 @@ export function renderTranscript(container, payload) {
         metaTags.push({ text: 'redacted', class: 'redacted' });
       }
 
-      // pronounce_rule badge: show on assistant messages when a pronunciation rule was applied
+      // pronounce badge: pronounce rules / text normalization rewrote this
+      // assistant message's TTS output (synthetic call_timeline event)
       if (role === 'assistant' && msg.timestamp && pronounceIdx < enrichedEvents.pronounceRules.length) {
         const rule = enrichedEvents.pronounceRules[pronounceIdx];
         if (rule.timestamp <= msg.timestamp) {
           metaTags.push({ text: `TTS: ${rule.original} → ${rule.result}`, class: 'rewrite' });
           pronounceIdx++;
-        }
-      }
-
-      // text_normalize TN badge: show on assistant messages
-      if (role === 'assistant' && msg.timestamp && tnIdx < enrichedEvents.textNormalizeTn.length) {
-        const tn = enrichedEvents.textNormalizeTn[tnIdx];
-        if (tn.timestamp <= msg.timestamp) {
-          metaTags.push({ text: `TN: ${tn.original} → ${tn.normalized}`, class: 'rewrite' });
-          tnIdx++;
         }
       }
 
@@ -444,15 +478,22 @@ export function renderTranscript(container, payload) {
             <div class="transcript__inline transcript__inline--error">
               <span class="transcript__inline-error-label">Function Error</span>
               <code>${escapeHtml(ev.functionName)}</code>
-              <span class="transcript__inline-error-detail">${escapeHtml(ev.errorType)}${ev.httpCode ? ` (HTTP ${ev.httpCode})` : ''}</span>
+              <span class="transcript__inline-error-detail">${escapeHtml(ev.errorType)}</span>
               ${ev.errorMessage ? `<span class="transcript__inline-error-msg">${escapeHtml(ev.errorMessage)}</span>` : ''}
+            </div>`;
+        } else if (ev._type === 'function_problem') {
+          inlineHtml += `
+            <div class="transcript__inline transcript__inline--error">
+              <span class="transcript__inline-error-label">${escapeHtml(ev.label)}</span>
+              <code>${escapeHtml(ev.functionName)}</code>
+              <span class="transcript__inline-error-detail">${escapeHtml(ev.detail)}</span>
             </div>`;
         } else if (ev._type === 'inner_dialog') {
           const dialogId = `inner-dialog-${idx}-${inlineIdx}`;
           inlineHtml += `
             <div class="transcript__inline transcript__inline--inner-dialog">
               <button class="transcript__inner-dialog-toggle" data-target="${dialogId}">
-                <span class="transcript__inner-dialog-label">Inner Dialog</span>
+                <span class="transcript__inner-dialog-label">${escapeHtml(ev.label || 'Inner Dialog')}</span>
                 <span class="transcript__inner-dialog-chevron">&#9654;</span>
               </button>
               <div class="transcript__inner-dialog-body" id="${dialogId}" style="display:none">
@@ -461,6 +502,23 @@ export function renderTranscript(container, payload) {
             </div>`;
         }
         inlineIdx++;
+      }
+
+      // assistant-thinking: LLM reasoning output (no metadata, never in
+      // call_timeline) — render collapsed so it doesn't drown the transcript
+      if (role === 'assistant-thinking') {
+        return `${inlineHtml}
+        <div class="transcript__msg transcript__msg--${roleClass}" ${dataAttrs}>
+          <div class="transcript__role">thinking</div>
+          <div class="transcript__body">
+            <details class="transcript__thinking">
+              <summary>${escapeHtml(truncate(contentDisplay, 100))}</summary>
+              <div class="transcript__content">${displayContent}</div>
+            </details>
+            ${time ? `<div class="transcript__meta"><span class="transcript__meta-tag">${time}</span></div>` : ''}
+          </div>
+        </div>
+      `;
       }
 
       return `${inlineHtml}

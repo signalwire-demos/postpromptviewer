@@ -11,6 +11,47 @@ export function renderDashboard(container, metrics) {
   const e = metrics.enriched || {};
   const sections = [];
 
+  const scorecardEntriesHtml = (entries) => `
+    <div class="scorecard__grid">
+      ${entries.bars.map(b => `
+        <div class="scorecard__metric">
+          <div class="scorecard__metric-head">
+            <span class="scorecard__metric-name">${b.key.replace(/_/g, ' ')}${b.inverted ? ' (lower is better)' : ''}</span>
+            <span class="scorecard__metric-value">${b.pct}%</span>
+          </div>
+          <div class="scorecard__track">
+            <div class="scorecard__fill scorecard__fill--${b.good ? 'good' : 'bad'}" style="width:${b.pct}%"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    ${entries.chips.length ? `
+      <div class="scorecard__chips">
+        ${entries.chips.map(ch => `<span class="badge badge-outline badge-sm">${ch.key}: ${ch.value}</span>`).join('')}
+      </div>
+    ` : ''}
+  `;
+
+  // Scorecards: agent-set global_data.scorecard and/or the utility model's
+  // inner_dialog_scorecard self-assessment
+  if (metrics.scorecard) {
+    const parts = [];
+    if (metrics.scorecard.global) {
+      parts.push(`<div class="mb-3"><div class="text-xs opacity-50 mb-2">From global_data.scorecard</div>${scorecardEntriesHtml(metrics.scorecard.global)}</div>`);
+    }
+    if (metrics.scorecard.dialog) {
+      parts.push(`<div class="mb-3"><div class="text-xs opacity-50 mb-2">Inner-dialog self-assessment</div>${scorecardEntriesHtml(metrics.scorecard.dialog)}</div>`);
+    }
+    sections.push({
+      _ratingHtml: `
+        <div class="mb-6">
+          <h3 class="text-lg font-bold mb-3" style="font-family: var(--font-heading)">Scorecard</h3>
+          ${parts.join('')}
+        </div>
+      `,
+    });
+  }
+
   // Duration
   sections.push({
     title: 'Duration',
@@ -54,11 +95,28 @@ export function renderDashboard(container, metrics) {
     });
   }
 
+  // User-perceived latency (mouth-to-ear) — only present on new-format calls
+  if (l.perceivedStats || l.eosToPushStats || l.pollStats) {
+    sections.push({
+      title: 'User-Perceived Latency',
+      subtitle: 'Anchored at the caller’s last spoken word (acoustic pipeline)',
+      cards: [
+        ...(l.perceivedStats ? [
+          { label: 'Perceived Avg', value: `${l.perceivedStats.avg}`, unit: 'ms mouth-to-ear' },
+          { label: 'Perceived P95', value: `${l.perceivedStats.p95}`, unit: 'ms' },
+        ] : []),
+        ...(l.eosToPushStats ? [{ label: 'Turn Detection', value: `${l.eosToPushStats.avg}`, unit: 'ms avg (eos → push)' }] : []),
+        ...(l.dgDecisionStats ? [{ label: 'DG Decision', value: `${l.dgDecisionStats.avg}`, unit: 'ms avg (decide → push)' }] : []),
+        ...(l.pollStats ? [{ label: 'Poll Gap', value: `${l.pollStats.avg}`, unit: 'ms avg (push → read)' }] : []),
+      ],
+    });
+  }
+
   // Tool Calls
   if (l.toolStats) {
     sections.push({
       title: 'Tool Calls',
-      subtitle: 'External SWAIG round-trip (not AI-controlled)',
+      subtitle: 'SWAIG function execution time (end − start, not AI-controlled)',
       cards: [
         { label: 'Average', value: `${l.toolStats.avg}`, unit: 'ms' },
         { label: 'Fastest', value: `${l.toolStats.min}`, unit: 'ms' },
@@ -125,10 +183,30 @@ export function renderDashboard(container, metrics) {
       title: 'SWAIG Details',
       cards: [
         { label: 'Total Calls', value: t.swaigCallCount },
-        { label: 'Avg Execution', value: t.avgExecutionLatency ? `${Math.round(t.avgExecutionLatency)}` : 'N/A', unit: t.avgExecutionLatency ? 'ms (round-trip)' : '', na: !t.avgExecutionLatency },
-        { label: 'Avg Function', value: t.avgFunctionLatency ? `${Math.round(t.avgFunctionLatency)}` : 'N/A', unit: t.avgFunctionLatency ? 'ms (remote only)' : '', na: !t.avgFunctionLatency },
+        { label: 'Avg Execution', value: t.avgExecutionLatency ? `${Math.round(t.avgExecutionLatency)}` : 'N/A', unit: t.avgExecutionLatency ? 'ms (end − start)' : '', na: !t.avgExecutionLatency },
+        { label: 'Avg Turn Audio', value: t.avgTurnAudioLatency ? `${Math.round(t.avgTurnAudioLatency)}` : 'N/A', unit: t.avgTurnAudioLatency ? 'ms (surrounding turn)' : '', na: !t.avgTurnAudioLatency },
         { label: 'Action Types', value: t.actionTypes.length ? t.actionTypes.length : 'None', unit: t.actionTypes.length ? t.actionTypes.map(a => `<span class="badge badge-outline badge-xs">${a}</span>`).join(' ') : '', na: !t.actionTypes.length },
         { label: 'Call Rate', value: t.toolCallRate ? t.toolCallRate.toFixed(1) : 'N/A', unit: 'calls/min' },
+        ...(t.distilledCount > 0 ? [{ label: 'Distilled Results', value: t.distilledCount }] : []),
+      ],
+    });
+  }
+
+  // ASR turn telemetry (entity / end-of-turn / hold timing) — new format only
+  if (a.hasTurnTelemetry) {
+    const entityBadges = a.entities.map(en =>
+      `<span class="badge badge-outline badge-xs" title="${en.text.replace(/"/g, '&quot;')}">${en.valid ? '✓' : '✕'} ${en.type}: ${en.value}</span>`
+    ).join(' ');
+    sections.push({
+      title: 'Turn Detection & Entities',
+      subtitle: 'mod_deepgram turn telemetry (entity capture, end-of-turn, dictation hold)',
+      cards: [
+        { label: 'Entities Captured', value: a.entities.length, unit: entityBadges },
+        ...(a.avgEotConfidence != null ? [{ label: 'EOT Confidence', value: `${(a.avgEotConfidence * 100).toFixed(0)}`, unit: '% avg' }] : []),
+        ...(a.ceilingCount > 0 ? [{ label: 'Forced Turn Ends', value: a.ceilingCount, unit: 'hit hold cap — consider re-prompting' }] : []),
+        ...(a.avgCommitLatencyMs != null ? [{ label: 'Avg Commit', value: Math.round(a.avgCommitLatencyMs), unit: 'ms (EOT hold)' }] : []),
+        ...(a.heldTurnCount > 0 ? [{ label: 'Held Turns', value: a.heldTurnCount, unit: 'dictation hold engaged' }] : []),
+        ...(a.totalWalkbacks > 0 ? [{ label: 'Walkbacks', value: a.totalWalkbacks, unit: 'retracted end-of-turn decisions' }] : []),
       ],
     });
   }
@@ -145,15 +223,23 @@ export function renderDashboard(container, metrics) {
         { label: 'ASR Minutes', value: tk.totalAsrMinutes != null ? tk.totalAsrMinutes.toFixed(2) : 'N/A' },
         { label: 'Wire Input', value: tk.totalWireInputTokens != null ? tk.totalWireInputTokens.toLocaleString() : 'N/A', unit: 'tokens' },
         { label: 'Wire Output', value: tk.totalWireOutputTokens != null ? tk.totalWireOutputTokens.toLocaleString() : 'N/A', unit: 'tokens' },
+        ...(tk.totalMinutes != null ? [{
+          label: 'Est. AI Cost',
+          value: `$${(tk.totalMinutes * 0.16).toFixed(2)}`,
+          unit: `${tk.totalMinutes.toFixed(2)} min × $0.16/min`,
+        }] : []),
       ],
     });
   }
 
   // Enriched Event Metrics (only show if any enriched data is present)
   const hasEnrichedData = e.functionErrorCount > 0 || e.gatherRejectCount > 0 ||
-    e.textRewriteCount > 0 || e.fillerCount > 0 || e.attentionTimeoutCount > 0 ||
+    e.textRewriteCount > 0 || e.totalFillerCount > 0 || e.attentionTimeoutCount > 0 ||
     e.startupHookDuration != null || e.bargedCount > 0 ||
-    e.innerDialogCount > 0 || e.redactedMessageCount > 0;
+    e.innerDialogCount > 0 || e.redactedMessageCount > 0 ||
+    e.functionLoopCount > 0 || e.swaigProblemCount > 0 ||
+    e.changeStepFailedCount > 0 || e.doubleTurnCount > 0 ||
+    e.innerDialogScorecardCount > 0 || e.manualSayErrorCount > 0;
 
   if (hasEnrichedData) {
     const enrichedCards = [];
@@ -181,13 +267,44 @@ export function renderDashboard(container, metrics) {
       });
     }
 
+    if (e.functionLoopCount > 0) {
+      enrichedCards.push({
+        label: 'Function Loops Broken',
+        value: e.functionLoopCount,
+        unit: 'runaway call loops detected',
+      });
+    }
+
+    if (e.swaigProblemCount > 0) {
+      enrichedCards.push({
+        label: 'SWAIG Problems',
+        value: e.swaigProblemCount,
+        unit: 'webhooks with no usable response',
+      });
+    }
+
+    if (e.changeStepFailedCount > 0) {
+      enrichedCards.push({
+        label: 'Step Changes Failed',
+        value: e.changeStepFailedCount,
+        unit: 'navigation to unknown steps',
+      });
+    }
+
+    if (e.manualSayErrorCount > 0) {
+      enrichedCards.push({
+        label: 'Error Recoveries',
+        value: e.manualSayErrorCount,
+        unit: 'spoken error-recovery messages',
+      });
+    }
+
     if (e.textRewriteCount > 0) {
       const parts = [];
       if (e.hearingHintCount) parts.push(`${e.hearingHintCount} ASR`);
-      if (e.pronounceRuleCount) parts.push(`${e.pronounceRuleCount} TTS`);
+      if (e.pronounceCount) parts.push(`${e.pronounceCount} TTS`);
       if (e.autoCorrectCount) parts.push(`${e.autoCorrectCount} auto-correct`);
-      if (e.textNormalizeItnCount) parts.push(`${e.textNormalizeItnCount} ITN`);
-      if (e.textNormalizeTnCount) parts.push(`${e.textNormalizeTnCount} TN`);
+      if (e.textNormalizeCount) parts.push(`${e.textNormalizeCount} ITN`);
       enrichedCards.push({
         label: 'Text Rewrites',
         value: e.textRewriteCount,
@@ -195,11 +312,14 @@ export function renderDashboard(container, metrics) {
       });
     }
 
-    if (e.fillerCount > 0) {
+    if (e.totalFillerCount > 0) {
+      const parts = [];
+      if (e.fillerCount) parts.push(`${e.fillerCount} events`);
+      if (e.textModeFillerCount) parts.push(`${e.textModeFillerCount} text-mode`);
       enrichedCards.push({
         label: 'Filler Count',
-        value: e.fillerCount,
-        unit: 'thinking fillers',
+        value: e.totalFillerCount,
+        unit: parts.join(' + '),
       });
     }
 
@@ -210,10 +330,19 @@ export function renderDashboard(container, metrics) {
       });
     }
 
-    if (e.innerDialogCount > 0) {
+    if (e.innerDialogCount > 0 || e.innerDialogScorecardCount > 0) {
       enrichedCards.push({
         label: 'Inner Dialogs',
-        value: e.innerDialogCount,
+        value: e.innerDialogCount + e.innerDialogScorecardCount,
+        unit: e.innerDialogScorecardCount ? `${e.innerDialogScorecardCount} scorecards` : '',
+      });
+    }
+
+    if (e.doubleTurnCount > 0) {
+      enrichedCards.push({
+        label: 'Double Turns',
+        value: e.doubleTurnCount,
+        unit: 'hidden follow-up directives',
       });
     }
 

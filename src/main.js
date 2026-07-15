@@ -4,6 +4,7 @@ import { renderHeader } from './components/header.js';
 import { renderDashboard } from './components/dashboard.js';
 import { renderCharts } from './components/charts.js';
 import { renderTimeline } from './components/timeline.js';
+import { renderTrace } from './components/trace.js';
 import { renderTranscript } from './components/transcript.js';
 import { renderSwaigInspector } from './components/swaig-inspector.js';
 import { renderPostPrompt } from './components/post-prompt.js';
@@ -20,6 +21,7 @@ const app = document.getElementById('app');
 
 const POSTPROMPT_TABS = [
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'trace', label: 'Trace' },
   { id: 'charts', label: 'Charts' },
   { id: 'timeline', label: 'Timeline' },
   { id: 'transcript', label: 'Transcript' },
@@ -113,6 +115,9 @@ function render(state) {
     switch (activeTab) {
       case 'dashboard':
         renderDashboard(content, metrics);
+        break;
+      case 'trace':
+        renderTrace(content, payload, metrics);
         break;
       case 'charts':
         renderCharts(content, payload, metrics);

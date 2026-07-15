@@ -1,4 +1,4 @@
-import { formatDuration, formatMs, usToSec, truncate } from '../../lib/utils.js';
+import { formatDuration, formatMs, usToSec, truncate, fieldsOf, measuredMs } from '../../lib/utils.js';
 
 const PHASE_COLORS = {
   ring: '#044EF4',
@@ -69,17 +69,18 @@ export function renderTimeline(container, payload, metrics) {
     phases.push({ label: 'Teardown', color: PHASE_COLORS.teardown, startUs: payload.aiEndDate, endUs: callEnd });
   }
 
-  // ─── Build a queue of tool dispatch info ───
-  const pendingToolCalls = [];
+  // ─── Tool request lookup: tool_call_id → the assistant's tool_calls entry ───
+  // Identity comes from the tool entry's own function_name; the request map
+  // supplies the arguments (and a name fallback for pre-enriched payloads).
+  const toolCallById = new Map();
   for (const msg of payload.callLog) {
     if (msg.role === 'assistant' && msg.tool_calls && Array.isArray(msg.tool_calls)) {
       for (const tc of msg.tool_calls) {
         const fn = tc.function || {};
-        pendingToolCalls.push({ name: fn.name || 'unknown', arguments: fn.arguments || '{}' });
+        if (tc.id) toolCallById.set(tc.id, { name: fn.name || 'unknown', arguments: fn.arguments || '{}' });
       }
     }
   }
-  let toolCallIdx = 0;
 
   // ─── Collect enriched events for new swimlane rows ───
   // Use call_timeline as primary source when available, fall back to call_log
@@ -89,7 +90,7 @@ export function renderTimeline(container, payload, metrics) {
   const enrichedRows = [];
   for (const msg of enrichedSource) {
     if (msg.role !== 'system-log' || !msg.action || !msg.timestamp) continue;
-    const m = msg.metadata || {};
+    const m = fieldsOf(msg);
 
     if (msg.action === 'filler') {
       enrichedRows.push({
@@ -121,15 +122,20 @@ export function renderTimeline(container, payload, metrics) {
         label: truncate(m.text || 'say', 20),
         content: (m.text || 'System say') + (m.is_error ? ' [ERROR]' : ''),
       });
-    } else if (msg.action === 'hearing_hint' || msg.action === 'pronounce_rule' || msg.action === 'pronounce') {
+    } else if (msg.action === 'hearing_hint' || msg.action === 'pronounce' ||
+               msg.action === 'text_normalize' || msg.action === 'auto_correct') {
+      // hearing_hint / auto_correct are system-log actions; pronounce and
+      // text_normalize are synthetic call_timeline events.
+      const rewritten = m.result ?? m.normalized ?? m.corrected ?? '';
+      const labels = { hearing_hint: 'ASR hint', pronounce: 'TTS rule', text_normalize: 'ITN', auto_correct: 'Auto-correct' };
       enrichedRows.push({
         role: 'enriched',
         category: 'rewrite',
         timestamp: msg.timestamp,
         endTimestamp: msg.timestamp + 200_000, // thin marker
         durationMs: 200,
-        label: msg.action === 'hearing_hint' ? 'ASR hint' : 'TTS rule',
-        content: `${m.original || ''} → ${m.result || ''}`,
+        label: labels[msg.action],
+        content: `${m.original || ''} → ${rewritten}`,
       });
     } else if (msg.action === 'context_enter') {
       enrichedRows.push({
@@ -138,18 +144,19 @@ export function renderTimeline(container, payload, metrics) {
         timestamp: msg.timestamp,
         endTimestamp: msg.timestamp + 300_000,
         durationMs: 300,
-        label: truncate(m.to_context || m.context || 'context', 20),
-        content: `Context: ${m.from_context || '?'} → ${m.to_context || m.context || '?'}`,
+        label: truncate(m.to_context || 'context', 20),
+        content: `Context: ${m.from_context || '?'} → ${m.to_context || '?'}${m.isolated ? ' (isolated)' : ''}`,
       });
     } else if (msg.action === 'reset') {
+      const kind = m.full_reset ? 'full reset' : (m.consolidate ? 'consolidate' : 'reset');
       enrichedRows.push({
         role: 'enriched',
         category: 'reset',
         timestamp: msg.timestamp,
         endTimestamp: msg.timestamp + 300_000,
         durationMs: 300,
-        label: m.reset_type || m.type || 'reset',
-        content: `Reset: ${m.reset_type || m.type || 'full'}`,
+        label: kind,
+        content: `Reset: ${kind}`,
       });
     }
   }
@@ -169,6 +176,29 @@ export function renderTimeline(container, payload, metrics) {
 
     // Skip initial system prompt and goal updates (verbose, not actionable)
     if (msg.role === 'system') continue;
+
+    // assistant-thinking: reasoning output logged as its own role (no
+    // metadata, no start/end window) — span it until the next message.
+    if (msg.role === 'assistant-thinking') {
+      let nextTs = swimEnd;
+      for (let j = mi + 1; j < allMessages.length; j++) {
+        nextTs = allMessages[j].start_timestamp || allMessages[j].timestamp;
+        break;
+      }
+      const durationMs = Math.round((nextTs - msg.timestamp) / 1000);
+      if (durationMs < 20) continue;
+      const content = typeof msg.content === 'string' ? msg.content.trim() : '';
+      events.push({
+        role: 'system',
+        category: 'assistant-thinking',
+        timestamp: msg.timestamp,
+        endTimestamp: nextTs,
+        durationMs,
+        content,
+        label: truncate(content, 40),
+      });
+      continue;
+    }
 
     // System-log: only include classified entries
     if (msg.role === 'system-log') {
@@ -220,8 +250,12 @@ export function renderTimeline(container, payload, metrics) {
       startTimestamp: msg.start_timestamp || 0,
       endTimestamp: msg.end_timestamp || 0,
       content: typeof msg.content === 'string' ? msg.content.trim() : '',
-      audioLatency: msg.audio_latency || msg.utterance_latency || msg.latency || 0,
-      acousticLatency: msg.acoustic_latency ?? null,
+      // null / 0 = not measured, never charted as real values
+      audioLatency: measuredMs(msg.audio_latency) ?? measuredMs(msg.utterance_latency) ?? measuredMs(msg.latency) ?? 0,
+      acousticLatency: measuredMs(msg.acoustic_latency),
+      eosToPushLatency: measuredMs(msg.eos_to_push_latency),
+      pollLatency: measuredMs(msg.poll),
+      timingsInferred: !!msg.timings_inferred,
     };
 
     // Barge-in data (assistant was interrupted by caller)
@@ -244,12 +278,18 @@ export function renderTimeline(container, payload, metrics) {
     }
 
     if (msg.role === 'tool') {
-      const dispatch = pendingToolCalls[toolCallIdx] || {};
-      toolCallIdx++;
-      ev.toolName = dispatch.name || 'unknown';
-      ev.toolArgs = dispatch.arguments || '{}';
-      ev.executionLatency = msg.execution_latency || 0;
-      ev.functionLatency = msg.function_latency || 0;
+      const request = toolCallById.get(msg.tool_call_id || msg.id) || {};
+      // function_name on the tool entry is the direct-identity field;
+      // the tool_call_id-correlated request is the fallback + args source.
+      ev.toolName = msg.function_name || request.name || 'unknown';
+      ev.toolArgs = request.arguments || '{}';
+      // Real execution time (end − start µs); the execution_latency /
+      // function_latency fields are deprecated aliases of the surrounding
+      // LLM turn's audio/utterance latency, not the tool's own timing.
+      ev.executionMs = (msg.start_timestamp && msg.end_timestamp)
+        ? Math.round((msg.end_timestamp - msg.start_timestamp) / 1000) : 0;
+      ev.turnAudioLatency = measuredMs(msg.execution_latency) ?? 0;
+      ev.distilled = !!msg.distilled;
     }
 
     events.push(ev);
@@ -316,8 +356,15 @@ export function renderTimeline(container, payload, metrics) {
     if (ev.role === 'tool') {
       seg.toolName = ev.toolName;
       seg.toolArgs = ev.toolArgs;
-      seg.executionLatency = ev.executionLatency;
-      seg.functionLatency = ev.functionLatency;
+      seg.executionMs = ev.executionMs;
+      seg.turnAudioLatency = ev.turnAudioLatency;
+      seg.distilled = ev.distilled;
+    }
+
+    if (ev.role === 'assistant' || ev.role === 'assistant-manual') {
+      seg.acousticLatency = ev.acousticLatency;
+      seg.eosToPushLatency = ev.eosToPushLatency;
+      seg.pollLatency = ev.pollLatency;
     }
 
     if (ev.role === 'user') {
@@ -403,8 +450,15 @@ export function renderTimeline(container, payload, metrics) {
       if (seg.role === 'tool') {
         attrs += ` data-tool-name="${(seg.toolName || '').replace(/"/g, '&quot;')}"`;
         attrs += ` data-tool-args="${(seg.toolArgs || '').replace(/"/g, '&quot;')}"`;
-        attrs += ` data-exec-latency="${seg.executionLatency || 0}"`;
-        attrs += ` data-func-latency="${seg.functionLatency || 0}"`;
+        attrs += ` data-exec-ms="${seg.executionMs || 0}"`;
+        attrs += ` data-turn-audio-latency="${seg.turnAudioLatency || 0}"`;
+        if (seg.distilled) attrs += ` data-distilled="true"`;
+      }
+
+      if (seg.role === 'assistant' || seg.role === 'assistant-manual') {
+        if (seg.acousticLatency != null) attrs += ` data-acoustic="${seg.acousticLatency}"`;
+        if (seg.eosToPushLatency != null) attrs += ` data-eos-to-push="${seg.eosToPushLatency}"`;
+        if (seg.pollLatency != null) attrs += ` data-poll="${seg.pollLatency}"`;
       }
 
       if (seg.role === 'user') {
@@ -522,8 +576,8 @@ export function renderTimeline(container, payload, metrics) {
     if (role === 'tool') {
       const toolName = seg.dataset.toolName || 'unknown';
       const toolArgs = seg.dataset.toolArgs || '{}';
-      const execLat = parseInt(seg.dataset.execLatency) || 0;
-      const funcLat = parseInt(seg.dataset.funcLatency) || 0;
+      const execMs = parseInt(seg.dataset.execMs) || 0;
+      const turnAudioLat = parseInt(seg.dataset.turnAudioLatency) || 0;
 
       html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--tool">${toolName}</div>`;
 
@@ -544,12 +598,11 @@ export function renderTimeline(container, payload, metrics) {
       }
 
       html += `<div class="swimlane__tooltip-divider"></div>`;
-      html += `<div class="swimlane__tooltip-row"><span>Round-trip</span><strong>${formatMs(execLat)}</strong></div>`;
-      if (funcLat > 0) {
-        html += `<div class="swimlane__tooltip-row"><span>Function time</span><strong>${formatMs(funcLat)}</strong></div>`;
-        const overhead = execLat - funcLat;
-        if (overhead > 0) html += `<div class="swimlane__tooltip-row"><span>Network overhead</span><span>${formatMs(overhead)}</span></div>`;
+      if (execMs > 0) html += `<div class="swimlane__tooltip-row"><span>Execution</span><strong>${formatMs(execMs)}</strong></div>`;
+      if (turnAudioLat > 0) {
+        html += `<div class="swimlane__tooltip-row"><span>Turn audio latency</span><span>${formatMs(turnAudioLat)}</span></div>`;
       }
+      if (seg.dataset.distilled) html += `<div class="swimlane__tooltip-row"><span>Result</span><span>distilled</span></div>`;
       html += `<div class="swimlane__tooltip-row"><span>Offset</span><span>${formatMs(startMs)}</span></div>`;
       if (gap > 0) {
         html += `<div class="swimlane__tooltip-row swimlane__tooltip-row--gap"><span>Gap from prev</span><strong>${formatMs(gap)}</strong></div>`;
@@ -609,6 +662,12 @@ export function renderTimeline(container, payload, metrics) {
       html += `<div class="swimlane__tooltip-role swimlane__tooltip-role--assistant">Assistant</div>`;
       if (content) html += `<div class="swimlane__tooltip-text">${content}</div>`;
       html += `<div class="swimlane__tooltip-row"><span>Duration</span><strong>${formatMs(duration)}</strong></div>`;
+      const acoustic = parseInt(seg.dataset.acoustic);
+      const eosToPush = parseInt(seg.dataset.eosToPush);
+      const pollMs = parseInt(seg.dataset.poll);
+      if (!isNaN(acoustic)) html += `<div class="swimlane__tooltip-row"><span>Perceived (acoustic)</span><strong>${formatMs(acoustic)}</strong></div>`;
+      if (!isNaN(eosToPush)) html += `<div class="swimlane__tooltip-row"><span>Turn detection</span><span>${formatMs(eosToPush)}</span></div>`;
+      if (!isNaN(pollMs)) html += `<div class="swimlane__tooltip-row"><span>Poll</span><span>${formatMs(pollMs)}</span></div>`;
       html += `<div class="swimlane__tooltip-row"><span>Offset</span><span>${formatMs(startMs)}</span></div>`;
       if (gap > 0) {
         html += `<div class="swimlane__tooltip-row swimlane__tooltip-row--gap"><span>Gap from prev</span><strong>${formatMs(gap)}</strong></div>`;

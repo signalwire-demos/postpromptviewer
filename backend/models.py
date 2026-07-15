@@ -44,6 +44,7 @@ class Record(Base):
     ai_result = Column(String, index=True)
     content_disposition = Column(String)
     call_ended_by = Column(String, index=True)
+    session_end_reason = Column(String, index=True)
     hard_timeout = Column(Boolean, default=False)
 
     # Aggregate metrics
@@ -53,9 +54,13 @@ class Record(Base):
     total_output_tokens = Column(Integer)
     total_minutes = Column(Float)
     avg_latency_ms = Column(Float)
+    avg_acoustic_latency_ms = Column(Float)
     p95_latency_ms = Column(Float)
     avg_asr_confidence = Column(Float)
     barge_in_count = Column(Integer)
+    has_errors = Column(Boolean, default=False)
+    has_barge = Column(Boolean, default=False)
+    entity_count = Column(Integer)
     performance_rating = Column(String, index=True)
 
     # Full raw payload

@@ -1,4 +1,5 @@
 import mermaid from 'mermaid';
+import { fieldsOf } from '../../lib/utils.js';
 
 // Initialize mermaid with dark theme
 mermaid.initialize({
@@ -255,13 +256,13 @@ export async function renderStateFlow(container, payload) {
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
                   <div class="flow-timeline-detail">
                     <span class="flow-timeline-detail-label" style="color:#dc2626">Error</span>
-                    <span style="color:#fca5a5">${escapeHtml(item.errorType)}${item.httpCode ? ` (HTTP ${item.httpCode})` : ''}</span>
+                    <span style="color:#fca5a5">${escapeHtml(item.errorType)}</span>
                     ${item.errorMessage ? `<span style="color:var(--text-muted);font-size:0.75rem">${escapeHtml(item.errorMessage)}</span>` : ''}
                   </div>
 
-                ` : item.type === 'startup_hook' || item.type === 'hangup_hook' ? `
+                ` : item.type === 'startup_hook' || item.type === 'hangup_hook' || item.type === 'check_for_input' ? `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
-                    <code style="color:#FFD700;font-size:0.9rem">${item.type === 'startup_hook' ? 'startup_hook' : 'hangup_hook'}</code>
+                    <code style="color:#FFD700;font-size:0.9rem">${item.type}</code>
                     ${item.durationMs ? `<span style="color:var(--text-muted);font-size:0.75rem;margin-left:0.5rem">${item.durationMs}ms</span>` : ''}
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
@@ -310,7 +311,7 @@ export async function renderStateFlow(container, payload) {
 
                 ` : item.type === 'inner_dialog' ? `
                   <div class="flow-timeline-step" style="padding-left:1.5rem">
-                    <strong style="color:#a78bfa">Inner Dialog</strong>
+                    <strong style="color:#a78bfa">${escapeHtml(item.label || 'Inner Dialog')}</strong>
                   </div>
                   <div class="flow-timeline-time">${formatTimestamp(item.timestamp)}</div>
                   <div class="flow-timeline-detail">
@@ -451,7 +452,7 @@ function extractStateFlow(payload) {
 
   callLog.forEach(entry => {
     if (entry.role !== 'system-log' || entry.action !== 'step_change') return;
-    const m = entry.metadata || {};
+    const m = fieldsOf(entry);
     const trigger = m.trigger;
     const source = trigger === 'ai_function' ? 'ai'
       : trigger === 'webhook_action' ? 'tool'
@@ -504,7 +505,7 @@ function extractStateFlow(payload) {
     if (entry.role !== 'system-log' || !entry.action) return;
 
     if (entry.action === 'gather_answer') {
-      const m = entry.metadata || {};
+      const m = fieldsOf(entry);
       // Pull answer value from the corresponding swaig_log gather_submit (in order)
       let answerArg = null;
       const swaigSubmit = swaigGathers[swaigGatherIdx++];
@@ -522,7 +523,7 @@ function extractStateFlow(payload) {
       });
     }
     else if (entry.action === 'function_call') {
-      const m = entry.metadata || {};
+      const m = fieldsOf(entry);
       if (m.function) {
         functionCalls.push({
           timestamp: entry.timestamp,
@@ -831,7 +832,10 @@ function extractStateFlow(payload) {
   enrichedSource.sort((a, b) => a.timestamp - b.timestamp);
 
   enrichedSource.forEach(entry => {
-    const m = entry.metadata || {};
+    // Nested metadata for most actions; flat top-level keys for the
+    // ai_conversation_system_log actions (function_error, function_loop,
+    // swaig_problem, change_step_failed, double_turn, inner_dialog*).
+    const m = fieldsOf(entry);
 
     switch (entry.action) {
       case 'context_enter':
@@ -847,7 +851,7 @@ function extractStateFlow(payload) {
         detailedTimeline.push({
           type: 'reset',
           timestamp: entry.timestamp,
-          resetType: m.reset_type || m.type || 'full_reset',
+          resetType: m.full_reset ? 'full reset' : (m.consolidate ? 'consolidate' : 'reset'),
         });
         break;
 
@@ -868,8 +872,8 @@ function extractStateFlow(payload) {
         if (currentGatherGroup) {
           currentGatherGroup.questions.push({
             timestamp: entry.timestamp,
-            key: m.key || m.name || null,
-            questionType: m.type || null,
+            key: m.key || null,
+            questionType: m.question_type || null,
             requiresConfirm: m.requires_confirm || false,
           });
         }
@@ -895,20 +899,50 @@ function extractStateFlow(payload) {
         if (currentGatherGroup) {
           currentGatherGroup.complete = {
             timestamp: entry.timestamp,
-            answeredCount: m.answered_count || m.answered || 0,
-            completionAction: m.completion_action || m.action || null,
+            answeredCount: m.answered || 0,
+            completionAction: m.completion_action || null,
           };
         }
         break;
 
       case 'function_error':
+        // Production shape: function + error + optional details
         detailedTimeline.push({
           type: 'function_error',
           timestamp: entry.timestamp,
-          functionName: m.function || m.name || 'unknown',
-          errorType: m.error_type || m.type || 'unknown',
-          httpCode: m.http_code || m.status_code || null,
-          errorMessage: m.message || m.error || null,
+          functionName: m.function || 'unknown',
+          errorType: m.error || 'unknown',
+          errorMessage: m.details || null,
+        });
+        break;
+
+      case 'function_loop':
+        detailedTimeline.push({
+          type: 'function_error',
+          timestamp: entry.timestamp,
+          functionName: m.function || 'unknown',
+          errorType: `${m.type || 'function'} loop broken`,
+          errorMessage: null,
+        });
+        break;
+
+      case 'swaig_problem':
+        detailedTimeline.push({
+          type: 'function_error',
+          timestamp: entry.timestamp,
+          functionName: m.function || 'unknown',
+          errorType: m.error || 'problem response',
+          errorMessage: null,
+        });
+        break;
+
+      case 'change_step_failed':
+        detailedTimeline.push({
+          type: 'function_error',
+          timestamp: entry.timestamp,
+          functionName: m.name || 'unknown',
+          errorType: 'step not found',
+          errorMessage: null,
         });
         break;
 
@@ -923,6 +957,15 @@ function extractStateFlow(payload) {
       case 'hangup_hook':
         detailedTimeline.push({
           type: 'hangup_hook',
+          timestamp: entry.timestamp,
+          durationMs: m.duration_ms || 0,
+        });
+        break;
+
+      case 'check_for_input':
+        // Input-poll webhook returned data (only logged when it did)
+        detailedTimeline.push({
+          type: 'check_for_input',
           timestamp: entry.timestamp,
           durationMs: m.duration_ms || 0,
         });
@@ -971,10 +1014,26 @@ function extractStateFlow(payload) {
         break;
 
       case 'inner_dialog':
+      case 'inner_dialog_scorecard':
+      case 'double_turn':
         detailedTimeline.push({
           type: 'inner_dialog',
           timestamp: entry.timestamp,
+          label: entry.action === 'double_turn' ? 'Double Turn Directive'
+            : entry.action === 'inner_dialog_scorecard' ? 'Inner Dialog Scorecard'
+            : 'Inner Dialog',
           content: entry.content || '',
+        });
+        break;
+
+      case 'pronounce':
+        // Synthetic call_timeline event: pronounce rules / TN rewrote TTS output
+        detailedTimeline.push({
+          type: 'text_normalize',
+          timestamp: entry.timestamp,
+          direction: 'tts',
+          original: m.original || '',
+          normalized: m.result || '',
         });
         break;
 
@@ -1091,7 +1150,7 @@ function generateFlowDiagram(flowData) {
     });
     errors.forEach(e => {
       claimed.add(detailedTimeline.indexOf(e));
-      flow.push({ type: 'function_error', step: currentState, functionName: e.functionName, errorType: e.errorType, httpCode: e.httpCode });
+      flow.push({ type: 'function_error', step: currentState, functionName: e.functionName, errorType: e.errorType });
     });
 
     // Add context_enter transitions for this state
@@ -1293,7 +1352,7 @@ function generateFlowDiagram(flowData) {
 
       } else if (item.type === 'function_error') {
         const errNodeId = `E${nodeId++}`;
-        const errLabel = sanitizeLabel(`${item.functionName} ERROR${item.httpCode ? ` (${item.httpCode})` : ''}`);
+        const errLabel = sanitizeLabel(`${item.functionName} ERROR`);
         lines.push(`    ${errNodeId}["${errLabel}"]:::errorNode`);
         if (item._stepNodeId) {
           lines.push(`    ${item._stepNodeId} -.-> ${errNodeId}`);

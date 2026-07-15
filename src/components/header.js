@@ -11,10 +11,19 @@ export function renderHeader(container, payload, metrics) {
   let endBadge = '';
   if (dur.callInProgress) {
     endBadge = '<div class="badge badge-info badge-sm gap-1">In Progress</div>';
-  } else if (payload.callEndedBy === 'user') {
-    endBadge = '<div class="badge badge-success badge-sm gap-1">Ended by User</div>';
+  } else if (payload.callEndedBy === 'user' || payload.callEndedBy === 'caller') {
+    endBadge = '<div class="badge badge-success badge-sm gap-1">Ended by Caller</div>';
   } else if (payload.callEndedBy === 'assistant') {
     endBadge = '<div class="badge badge-warning badge-sm gap-1">Ended by Assistant</div>';
+  } else if (payload.callEndedBy === 'system') {
+    endBadge = '<div class="badge badge-neutral badge-sm gap-1">Ended by System</div>';
+  }
+
+  // session_end reason: "normal" is unremarkable; surface the others
+  let endReasonBadge = '';
+  if (payload.sessionEndReason && payload.sessionEndReason !== 'normal') {
+    const alarming = ['hard_timeout', 'hard_stop', 'inactivity_timeout'].includes(payload.sessionEndReason);
+    endReasonBadge = `<div class="badge ${alarming ? 'badge-error' : 'badge-ghost'} badge-sm gap-1" title="session_end reason">${payload.sessionEndReason.replace(/_/g, ' ')}</div>`;
   }
 
   let hardTimeoutBadge = '';
@@ -67,6 +76,7 @@ export function renderHeader(container, payload, metrics) {
         </div>
         <div class="badge badge-primary badge-sm">${durationText}</div>
         ${endBadge}
+        ${endReasonBadge}
         ${hardTimeoutBadge}
         ${aiResultBadge}
         ${capabilityChips}

@@ -20,6 +20,10 @@ class RecordSummary(BaseModel):
     turn_count: int | None = None
     swaig_call_count: int | None = None
     avg_latency_ms: float | None = None
+    avg_acoustic_latency_ms: float | None = None
+    has_errors: bool | None = None
+    has_barge: bool | None = None
+    session_end_reason: str | None = None
     performance_rating: str | None = None
     ingested_at: datetime
     source: str = "upload"
@@ -46,6 +50,7 @@ class RecordDetail(RecordSummary):
     p95_latency_ms: float | None = None
     avg_asr_confidence: float | None = None
     barge_in_count: int | None = None
+    entity_count: int | None = None
     raw_payload: dict[str, Any]
 
 

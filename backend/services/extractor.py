@@ -55,15 +55,69 @@ def percentile(values: list[float], pct: int) -> float | None:
     return values[f] + (k - f) * (values[c] - values[f])
 
 
+def fields_of(entry: dict) -> dict:
+    """
+    Typed event fields for a system-log entry. Most actions nest them in
+    `metadata`; the flat-key actions (function_error, function_loop,
+    swaig_problem, change_step_failed, double_turn, inner_dialog,
+    inner_dialog_scorecard) put them directly on the entry.
+    """
+    meta = entry.get("metadata")
+    return meta if isinstance(meta, dict) else entry
+
+
 def infer_call_ended_by(raw: dict) -> str:
     """Port of _inferCallEndedBy from parser.js."""
     if raw.get("call_ended_by"):
         return raw["call_ended_by"]
     for entry in raw.get("call_log", []):
         if entry.get("role") == "system-log" and entry.get("action") == "session_end":
-            meta = entry.get("metadata") or {}
-            return meta.get("ended_by", "unknown")
+            return fields_of(entry).get("ended_by", "unknown")
     return "unknown"
+
+
+def infer_session_end_reason(raw: dict) -> str | None:
+    """Why the AI loop ended (normal / hard_timeout / hangup / end_call / ...)."""
+    for entry in raw.get("call_log", []):
+        if entry.get("role") == "system-log" and entry.get("action") == "session_end":
+            return fields_of(entry).get("reason")
+    return None
+
+
+# Flat-key system-log actions that indicate something went wrong on the call
+_ERROR_ACTIONS = {"function_error", "function_loop", "swaig_problem", "change_step_failed"}
+_FATAL_REASONS = {"token_exhaustion", "llm_fatal", "llm_max_retries"}
+
+
+def detect_errors(raw: dict) -> bool:
+    """True when the call carried error events (spec-shape aware)."""
+    for entry in raw.get("call_log", []):
+        if entry.get("role") != "system-log":
+            continue
+        action = entry.get("action")
+        m = fields_of(entry)
+        if action in _ERROR_ACTIONS:
+            return True
+        if action == "manual_say" and m.get("is_error"):
+            return True
+        if action == "manual_say" and m.get("error_reason") in _FATAL_REASONS:
+            return True
+    return False
+
+
+def detect_barge(raw: dict) -> bool:
+    """
+    True when any assistant response was barged. Barge metadata is written
+    to raw_array only, so it appears in raw_call_log / call_timeline — never
+    on the blessed call_log.
+    """
+    for entry in raw.get("raw_call_log", []) or []:
+        if entry.get("role") == "assistant" and entry.get("barged"):
+            return True
+    for entry in raw.get("call_timeline", []) or []:
+        if entry.get("type") == "ai_response" and entry.get("barged"):
+            return True
+    return False
 
 
 def infer_call_end_date(raw: dict) -> int:
@@ -121,18 +175,40 @@ def extract_metadata(raw: dict) -> dict:
     # SWAIG call count
     swaig_call_count = len(swaig_log)
 
-    # Latency (port of computeLatency - assistant only for avg/p95)
+    # Latency (port of computeLatency - assistant only for avg/p95).
+    # null and the 0 sentinel both mean "not measured" per the enriched spec.
+    def _measured(v):
+        return v if isinstance(v, (int, float)) and v > 0 else None
+
     assistant_latencies = []
+    acoustic_latencies = []
     for msg in call_log:
         if msg.get("role") != "assistant":
             continue
-        lat = msg.get("audio_latency") or msg.get("utterance_latency") or msg.get("latency")
-        if lat and lat > 0:
+        lat = (_measured(msg.get("audio_latency"))
+               or _measured(msg.get("utterance_latency"))
+               or _measured(msg.get("latency")))
+        if lat:
             assistant_latencies.append(lat)
+        acoustic = _measured(msg.get("acoustic_latency"))
+        if acoustic:
+            acoustic_latencies.append(acoustic)
 
     avg_latency_ms = safe_mean(assistant_latencies)
     if avg_latency_ms is not None:
         avg_latency_ms = round(avg_latency_ms)
+
+    avg_acoustic_latency_ms = safe_mean(acoustic_latencies)
+    if avg_acoustic_latency_ms is not None:
+        avg_acoustic_latency_ms = round(avg_acoustic_latency_ms)
+
+    # Entity captures (mod_deepgram turn telemetry on user entries)
+    entity_count = sum(
+        1 for msg in call_log
+        if msg.get("role") == "user"
+        and isinstance(msg.get("entity"), dict)
+        and msg["entity"].get("value")
+    )
 
     # P95 from times[].answer_time
     answer_times = [
@@ -208,6 +284,7 @@ def extract_metadata(raw: dict) -> dict:
         "ai_result": swml_vars.get("ai_result"),
         "content_disposition": raw.get("content_disposition"),
         "call_ended_by": infer_call_ended_by(raw),
+        "session_end_reason": infer_session_end_reason(raw),
         "hard_timeout": bool(raw.get("hard_timeout")),
 
         # Aggregate metrics
@@ -217,9 +294,13 @@ def extract_metadata(raw: dict) -> dict:
         "total_output_tokens": total_output_tokens,
         "total_minutes": raw.get("total_minutes"),
         "avg_latency_ms": avg_latency_ms,
+        "avg_acoustic_latency_ms": avg_acoustic_latency_ms,
         "p95_latency_ms": p95_latency_ms,
         "avg_asr_confidence": avg_asr_confidence,
         "barge_in_count": barge_in_count,
+        "has_errors": detect_errors(raw),
+        "has_barge": detect_barge(raw),
+        "entity_count": entity_count,
         "performance_rating": performance_rating,
 
         # Raw payload

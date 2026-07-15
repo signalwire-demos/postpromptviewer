@@ -3,7 +3,7 @@ import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import MinimapPlugin from 'wavesurfer.js/dist/plugins/minimap.esm.js';
 import HoverPlugin from 'wavesurfer.js/dist/plugins/hover.esm.js';
-import { truncate } from '../../lib/utils.js';
+import { truncate, fieldsOf, stampsOf } from '../../lib/utils.js';
 import { getState } from '../state.js';
 
 const REGION_COLORS = {
@@ -53,7 +53,11 @@ function buildRegions(payload, recordingDuration) {
   let bestAnchor;
   const scale = 1;
 
-  if (payload.recordCallStart) {
+  if (payload.recordFirstFrame) {
+    // First PCM frame written — same clock as stamps_us, the exact t=0 of
+    // the recording (record_call_start is the relay ack, ~100ms earlier)
+    bestAnchor = payload.recordFirstFrame;
+  } else if (payload.recordCallStart) {
     bestAnchor = payload.recordCallStart;
   } else if (payload.aiStartDate) {
     bestAnchor = payload.aiStartDate;
@@ -237,10 +241,11 @@ function buildRegions(payload, recordingDuration) {
     }
   }
 
-  // Add regions for enriched event types from call_log
+  // Add regions for enriched event types from call_log.
+  // fieldsOf handles both shapes: nested metadata and the flat-key actions.
   for (const msg of payload.callLog) {
     if (msg.role !== 'system-log' || !msg.action || !msg.timestamp) continue;
-    const m = msg.metadata || {};
+    const m = fieldsOf(msg);
 
     if (msg.action === 'filler') {
       const startSec = toSec(msg.timestamp);
@@ -278,29 +283,86 @@ function buildRegions(payload, recordingDuration) {
         content: 'Timeout',
         fullContent: `Inactivity timeout (${m.timeout_ms || m.timeout || '?'}ms)`,
       });
-    } else if (msg.action === 'function_error') {
+    } else if (msg.action === 'function_error' || msg.action === 'function_loop' ||
+               msg.action === 'swaig_problem' || msg.action === 'change_step_failed') {
       const startSec = toSec(msg.timestamp);
       if (startSec < 0 || startSec >= recordingDuration) continue;
       const endSec = Math.min(startSec + 0.3, recordingDuration);
+      const detail = msg.action === 'function_error' ? `Function error: ${m.function || 'unknown'} (${m.error || 'error'})`
+        : msg.action === 'function_loop' ? `Function loop broken: ${m.function || 'unknown'} (${m.type || ''})`
+        : msg.action === 'swaig_problem' ? `SWAIG problem: ${m.function || 'unknown'} (${m.error || ''})`
+        : `Step change failed: ${m.name || 'unknown'}`;
       regions.push({
         start: Math.max(0, startSec),
         end: endSec,
         color: REGION_COLORS['function-error'],
         role: 'function-error',
         content: 'Error',
-        fullContent: `Function error: ${m.function || m.name || 'unknown'} (${m.error_type || m.type || 'error'})`,
+        fullContent: detail,
       });
-    } else if (msg.action === 'inner_dialog') {
+    } else if (msg.action === 'inner_dialog' || msg.action === 'inner_dialog_scorecard' || msg.action === 'double_turn') {
       const startSec = toSec(msg.timestamp);
       if (startSec < 0 || startSec >= recordingDuration) continue;
       const endSec = Math.min(startSec + 1, recordingDuration);
+      const label = msg.action === 'double_turn' ? 'Double Turn'
+        : msg.action === 'inner_dialog_scorecard' ? 'Scorecard' : 'Inner Dialog';
       regions.push({
         start: Math.max(0, startSec),
         end: endSec,
         color: REGION_COLORS['inner-dialog'],
         role: 'inner-dialog',
-        content: 'Inner Dialog',
-        fullContent: msg.content || 'Inner dialog',
+        content: label,
+        fullContent: msg.content || label,
+      });
+    }
+  }
+
+  // assistant-thinking role entries: reasoning output with only a fire
+  // timestamp — span until the next message like legacy Thinking: markers
+  for (let mi = 0; mi < allMessages.length; mi++) {
+    const msg = allMessages[mi];
+    if (msg.role !== 'assistant-thinking' || !msg.timestamp) continue;
+    const startSec = toSec(msg.timestamp);
+    if (startSec < 0 || startSec >= recordingDuration) continue;
+    let nextTs = msg.timestamp + 1_000_000;
+    for (let j = mi + 1; j < allMessages.length; j++) {
+      nextTs = allMessages[j].start_timestamp || allMessages[j].timestamp;
+      break;
+    }
+    const durSec = (nextTs - msg.timestamp) / 1_000_000;
+    if (durSec < 0.02) continue;
+    regions.push({
+      start: Math.max(0, startSec),
+      end: Math.min(startSec + durSec, recordingDuration),
+      color: REGION_COLORS['assistant-thinking'],
+      role: 'assistant-thinking',
+      content: truncate((msg.content || '').trim(), 40),
+      fullContent: (msg.content || '').trim(),
+    });
+  }
+
+  // Pipeline milestone markers from stamps_us — same wall clock as
+  // record_first_frame, so recording alignment is stamp − anchor.
+  const MILESTONE_MARKS = [
+    { key: 'turn_decided', label: 'EOT', color: 'rgba(45, 212, 191, 0.85)' },
+    { key: 'first_token', label: 'Token', color: 'rgba(147, 51, 234, 0.85)' },
+    { key: 'first_audio', label: 'Audio', color: 'rgba(129, 140, 248, 0.85)' },
+  ];
+  for (const msg of payload.callLog) {
+    if (msg.role !== 'assistant' && msg.role !== 'assistant-manual') continue;
+    const stamps = stampsOf(msg);
+    for (const mark of MILESTONE_MARKS) {
+      const ts = stamps[mark.key];
+      if (ts == null) continue;
+      const sec = toSec(ts);
+      if (sec < 0 || sec >= recordingDuration) continue;
+      regions.push({
+        start: sec,
+        end: sec + 0.03,
+        color: mark.color,
+        role: 'milestone',
+        content: mark.label,
+        fullContent: `${mark.label} — ${mark.key} stamp`,
       });
     }
   }
@@ -319,6 +381,7 @@ function buildRegions(payload, recordingDuration) {
       if (a.role === 'step' || b.role === 'step') continue;
       if (a.role === 'endpointing' || b.role === 'endpointing') continue;
       if (a.role === 'barge-cutoff' || b.role === 'barge-cutoff') continue;
+      if (a.role === 'milestone' || b.role === 'milestone') continue;
       if (a.role === 'filler' || b.role === 'filler') continue;
       if (a.role === 'attention-timeout' || b.role === 'attention-timeout') continue;
       if (a.role === 'function-error' || b.role === 'function-error') continue;

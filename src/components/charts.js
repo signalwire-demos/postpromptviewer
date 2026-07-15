@@ -32,15 +32,14 @@ const COLORS = {
   pink: '#F72A72',
 };
 
-// Stacked segment colors — brighter for assistant, dimmer for tool
+// Stacked segment colors — the full pipeline anchored at user-stopped-talking
 const SEGMENT = {
+  turnDetection: 'rgba(34, 197, 94, 0.7)',
+  poll: 'rgba(148, 163, 184, 0.7)',
   llmAssistant: 'rgba(147, 51, 234, 0.8)',
-  llmTool: 'rgba(147, 51, 234, 0.5)',
   utteranceAssistant: 'rgba(251, 191, 36, 0.8)',
-  utteranceTool: 'rgba(251, 191, 36, 0.5)',
   audioAssistant: 'rgba(129, 140, 248, 0.8)',
-  audioTool: 'rgba(129, 140, 248, 0.5)',
-  audioToolNone: 'rgba(129, 140, 248, 0.2)',
+  toolExecution: 'rgba(245, 158, 11, 0.6)',
 };
 
 const TOOLTIP_STYLE = {
@@ -79,27 +78,33 @@ export function renderCharts(container, payload, metrics) {
 
   const chartDefs = [];
 
-  // ─── 1. Latency Breakdown (dual stacked charts — assistant top, tool bottom) ───
+  // ─── 1. Latency Breakdown (assistant pipeline top, tool execution bottom) ───
   if (l.perResponseBreakdown.length > 0) {
     chartDefs.push({
-      title: 'Latency Breakdown',
+      title: 'Latency Pipeline',
       id: 'chart-latency-breakdown',
       dual: true, // signals custom two-canvas rendering
       render: (wrapper) => {
-        const breakdown = l.perResponseBreakdown;
-        const labels = breakdown.map((r, i) =>
-          r.role === 'tool' ? `Tool ${i + 1}` : `Turn ${i + 1}`
-        );
+        // Assistant pipeline, anchored at user-stopped-talking per the spec:
+        // turn detection (eos_to_push) → poll → model TTFT → utterance →
+        // audio. acoustic_latency is the full-extent perceived reference.
+        const breakdown = l.perResponseBreakdown.filter(r => r.role === 'assistant');
+        const labels = breakdown.map((r, i) => `Turn ${i + 1}`);
 
-        // Assistant data (zero out tool indices)
-        const aLlm = breakdown.map(r => r.role !== 'tool' ? r.llm : 0);
-        const aUtterance = breakdown.map(r => r.role !== 'tool' ? r.utteranceProcessing : 0);
-        const aAudio = breakdown.map(r => r.role !== 'tool' ? r.audioDelivery : 0);
+        const aTurnDetect = breakdown.map(r => r.turnDetection || 0);
+        const aPoll = breakdown.map(r => r.poll || 0);
+        const aLlm = breakdown.map(r => r.llm);
+        const aUtterance = breakdown.map(r => r.utteranceProcessing);
+        const aAudio = breakdown.map(r => r.audioDelivery);
+        const aPerceived = breakdown.map(r => r.perceivedTotal); // null-skipped line
+        const hasPipeline = breakdown.some(r => r.turnDetection != null || r.poll != null);
+        const hasPerceived = breakdown.some(r => r.perceivedTotal != null);
 
-        // Tool data (zero out assistant indices)
-        const tLlm = breakdown.map(r => r.role === 'tool' ? r.llm : 0);
-        const tUtterance = breakdown.map(r => r.role === 'tool' ? r.utteranceProcessing : 0);
-        const tAudio = breakdown.map(r => r.role === 'tool' ? r.audioDelivery : 0);
+        // Tool rows: real execution time (end − start), not the deprecated
+        // execution_latency alias (which is the surrounding turn's audio).
+        const toolRows = l.perResponseBreakdown.filter(r => r.role === 'tool');
+        const toolLabels = toolRows.map((r, i) => `Tool ${i + 1}`);
+        const toolExec = toolRows.map(r => r.functionExecutionMs || 0);
 
         // Reference line plugin (assistant chart only)
         const assistantStats = l.assistantStats;
@@ -159,20 +164,19 @@ export function renderCharts(container, payload, metrics) {
         const sharedBarOpts = { borderWidth: 0, barPercentage: 0.6, categoryPercentage: 0.8, stack: 'bars' };
 
         const tooltipCallbacks = {
-          title: (items) => {
-            const idx = items[0].dataIndex;
-            const r = breakdown[idx];
-            return r.role === 'tool' ? `Tool Call ${idx + 1}` : `Turn ${idx + 1}`;
-          },
+          title: (items) => `Turn ${items[0].dataIndex + 1}`,
           label: (ctx) => {
             const val = ctx.parsed.y || 0;
-            if (val > 0) return `${ctx.dataset.label}: ${val}ms`;
+            if (val > 0) return `${ctx.dataset.label}: ${Math.round(val)}ms`;
             return '';
           },
           afterBody: (items) => {
             const idx = items[0].dataIndex;
             const r = breakdown[idx];
-            return [`Total: ${r.total}ms`];
+            const lines = [`Model+delivery: ${r.total}ms`];
+            if (r.perceivedTotal != null) lines.push(`User-perceived (acoustic): ${r.perceivedTotal}ms`);
+            if (r.barged) lines.push('Interrupted by caller');
+            return lines;
           },
         };
 
@@ -184,9 +188,25 @@ export function renderCharts(container, payload, metrics) {
           data: {
             labels,
             datasets: [
+              ...(hasPipeline ? [
+                { label: 'Turn Detection', data: aTurnDetect, backgroundColor: SEGMENT.turnDetection, ...sharedBarOpts },
+                { label: 'Poll', data: aPoll, backgroundColor: SEGMENT.poll, ...sharedBarOpts },
+              ] : []),
               { label: 'LLM Latency', data: aLlm, backgroundColor: SEGMENT.llmAssistant, ...sharedBarOpts },
               { label: 'Utterance Processing', data: aUtterance, backgroundColor: SEGMENT.utteranceAssistant, ...sharedBarOpts },
               { label: 'Audio Delivery', data: aAudio, backgroundColor: SEGMENT.audioAssistant, ...sharedBarOpts },
+              ...(hasPerceived ? [{
+                type: 'line',
+                label: 'Perceived (acoustic)',
+                data: aPerceived,
+                borderColor: COLORS.pink,
+                backgroundColor: COLORS.pink,
+                pointStyle: 'rectRot',
+                pointRadius: 5,
+                showLine: false,
+                spanGaps: false,
+                stack: undefined,
+              }] : []),
             ],
           },
           options: {
@@ -270,15 +290,17 @@ export function renderCharts(container, payload, metrics) {
         };
 
         const botCanvas = wrapper.querySelector('.chart-latency-bot');
+        if (toolRows.length === 0) {
+          botCanvas.closest('div')?.remove();
+          return [topChart];
+        }
         const botChart = new Chart(botCanvas, {
           type: 'bar',
           plugins: [toolRefLinePlugin],
           data: {
-            labels,
+            labels: toolLabels,
             datasets: [
-              { label: 'LLM Latency', data: tLlm, backgroundColor: SEGMENT.llmTool, ...sharedBarOpts },
-              { label: 'Utterance Processing', data: tUtterance, backgroundColor: SEGMENT.utteranceTool, ...sharedBarOpts },
-              { label: 'Audio Delivery', data: tAudio, backgroundColor: SEGMENT.audioTool, ...sharedBarOpts },
+              { label: 'Execution (end − start)', data: toolExec, backgroundColor: SEGMENT.toolExecution, ...sharedBarOpts },
             ],
           },
           options: {
@@ -307,11 +329,17 @@ export function renderCharts(container, payload, metrics) {
                   },
                 },
               },
-              tooltip: { ...TOOLTIP_STYLE, callbacks: tooltipCallbacks },
+              tooltip: {
+                ...TOOLTIP_STYLE,
+                callbacks: {
+                  title: (items) => toolLabels[items[0].dataIndex],
+                  label: (ctx) => `Execution: ${Math.round(ctx.parsed.y || 0)}ms`,
+                },
+              },
             },
             scales: {
-              x: { stacked: true, ...SCALE_STYLE.x, title: { display: true, text: 'Responses', color: '#6b7280' } },
-              y: { stacked: true, ...SCALE_STYLE.y, beginAtZero: true, title: { display: true, text: 'Tool (ms)', color: '#6b7280' } },
+              x: { stacked: true, ...SCALE_STYLE.x, title: { display: true, text: 'Tool Calls', color: '#6b7280' } },
+              y: { stacked: true, ...SCALE_STYLE.y, beginAtZero: true, title: { display: true, text: 'Execution (ms)', color: '#6b7280' } },
             },
           },
         });
@@ -364,6 +392,15 @@ export function renderCharts(container, payload, metrics) {
                       return `${r.tokens} tokens (timing unavailable)`;
                     }
                     return `TPS: ${Math.round(r.tps)} (${r.tokens} tokens)`;
+                  },
+                  afterBody: (items) => {
+                    // times[] is per-generation: a spoken-text generation
+                    // that matched no call_log turn was abandoned/regenerated
+                    const r = times[items[0].dataIndex];
+                    if (r && !r.isToolCall && !r.matchedSpokenTurn && r.responseWordCount > 0) {
+                      return ['Not spoken (abandoned or regenerated)'];
+                    }
+                    return [];
                   },
                 },
               },
@@ -425,6 +462,14 @@ export function renderCharts(container, payload, metrics) {
                     return text.length > 60 ? text.slice(0, 57) + '...' : text || '(no text)';
                   },
                   label: (ctx) => `Confidence: ${ctx.parsed.y}%`,
+                  afterBody: (items) => {
+                    const m = msgs[items[0].dataIndex];
+                    const lines = [];
+                    if (m.entity?.value) lines.push(`Entity: ${m.entity.type} ${m.entity.value}${m.entity.valid ? ' ✓' : ' ✕'}`);
+                    if (m.eot?.basis) lines.push(`End-of-turn: ${m.eot.basis}${m.eot.confidence != null ? ` (${Math.round(m.eot.confidence * 100)}%)` : ''}`);
+                    if (m.timing?.walkbacks) lines.push(`Walkbacks: ${m.timing.walkbacks}`);
+                    return lines;
+                  },
                 },
               },
             },
@@ -582,21 +627,24 @@ export function renderCharts(container, payload, metrics) {
     });
   }
 
-  // ─── 5. SWAIG Execution vs Function Latency ───
+  // ─── 5. SWAIG Execution by Command ───
   const toolNames = Object.keys(t.toolBreakdown).filter(
-    n => t.toolBreakdown[n].executionLatencies.length > 0 || t.toolBreakdown[n].functionLatencies.length > 0
+    n => t.toolBreakdown[n].executionLatencies.length > 0 || t.toolBreakdown[n].turnAudioLatencies.length > 0
   );
   if (toolNames.length > 0) {
     chartDefs.push({
       title: 'SWAIG Latency by Command',
       id: 'chart-swaig',
       render: (canvas) => {
+        // Execution = the function's real run time (end − start timestamps).
+        // Turn audio = the surrounding LLM turn's audio latency (the
+        // deprecated execution_latency alias) shown for context.
         const avgExec = toolNames.map(name => {
           const lats = t.toolBreakdown[name].executionLatencies;
           return lats.length ? lats.reduce((a, b) => a + b, 0) / lats.length : 0;
         });
-        const avgFunc = toolNames.map(name => {
-          const lats = t.toolBreakdown[name].functionLatencies;
+        const avgTurnAudio = toolNames.map(name => {
+          const lats = t.toolBreakdown[name].turnAudioLatencies;
           return lats.length ? lats.reduce((a, b) => a + b, 0) / lats.length : 0;
         });
         return new Chart(canvas, {
@@ -605,7 +653,7 @@ export function renderCharts(container, payload, metrics) {
             labels: toolNames,
             datasets: [
               {
-                label: 'Execution (round-trip)',
+                label: 'Execution (end − start)',
                 data: avgExec,
                 backgroundColor: 'rgba(245,158,11,0.6)',
                 borderColor: COLORS.yellow,
@@ -613,10 +661,10 @@ export function renderCharts(container, payload, metrics) {
                 borderRadius: 4,
               },
               {
-                label: 'Function (remote only)',
-                data: avgFunc,
-                backgroundColor: 'rgba(239,68,68,0.5)',
-                borderColor: COLORS.red,
+                label: 'Surrounding turn audio',
+                data: avgTurnAudio,
+                backgroundColor: 'rgba(129,140,248,0.4)',
+                borderColor: COLORS.indigo,
                 borderWidth: 1,
                 borderRadius: 4,
               },
